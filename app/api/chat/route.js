@@ -7,7 +7,7 @@ const CANDIDATE_MODELS = ['gemini-3.5-flash', 'gemini-3.8-flash', 'gemini-flash-
  */
 export async function POST(req) {
   try {
-    const { message, history, persona, apiKey, model: requestedModel } = await req.json();
+    const { message, history, persona, apiKey, model: requestedModel, userProfile } = await req.json();
 
     const activeKey = process.env.GEMINI_API_KEY || apiKey;
 
@@ -20,16 +20,26 @@ export async function POST(req) {
 
     const genAI = new GoogleGenerativeAI(activeKey);
 
+    const userName = userProfile?.name?.trim() || 'ผู้ใช้';
+    const userCallMe = userProfile?.callMe?.trim() || userName;
+    const userDesc = userProfile?.description?.trim();
+
     const systemInstruction = `
 คุณคือตัวละครชื่อ "${persona.name}"
-รายละเอียดและบทบาท: ${persona.description}
+รายละเอียดและบทบาทของคุณ: ${persona.description}
 ประโยคที่คุณได้ทักทายผู้ใช้ไปตอนแรกคือ: "${persona.greeting || ''}"
+
+[ข้อมูลคู่สนทนาของคุณ]:
+- ชื่อคู่สนทนา: ${userName}
+- คำสรรพนามหรือชื่อที่คุณต้องใช้เรียกคู่สนทนา: "${userCallMe}"
+${userDesc ? `- ข้อมูล/ความสัมพันธ์กับคู่สนทนา: ${userDesc}` : ''}
 
 [กฎการตอบกลับ]:
 1. สวมบทบาทเป็น ${persona.name} อย่างเคร่งครัด ห้ามหลุดออกจากบทบาทเด็ดขาด
 2. ตอบกลับเป็นภาษาไทยที่เป็นธรรมชาติ สอดคล้องกับบุคลิก
 3. บรรยายการกระทำ สีหน้า หรืออารมณ์ ไว้ในวงเล็บดอกจันเสมอ เช่น *(ยิ้มหวานพร้อมจิบกาแฟ)*
 4. ให้ตอบกลับสั้นยาวตามความเหมาะสมของบทสนทนา
+5. เรียกคู่สนทนาด้วยชื่อหรือสรรพนาม "${userCallMe}" ให้สอดคล้องกับความสัมพันธ์
 `;
 
     // Ensure chat history conforms to Gemini SDK requirements:

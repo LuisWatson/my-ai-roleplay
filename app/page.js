@@ -14,10 +14,11 @@ export default function Home() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [apiKey, setApiKey] = useState('');
+  const [userProfile, setUserProfile] = useState({ name: '', callMe: '', description: '' });
   const [showSettings, setShowSettings] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
-  // Load saved API key and custom characters on mount
+  // Load saved API key, custom characters, and user persona profile on mount
   useEffect(() => {
     const savedKey = localStorage.getItem('user_gemini_api_key');
     if (savedKey) setApiKey(savedKey);
@@ -31,12 +32,27 @@ export default function Home() {
         console.error('Failed to parse custom characters from localStorage:', err);
       }
     }
+
+    const savedProfile = localStorage.getItem('user_roleplay_profile');
+    if (savedProfile) {
+      try {
+        setUserProfile(JSON.parse(savedProfile));
+      } catch (err) {
+        console.error('Failed to parse user profile from localStorage:', err);
+      }
+    }
   }, []);
 
   // Save updated API key
   const handleSaveApiKey = (newKey) => {
     setApiKey(newKey);
     localStorage.setItem('user_gemini_api_key', newKey);
+  };
+
+  // Save updated user persona profile
+  const handleSaveUserProfile = (profile) => {
+    setUserProfile(profile);
+    localStorage.setItem('user_roleplay_profile', JSON.stringify(profile));
   };
 
   // Switch character and load their respective conversation history
@@ -80,6 +96,7 @@ export default function Home() {
           history: historyPayload.slice(0, -1),
           persona: selectedChar,
           apiKey: apiKey,
+          userProfile: userProfile,
         }),
       });
 
@@ -189,12 +206,14 @@ export default function Home() {
         onClearHistory={handleClearHistory}
       />
 
-      {/* Settings modal */}
+      {/* Settings modal with User Persona and API Key configuration */}
       <SettingsModal
         isOpen={showSettings}
         onClose={() => setShowSettings(false)}
         apiKey={apiKey}
         onSaveApiKey={handleSaveApiKey}
+        userProfile={userProfile}
+        onSaveUserProfile={handleSaveUserProfile}
       />
 
       {/* Create character modal */}
