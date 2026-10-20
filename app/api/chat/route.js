@@ -1,5 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
+const CANDIDATE_MODELS = ['gemini-3.5-flash', 'gemini-3.8-flash', 'gemini-flash-latest'];
+
 /**
  * Handles incoming chat messages and streams responses back from Google Gemini.
  */
@@ -21,6 +23,7 @@ export async function POST(req) {
     const systemInstruction = `
 คุณคือตัวละครชื่อ "${persona.name}"
 รายละเอียดและบทบาท: ${persona.description}
+ประโยคที่คุณได้ทักทายผู้ใช้ไปตอนแรกคือ: "${persona.greeting || ''}"
 
 [กฎการตอบกลับ]:
 1. สวมบทบาทเป็น ${persona.name} อย่างเคร่งครัด ห้ามหลุดออกจากบทบาทเด็ดขาด
@@ -29,29 +32,60 @@ export async function POST(req) {
 4. ให้ตอบกลับสั้นยาวตามความเหมาะสมของบทสนทนา
 `;
 
-    // Use requested model or fallback to gemini-1.5-flash for reliability
-    const modelName = requestedModel || 'gemini-1.5-flash';
-    const model = genAI.getGenerativeModel({
-      model: modelName,
-      systemInstruction: systemInstruction,
-    });
+    // Ensure chat history conforms to Gemini SDK requirements:
+    // 1. First message must be from 'user'
+    // 2. Roles must strictly alternate between 'user' and 'model'
+    let rawHistory = (history || []).filter((h) => h.text && h.text.trim().length > 0);
+    while (rawHistory.length > 0 && rawHistory[0].role !== 'user') {
+      rawHistory.shift();
+    }
 
-    // Format previous chat history to match the Gemini SDK structure
-    const formattedHistory = (history || []).map((h) => ({
-      role: h.role === 'user' ? 'user' : 'model',
-      parts: [{ text: h.text }],
-    }));
+    const formattedHistory = [];
+    for (const item of rawHistory) {
+      const role = item.role === 'user' ? 'user' : 'model';
+      if (formattedHistory.length > 0 && formattedHistory[formattedHistory.length - 1].role === role) {
+        formattedHistory[formattedHistory.length - 1].parts[0].text += `\n${item.text}`;
+      } else {
+        formattedHistory.push({
+          role: role,
+          parts: [{ text: item.text }],
+        });
+      }
+    }
 
-    // Initialize chat session
-    const chat = model.startChat({
-      history: formattedHistory,
-      generationConfig: {
-        temperature: 0.95,
-      },
-    });
+    // Try primary requested model or fallback through available fast models
+    const modelsToTry = requestedModel
+      ? [requestedModel, ...CANDIDATE_MODELS.filter((m) => m !== requestedModel)]
+      : CANDIDATE_MODELS;
 
-    // Request a streaming response from Gemini
-    const resultStream = await chat.sendMessageStream(message);
+    let resultStream = null;
+    let lastError = null;
+
+    for (const mName of modelsToTry) {
+      try {
+        const model = genAI.getGenerativeModel({
+          model: mName,
+          systemInstruction: systemInstruction,
+        });
+
+        const chat = model.startChat({
+          history: formattedHistory,
+          generationConfig: {
+            temperature: 0.95,
+          },
+        });
+
+        resultStream = await chat.sendMessageStream(message);
+        break; // Successfully initiated stream
+      } catch (err) {
+        lastError = err;
+        console.warn(`Model ${mName} failed, trying fallback:`, err.message);
+      }
+    }
+
+    if (!resultStream) {
+      throw lastError || new Error('ไม่สามารถเชื่อมต่อโมเดล AI ได้ในขณะนี้');
+    }
 
     // Stream text chunks directly using ReadableStream
     const encoder = new TextEncoder();
