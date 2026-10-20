@@ -26,10 +26,11 @@ export function formatRoleplayText(text) {
 }
 
 /**
- * Renders an individual chat message item.
+ * Renders an individual chat message item with support for active streaming states.
  */
 export default function ChatMessage({ message, avatar, characterName }) {
   const isUser = message.role === 'user';
+  const hasText = message.text && message.text.length > 0;
 
   return (
     <div className={`flex items-start gap-2.5 transition-all ${isUser ? 'justify-end' : 'justify-start'}`}>
@@ -48,7 +49,15 @@ export default function ChatMessage({ message, avatar, characterName }) {
             : 'bg-slate-800/90 border border-slate-700/80 text-slate-100 rounded-tl-none backdrop-blur-sm'
         }`}
       >
-        {formatRoleplayText(message.text)}
+        {hasText ? (
+          formatRoleplayText(message.text)
+        ) : (
+          <span className="inline-flex items-center gap-1.5 py-1 px-1">
+            <span className="w-2 h-2 rounded-full bg-purple-400 animate-bounce" />
+            <span className="w-2 h-2 rounded-full bg-purple-400 animate-bounce [animation-delay:0.2s]" />
+            <span className="w-2 h-2 rounded-full bg-purple-400 animate-bounce [animation-delay:0.4s]" />
+          </span>
+        )}
       </div>
     </div>
   );

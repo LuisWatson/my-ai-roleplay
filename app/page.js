@@ -54,7 +54,7 @@ export default function Home() {
     setMessages([{ role: 'model', text: char.greeting }]);
   };
 
-  // Send message to Gemini API route
+  // Send message and stream response from Gemini API
   const handleSendMessage = async () => {
     if (!input.trim() || loading || !selectedChar) return;
 
@@ -83,15 +83,39 @@ export default function Home() {
         }),
       });
 
-      const data = await res.json();
-
       if (!res.ok) {
-        throw new Error(data.error || 'เกิดข้อผิดพลาดในการรับข้อมูลจาก API');
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP error ${res.status}`);
       }
 
-      const finalMessages = [...updatedMessages, { role: 'model', text: data.text }];
-      setMessages(finalMessages);
-      localStorage.setItem(`chat_history_${selectedChar.id}`, JSON.stringify(finalMessages));
+      // Add empty placeholder for the incoming stream
+      setMessages((prev) => [...prev, { role: 'model', text: '' }]);
+      setLoading(false);
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let accumulatedText = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        accumulatedText += chunk;
+
+        setMessages((prev) => {
+          const nextState = [...prev];
+          const lastIndex = nextState.length - 1;
+          if (lastIndex >= 0 && nextState[lastIndex].role === 'model') {
+            nextState[lastIndex] = { ...nextState[lastIndex], text: accumulatedText };
+          }
+          return nextState;
+        });
+      }
+
+      // Persist the complete dialogue in localStorage once stream finishes
+      const finalHistory = [...updatedMessages, { role: 'model', text: accumulatedText }];
+      localStorage.setItem(`chat_history_${selectedChar.id}`, JSON.stringify(finalHistory));
     } catch (err) {
       alert(`Error: ${err.message}`);
     } finally {
