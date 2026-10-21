@@ -68,6 +68,17 @@ const REPLY_ERRORS = {
   auth: { kind: 'error', title: 'Gemini API Key ใช้ไม่ได้', text: 'ตรวจ key ในหน้าตั้งค่า หรือในไฟล์ .env.local', retry: false },
 };
 
+// A character's saved conversation, or just their greeting when there is none yet
+function savedHistoryOrGreeting(store, char) {
+  try {
+    const parsed = JSON.parse(store.getItem(`chat_history_${char.id}`) || '[]');
+    if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+  } catch (err) {
+    console.error('Failed to parse chat history:', err);
+  }
+  return [{ role: 'model', text: char.greeting }];
+}
+
 // Newest messages that fit in `budget` characters; always keeps at least the latest message.
 function takeRecentMessages(messages, budget) {
   const recent = [];
@@ -104,23 +115,23 @@ function RoleplayApp({ store, account, getAccessToken }) {
   const abortRef = useRef(null);
   const activeCharIdRef = useRef(null); // which character's chat is currently on screen
 
-  // Load saved API key, custom characters, and user persona profile on mount
-  useEffect(() => {
+  // Put everything saved in the store into state; returns the full character list it loaded.
+  // Runs on mount and again whenever another device has changed the data (see the refresh effect below).
+  const loadSaved = () => {
     const savedKey = store.getItem('user_gemini_api_key');
     if (savedKey) setApiKey(savedKey);
 
     const savedModel = store.getItem('user_gemini_model');
     if (AVAILABLE_MODELS.some((m) => m.id === savedModel)) setModel(savedModel);
 
-    const savedChars = store.getItem('user_custom_chars');
-    if (savedChars) {
-      try {
-        const parsed = JSON.parse(savedChars);
-        setCharacters([...DEFAULT_CHARACTERS, ...parsed]);
-      } catch (err) {
-        console.error('Failed to parse custom characters from storage:', err);
-      }
+    let allChars = DEFAULT_CHARACTERS;
+    try {
+      const parsed = JSON.parse(store.getItem('user_custom_chars') || '[]');
+      if (Array.isArray(parsed)) allChars = [...DEFAULT_CHARACTERS, ...parsed];
+    } catch (err) {
+      console.error('Failed to parse custom characters from storage:', err);
     }
+    setCharacters(allChars);
 
     try {
       const savedSettings = JSON.parse(store.getItem('user_response_settings'));
@@ -131,11 +142,11 @@ function RoleplayApp({ store, account, getAccessToken }) {
 
     try {
       const savedRoles = JSON.parse(store.getItem('user_character_roles'));
-      if (savedRoles && typeof savedRoles === 'object') {
-        setUserRoles(
-          Object.fromEntries(Object.entries(savedRoles).map(([id, role]) => [id, normalizeUserRole(role)]))
-        );
-      }
+      setUserRoles(
+        savedRoles && typeof savedRoles === 'object'
+          ? Object.fromEntries(Object.entries(savedRoles).map(([id, role]) => [id, normalizeUserRole(role)]))
+          : {}
+      );
     } catch (err) {
       console.error('Failed to parse character roles from storage:', err);
     }
@@ -150,7 +161,60 @@ function RoleplayApp({ store, account, getAccessToken }) {
         console.error('Failed to parse user profile from storage:', err);
       }
     }
+    return allChars;
+  };
+
+  useEffect(() => {
+    loadSaved();
   }, []);
+
+  // Coming back to the tab: pick up what another device saved meanwhile, so this one doesn't write over it.
+  // Skipped while a reply is streaming; the next focus catches up.
+  useEffect(() => {
+    if (!store.refresh) return; // localStorage-only mode has nothing to fetch
+    const onVisible = async () => {
+      if (document.visibilityState !== 'visible' || abortRef.current) return;
+      let changed = false;
+      try {
+        changed = await store.refresh();
+      } catch (err) {
+        console.error('Refreshing saved data failed:', err);
+      }
+      if (!changed || abortRef.current) return;
+
+      const allChars = loadSaved();
+      const openId = activeCharIdRef.current;
+      if (!openId) return;
+      const openChar = allChars.find((c) => c.id === openId);
+      if (!openChar) {
+        // Deleted on the other device
+        activeCharIdRef.current = null;
+        setSelectedChar(null);
+        setMessages([]);
+        return;
+      }
+      setSelectedChar(openChar);
+      setMessages(savedHistoryOrGreeting(store, openChar));
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onVisible);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', onVisible);
+    };
+  }, [store]);
+
+  // Closing the tab before the last save reached the server would lose it; let the browser ask first
+  useEffect(() => {
+    if (!store.hasPendingWrites) return;
+    const onBeforeUnload = (e) => {
+      if (!store.hasPendingWrites()) return;
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => window.removeEventListener('beforeunload', onBeforeUnload);
+  }, [store]);
 
   // Save updated API key
   const handleSaveApiKey = (newKey) => {
@@ -247,19 +311,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
     activeCharIdRef.current = char.id;
     setSelectedChar(char);
     if (!userRoles[char.id] && markRolePrompted(char.id)) setShowUserRole(true);
-    const savedHistory = store.getItem(`chat_history_${char.id}`);
-    if (savedHistory) {
-      try {
-        const parsed = JSON.parse(savedHistory);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setMessages(parsed);
-          return;
-        }
-      } catch (err) {
-        console.error('Failed to parse chat history:', err);
-      }
-    }
-    setMessages([{ role: 'model', text: char.greeting }]);
+    setMessages(savedHistoryOrGreeting(store, char));
   };
 
   const handleBack = () => {
