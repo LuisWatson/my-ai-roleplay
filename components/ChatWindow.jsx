@@ -55,50 +55,44 @@ function WaitingIndicator({ avatar, name }) {
   );
 }
 
-// "+5" / "-3" next to a meter that just moved
-function Delta({ now, before }) {
-  if (!Number.isFinite(now) || !Number.isFinite(before) || now === before) return null;
-  const up = now > before;
-  return (
-    <span className={`text-[10px] font-medium animate-fadeIn ${up ? 'text-emerald-300' : 'text-rose-300'}`}>
-      {up ? '+' : ''}
-      {now - before}
-    </span>
-  );
-}
-
 /**
- * How the character feels about the user right now: bond 💗, trust 🤝 (0–100) and mood, with the change
- * from the reply before.
+ * The character's current feelings, shown in the header under their name instead of the tagline:
+ * bond 💗 and trust 🤝 (0–100) and mood.
  */
-function RelationPill({ relation, previous }) {
+function RelationLine({ relation }) {
   return (
-    <div
-      title="ความผูกพัน / ความไว้ใจ / อารมณ์ตอนนี้"
-      className="flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900/50 border border-white/10 backdrop-blur-md text-[11px] text-slate-300 shadow-sm"
-    >
+    <p title="ความผูกพัน · ความไว้ใจ · อารมณ์ตอนนี้" className="flex items-center gap-2 text-xs text-slate-300 min-w-0">
       {Number.isFinite(relation.bond) && (
-        <span className="flex items-center gap-1">
+        <span className="flex items-center gap-1 flex-shrink-0">
           <span aria-hidden>💗</span>
           <span className="tabular-nums">{relation.bond}</span>
-          <Delta now={relation.bond} before={previous?.bond} />
         </span>
       )}
       {Number.isFinite(relation.trust) && (
-        <span className="flex items-center gap-1">
+        <span className="flex items-center gap-1 flex-shrink-0">
           <span aria-hidden>🤝</span>
           <span className="tabular-nums">{relation.trust}</span>
-          <Delta now={relation.trust} before={previous?.trust} />
         </span>
       )}
-      {relation.mood && (
-        <>
-          <span className="w-px h-3 bg-white/15" />
-          <span className="max-w-[9rem] truncate">{relation.mood}</span>
-        </>
-      )}
-    </div>
+      {relation.mood && <span className="truncate text-slate-400">· {relation.mood}</span>}
+    </p>
   );
+}
+
+// For each message, how its reply moved the meters ({ bond, trust } differences; null when nothing changed)
+function relationChanges(messages) {
+  let previous = null;
+  return messages.map((m) => {
+    if (!m.relation) return null;
+    const change = {};
+    for (const key of ['bond', 'trust']) {
+      const now = m.relation[key];
+      const before = previous?.[key];
+      if (Number.isFinite(now) && Number.isFinite(before) && now !== before) change[key] = now - before;
+    }
+    previous = m.relation;
+    return Object.keys(change).length > 0 ? change : null;
+  });
 }
 
 /**
@@ -203,8 +197,7 @@ export default function ChatWindow({
   const scene = latestScene(messages);
   // Relationship now, and before the latest reply that changed it (for the +/- shown next to it)
   const shownRelation = showRelation ? latestRelation(messages) : null;
-  const lastRelationAt = messages.findLastIndex((m) => m.relation);
-  const previousRelation = lastRelationAt > 0 ? latestRelation(messages.slice(0, lastRelationAt)) : null;
+  const changes = showRelation ? relationChanges(messages) : [];
   const lastMessage = messages[messages.length - 1];
   const choices =
     showChoices && !loading && lastMessage?.role === 'model' && lastMessage.choices?.length ? lastMessage.choices : null;
@@ -250,14 +243,18 @@ export default function ChatWindow({
             <div className="flex items-center gap-2 min-w-0">
               <h2 className="font-semibold text-sm md:text-base text-slate-100 truncate">{selectedChar.name}</h2>
               {selectedChar.category && (
-                <span className="hidden min-[400px]:inline text-[10px] px-2 py-0.5 rounded-full bg-purple-900/40 flex-shrink-0 whitespace-nowrap text-purple-300 border border-purple-500/30">
+                <span className="hidden lg:inline text-[10px] px-2 py-0.5 rounded-full bg-purple-900/40 flex-shrink-0 whitespace-nowrap text-purple-300 border border-purple-500/30">
                   {selectedChar.category}
                 </span>
               )}
             </div>
-            <p className="text-xs text-slate-400 truncate sm:max-w-md">
-              {selectedChar.tagline || selectedChar.description}
-            </p>
+            {shownRelation ? (
+              <RelationLine relation={shownRelation} />
+            ) : (
+              <p className="text-xs text-slate-400 truncate sm:max-w-md">
+                {selectedChar.tagline || selectedChar.description}
+              </p>
+            )}
           </div>
         </div>
 
@@ -272,7 +269,7 @@ export default function ChatWindow({
           }`}
         >
           <UserCog className="w-5 h-5" />
-          <span className="hidden sm:inline">บทบาทของฉัน</span>
+          <span className="hidden lg:inline">บทบาทของฉัน</span>
         </button>
         <button
           onClick={onOpenMemory}
@@ -280,7 +277,7 @@ export default function ChatWindow({
           className="p-1.5 sm:p-2 rounded-lg transition flex items-center gap-1.5 text-xs hover:bg-slate-700/60 text-slate-400 hover:text-purple-300"
         >
           <Brain className="w-5 h-5" />
-          <span className="hidden sm:inline">ความทรงจำ</span>
+          <span className="hidden lg:inline">ความทรงจำ</span>
         </button>
         <button
           onClick={onClearHistory}
@@ -292,23 +289,20 @@ export default function ChatWindow({
         </div>
       </header>
 
-      {/* Scene bar: current in-story location/time (and relationship), reported by the model after each reply */}
-      {(scene || shownRelation) && (
-        <div className="flex flex-wrap justify-center gap-1.5 pt-3 px-4 z-10">
-          {scene && (
-            <div className="flex items-center gap-2.5 px-3.5 py-1 rounded-full bg-slate-900/50 border border-white/10 backdrop-blur-md text-[11px] text-slate-300 shadow-sm">
-              <span className="flex items-center gap-1.5">
-                <Clock className="w-3 h-3 text-violet-300/80" />
-                {scene.time}
-              </span>
-              <span className="w-px h-3 bg-white/15" />
-              <span className="flex items-center gap-1.5">
-                <MapPin className="w-3 h-3 text-violet-300/80" />
-                {scene.location}
-              </span>
-            </div>
-          )}
-          {shownRelation && <RelationPill relation={shownRelation} previous={previousRelation} />}
+      {/* Scene bar: current in-story location/time, reported by the model after each reply */}
+      {scene && (
+        <div className="flex justify-center pt-3 px-4 z-10">
+          <div className="flex items-center gap-2.5 px-3.5 py-1 rounded-full bg-slate-900/50 border border-white/10 backdrop-blur-md text-[11px] text-slate-300 shadow-sm">
+            <span className="flex items-center gap-1.5">
+              <Clock className="w-3 h-3 text-violet-300/80" />
+              {scene.time}
+            </span>
+            <span className="w-px h-3 bg-white/15" />
+            <span className="flex items-center gap-1.5">
+              <MapPin className="w-3 h-3 text-violet-300/80" />
+              {scene.location}
+            </span>
+          </div>
         </div>
       )}
 
@@ -329,6 +323,7 @@ export default function ChatWindow({
             onSaveMoment={(title) => onSaveMoment(idx, title)}
             onDismissMoment={() => onDismissMoment(idx)}
             onUndoMoment={() => onUndoMoment(idx)}
+            relationChange={changes[idx]}
             canRetry={idx === messages.length - 1 && msg.role === 'user' && !loading}
             onRetry={onRetry}
             onEdit={(text) => onEditMessage(idx, text)}

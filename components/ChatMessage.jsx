@@ -115,6 +115,7 @@ export default function ChatMessage({
   onSaveMoment,
   onDismissMoment,
   onUndoMoment,
+  relationChange,
   canRetry,
   onRetry,
   onEdit,
@@ -192,6 +193,23 @@ export default function ChatMessage({
           </span>
         )}
       </div>
+
+      {relationChange && !isEditing && (
+        <div className="flex items-center gap-2.5 px-1 text-[11px] font-medium animate-fadeIn" aria-label="ความสัมพันธ์ที่เปลี่ยนไป">
+          {[
+            ['bond', '💗'],
+            ['trust', '🤝'],
+          ].map(
+            ([key, icon]) =>
+              relationChange[key] !== undefined && (
+                <span key={key} className={relationChange[key] > 0 ? 'text-emerald-300' : 'text-rose-300'}>
+                  {icon} {relationChange[key] > 0 ? '+' : ''}
+                  {relationChange[key]}
+                </span>
+              )
+          )}
+        </div>
+      )}
 
       {message.moment && !isEditing && (
         <MomentCard
