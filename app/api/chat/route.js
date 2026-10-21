@@ -108,30 +108,42 @@ ${message}`;
       models: ordered,
       perModelMs: FIRST_RESPONSE_TIMEOUT_MS,
       totalMs: TOTAL_BUDGET_MS,
-      run: (mName) =>
-        genAI
+      // Waits for the first words, so a reply Google blocks (or an empty one) counts as this model failing
+      // and the page gets an error it can explain, instead of a stream that breaks after the 200
+      run: async (mName) => {
+        const { stream } = await genAI
           .getGenerativeModel({ model: mName, systemInstruction })
           .startChat({ history: formattedHistory, generationConfig: { temperature } })
-          .sendMessageStream(outgoingMessage),
+          .sendMessageStream(outgoingMessage);
+        const iterator = stream[Symbol.asyncIterator]();
+        let firstText = '';
+        while (!firstText) {
+          const { value, done } = await iterator.next();
+          if (done) break;
+          firstText = value.text(); // throws when the reply was blocked
+        }
+        if (!firstText) throw new Error('Empty reply');
+        return { iterator, firstText };
+      },
     });
     if (errorResponse) return errorResponse;
 
-    // Stream text chunks directly using ReadableStream
+    // Stream the rest of the reply. If Google blocks it midway, end quietly: the page keeps what arrived.
     const encoder = new TextEncoder();
     const customStream = new ReadableStream({
       async start(controller) {
+        controller.enqueue(encoder.encode(resultStream.firstText));
         try {
-          for await (const chunk of resultStream.stream) {
-            const chunkText = chunk.text();
-            if (chunkText) {
-              controller.enqueue(encoder.encode(chunkText));
-            }
+          while (true) {
+            const { value, done } = await resultStream.iterator.next();
+            if (done) break;
+            const chunkText = value.text();
+            if (chunkText) controller.enqueue(encoder.encode(chunkText));
           }
-          controller.close();
         } catch (streamError) {
-          console.error('Streaming error during chunk generation:', streamError);
-          controller.error(streamError);
+          console.error(`Reply from ${usedModel} stopped midway:`, streamError.message);
         }
+        controller.close();
       },
     });
 

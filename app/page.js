@@ -77,6 +77,12 @@ const REPLY_ERRORS = {
   network: { kind: 'error', title: 'เชื่อมต่อไม่ได้', text: 'ตรวจอินเทอร์เน็ตแล้วลองส่งอีกครั้ง' },
   signin: { kind: 'error', title: 'ต้องเข้าสู่ระบบใหม่', text: 'ออกจากระบบแล้วเข้าสู่ระบบอีกครั้ง', retry: false },
   auth: { kind: 'error', title: 'Gemini API Key ใช้ไม่ได้', text: 'ตรวจ key ในหน้าตั้งค่า หรือในไฟล์ .env.local', retry: false },
+  blocked: {
+    kind: 'warn',
+    title: 'Google ไม่ยอมตอบเนื้อหาช่วงนี้',
+    text: 'ระบบความปลอดภัยของ Google บล็อกคำตอบนี้ ลองแก้ข้อความล่าสุด (✏️) หรือกำกับให้เรื่องไปทางอื่น แล้วส่งใหม่ — กดส่งซ้ำแบบเดิมจะโดนบล็อกอีก',
+    retry: false,
+  },
 };
 
 // The character as sent to the server: the model never sees the pictures, and an uploaded photo is a

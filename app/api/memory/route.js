@@ -53,17 +53,20 @@ export async function POST(req) {
       models: SUMMARY_MODELS,
       perModelMs: PER_MODEL_MS,
       totalMs: TOTAL_MS,
-      run: (model) =>
-        genAI.getGenerativeModel({ model }).generateContent({
+      // Reading the text inside the attempt makes a blocked or empty summary count as a failed model
+      run: async (model) => {
+        const { response } = await genAI.getGenerativeModel({ model }).generateContent({
           contents: [{ role: 'user', parts: [{ text: prompt }] }],
           generationConfig: { temperature: 0.3 },
-        }),
+        });
+        const text = response.text().trim(); // throws when blocked
+        if (!text) throw new Error('Empty summary');
+        return text;
+      },
     });
     if (errorResponse) return errorResponse;
 
-    const summary = result.response.text().trim();
-    if (!summary) return jsonResponse({ error: 'สรุปไม่สำเร็จ', kind: 'busy' }, 502);
-    return jsonResponse({ summary, model: usedModel }, 200);
+    return jsonResponse({ summary: result, model: usedModel }, 200);
   } catch (error) {
     console.error('Memory API Error:', error);
     return jsonResponse({ error: error.message || 'เกิดข้อผิดพลาดในการประมวลผล' }, 500);
