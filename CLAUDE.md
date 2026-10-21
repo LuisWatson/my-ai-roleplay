@@ -30,7 +30,12 @@ The owner builds it for themselves and their partner. Reply to the owner in Thai
 - `supabase/schema.sql` — tables `user_kv`, `allowed_emails`, RLS, `is_allowed()`. Run in Supabase SQL Editor.
 - `app/api/chat/route.js` — streams Gemini replies; builds the system prompt with `lib/prompt.js`.
   With Supabase configured it requires `Authorization: Bearer <token>` of an allowlisted account.
-- `lib/prompt.js` — system instruction: persona, user role, novel-style format rules, trailing scene tag.
+- `lib/prompt.js` — system instruction: persona, user role, memory, novel-style format rules, trailing scene tag;
+  also `buildSummaryPrompt` for memory.
+- `lib/memory.js` + `app/api/memory/route.js` — long-term memory: older chat is summarized into
+  `chat_memory_<id>` and sent with each message; only the newest ~12–18k characters go as raw history.
+- `lib/geminiServer.js` — shared by API routes: `authorize`, `resolveApiKey`, `tryModels` (fallback + skip
+  models whose daily quota is gone).
 - `lib/scene.js` — parses the tag the model ends every reply with:
   `[ฉาก: สถานที่=...; เวลา=...; พื้นหลัง=<id>]` (the `พื้นหลัง=` part is optional).
 - `constants/models.js` — model list = default (first) + fallback order. Free tier only (owner's choice):
