@@ -1,3 +1,5 @@
+import { PRESET_PROFILES } from './characterProfiles';
+
 const avatarFor = (seed) => `https://api.dicebear.com/9.x/adventurer/svg?seed=${seed}&backgroundColor=b6e3f4,c0aede,d1d4f9`;
 
 /**
@@ -5,8 +7,9 @@ const avatarFor = (seed) => `https://api.dicebear.com/9.x/adventurer/svg?seed=${
  * `userRoleHint` is shown as a placeholder in the "my role" form to suggest what the user could be to this character.
  * `defaultUserRole` is used for any role field the user leaves empty.
  * `fixedBackground` keeps the chat backdrop on the character's own world instead of generic scene backgrounds.
+ * `profile` and `cast` come from constants/characterProfiles.js.
  */
-export const DEFAULT_CHARACTERS = [
+const BASE_CHARACTERS = [
   {
     id: 'ava',
     scenario:
@@ -219,5 +222,7 @@ export const DEFAULT_CHARACTERS = [
     defaultUserRole: { description: 'ลูกศิษย์ที่จ้างโค้ชบอสเป็นเทรนเนอร์ส่วนตัว', background: 'สมาชิกฟิตเนสมือใหม่ เพิ่งเริ่มออกกำลังกาย' },
   },
 ];
+
+export const DEFAULT_CHARACTERS = BASE_CHARACTERS.map((c) => ({ ...c, ...PRESET_PROFILES[c.id] }));
 
 export const DEFAULT_AVATAR = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80';

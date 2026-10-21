@@ -24,7 +24,23 @@ const EMPTY_FORM = {
   scenario: '',
   realism: DEFAULT_REALISM,
   avatar: DEFAULT_AVATAR,
+  profile: {},
+  cast: [],
 };
+
+// Optional profile fields (same keys as constants/characterProfiles.js), shown on the character's profile
+const PROFILE_FIELDS = [
+  ['age', 'อายุ', 'เช่น 24 ปี'],
+  ['occupation', 'อาชีพ / การเรียน', 'เช่น นักศึกษาปี 3 คณะศิลปศาสตร์'],
+  ['appearance', 'รูปลักษณ์', 'เช่น ผมดำยาว ตัวเล็ก ชอบใส่ฮู้ดตัวใหญ่'],
+  ['personality', 'นิสัย', 'เช่น ยิ้มเก่ง ใจดี แต่ปากแข็ง'],
+  ['likes', 'สิ่งที่ชอบ', 'เช่น ชานม แมว หนังสยองขวัญ'],
+  ['dislikes', 'สิ่งที่ไม่ชอบ', 'เช่น การรอคอย คนโกหก'],
+  ['story', 'ความเป็นมา', 'เช่น รู้จักกันตอนเข้าชมรมดนตรี'],
+];
+const MAX_CAST = 6;
+const SMALL_FIELD =
+  'w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-base md:text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-purple-500 transition';
 
 /**
  * Modal form component for authoring a new character persona, or editing an existing one
@@ -77,13 +93,26 @@ export default function CreateCharacterModal({
     }
     setFormError('');
 
+    // Keep only filled-in profile fields and named people
+    const profile = Object.fromEntries(
+      PROFILE_FIELDS.map(([key]) => [key, (formData.profile?.[key] || '').trim()]).filter(([, v]) => v)
+    );
+    const cast = (formData.cast || [])
+      .map((p) => ({ name: p.name.trim(), relation: p.relation.trim(), personality: p.personality.trim() }))
+      .filter((p) => p.name);
+    const data = { ...formData, profile, cast };
+
     if (editingCharacter) {
-      onUpdateCharacter(formData);
+      onUpdateCharacter(data);
     } else {
-      onCreateCharacter(formData);
+      onCreateCharacter(data);
     }
     onClose();
   };
+
+  const setProfileField = (key, value) => setFormData({ ...formData, profile: { ...formData.profile, [key]: value } });
+  const setCastField = (index, key, value) =>
+    setFormData({ ...formData, cast: formData.cast.map((p, i) => (i === index ? { ...p, [key]: value } : p)) });
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
@@ -286,6 +315,85 @@ export default function CreateCharacterModal({
               className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-slate-100 focus:outline-none focus:border-purple-500 transition resize-none"
             />
           </div>
+
+          {/* Profile sheet: optional structured bio and people around the character */}
+          <details className="rounded-xl border border-slate-700/70 bg-slate-900/40 px-3 py-2" open={Boolean(editingCharacter?.profile && Object.keys(editingCharacter.profile).length)}>
+            <summary className="cursor-pointer select-none text-xs font-medium text-slate-300 py-1">
+              โปรไฟล์ตัวละคร (ไม่บังคับ) — แสดงในหน้าโปรไฟล์และช่วยให้ AI เล่นบทแม่นขึ้น
+            </summary>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2.5">
+              {PROFILE_FIELDS.map(([key, label, placeholder]) => (
+                <div key={key} className={key === 'story' || key === 'appearance' ? 'sm:col-span-2' : ''}>
+                  <label className="block text-[11px] text-slate-400 mb-1">{label}</label>
+                  <input
+                    type="text"
+                    value={formData.profile?.[key] || ''}
+                    onChange={(e) => setProfileField(key, e.target.value)}
+                    maxLength={400}
+                    placeholder={placeholder}
+                    className={SMALL_FIELD}
+                  />
+                </div>
+              ))}
+            </div>
+          </details>
+
+          <details className="rounded-xl border border-slate-700/70 bg-slate-900/40 px-3 py-2" open={Boolean(editingCharacter?.cast?.length)}>
+            <summary className="cursor-pointer select-none text-xs font-medium text-slate-300 py-1">
+              คนรอบตัว (ไม่บังคับ) — เช่น พ่อแม่ เพื่อน สัตว์เลี้ยง ที่ออกมาในเรื่องได้
+            </summary>
+            <div className="space-y-2.5 pt-2.5">
+              {(formData.cast || []).map((person, i) => (
+                <div key={i} className="rounded-xl border border-slate-700/70 p-2.5 space-y-2">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={person.name}
+                      onChange={(e) => setCastField(i, 'name', e.target.value)}
+                      maxLength={40}
+                      placeholder="ชื่อ เช่น แม่ของฟองฟ้า"
+                      className={SMALL_FIELD}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, cast: formData.cast.filter((_, j) => j !== i) })}
+                      title="เอาออก"
+                      className="px-2 rounded-lg text-slate-500 hover:text-red-400 transition"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <input
+                    type="text"
+                    value={person.relation}
+                    onChange={(e) => setCastField(i, 'relation', e.target.value)}
+                    maxLength={100}
+                    placeholder="เป็นอะไรกับตัวละคร เช่น แม่, เพื่อนสนิท"
+                    className={SMALL_FIELD}
+                  />
+                  <input
+                    type="text"
+                    value={person.personality}
+                    onChange={(e) => setCastField(i, 'personality', e.target.value)}
+                    maxLength={200}
+                    placeholder="นิสัยสั้นๆ เช่น ใจดี ขี้บ่น"
+                    className={SMALL_FIELD}
+                  />
+                </div>
+              ))}
+              {(formData.cast || []).length < MAX_CAST && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFormData({ ...formData, cast: [...(formData.cast || []), { name: '', relation: '', personality: '' }] })
+                  }
+                  className="w-full py-2 rounded-xl border border-dashed border-slate-600 text-xs text-slate-300 hover:border-purple-500 hover:text-purple-200 transition"
+                >
+                  + เพิ่มคนรอบตัว
+                </button>
+              )}
+            </div>
+          </details>
 
           {formError && (
             <p role="alert" className="text-xs text-rose-300 bg-rose-950/40 border border-rose-500/30 rounded-xl px-3 py-2">

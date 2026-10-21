@@ -8,6 +8,7 @@ import SettingsModal from '../components/SettingsModal';
 import CreateCharacterModal from '../components/CreateCharacterModal';
 import UserRoleModal from '../components/UserRoleModal';
 import MemoryModal from '../components/MemoryModal';
+import CharacterProfile from '../components/CharacterProfile';
 import AuthGate from '../components/AuthGate';
 import Toast from '../components/Toast';
 import { useConfirm } from '../components/ConfirmDialog';
@@ -136,6 +137,8 @@ function RoleplayApp({ store, account, getAccessToken }) {
   const [showHistory, setShowHistory] = useState(false);
   const [direction, setDirection] = useState(''); // story direction for the next reply only
   const [chatStyle, setChatStyle] = useState('novel'); // 'novel' | 'dm' for the open chat
+  const [profileView, setProfileView] = useState(null); // { character, status, hasChat } while a profile is open
+  const [roleFor, setRoleFor] = useState(null); // character the role form edits when opened from a profile
   const [memoryView, setMemoryView] = useState(null); // { summary, pins } while the memory panel is open
   const abortRef = useRef(null);
   const activeCharIdRef = useRef(null); // which character's chat is currently on screen
@@ -340,6 +343,29 @@ function RoleplayApp({ store, account, getAccessToken }) {
     setChatStyle(store.getItem(chatStyleKey(char.id)) === 'dm' ? 'dm' : 'novel');
     if (!userRoles[char.id] && markRolePrompted(char.id)) setShowUserRole(true);
     setMessages(savedHistoryOrGreeting(store, char));
+  };
+
+  // Character grid → profile sheet first; it shows how things stand if there is a chat already
+  const openProfile = (char) => {
+    let history = [];
+    try {
+      history = JSON.parse(store.getItem(`chat_history_${char.id}`) || '[]');
+    } catch {
+      history = [];
+    }
+    setProfileView({
+      character: char,
+      hasChat: Array.isArray(history) && history.length > 0,
+      status: { relation: latestRelation(history), journalCount: readJournal(store, char.id).length },
+    });
+  };
+
+  const closeProfile = useCallback(() => setProfileView(null), []);
+
+  const startChatFromProfile = () => {
+    const char = profileView?.character;
+    setProfileView(null);
+    if (char) handleSelectChar(char);
   };
 
   const handleBack = () => {
@@ -1014,7 +1040,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
       ) : (
         <CharacterBrowser
           characters={characters}
-          onSelectChar={handleSelectChar}
+          onSelectChar={openProfile}
           onDeleteChar={handleDeleteCharacter}
           onEditChar={handleEditCharacter}
           onOpenCreateModal={() => setShowCreateModal(true)}
@@ -1039,6 +1065,25 @@ function RoleplayApp({ store, account, getAccessToken }) {
       <Toast toast={toast} onClose={closeToast} />
       {confirmDialog}
 
+      {/* Who a character is, before chatting */}
+      <CharacterProfile
+        character={profileView?.character}
+        status={profileView?.status}
+        hasChat={profileView?.hasChat}
+        role={profileView ? mergeUserProfile(userProfile, userRoles[profileView.character.id]) : null}
+        onClose={closeProfile}
+        onStartChat={startChatFromProfile}
+        onEditRole={() => {
+          setRoleFor(profileView.character);
+          setShowUserRole(true);
+        }}
+        onEdit={profileView?.character.id.startsWith('custom_') ? () => {
+          const char = profileView.character;
+          setProfileView(null);
+          handleEditCharacter(char);
+        } : undefined}
+      />
+
       {/* What the open character remembers */}
       <MemoryModal
         isOpen={Boolean(memoryView)}
@@ -1056,9 +1101,12 @@ function RoleplayApp({ store, account, getAccessToken }) {
       {/* Per-character user role modal */}
       <UserRoleModal
         isOpen={showUserRole}
-        onClose={() => setShowUserRole(false)}
-        character={selectedChar}
-        role={selectedChar ? userRoles[selectedChar.id] : null}
+        onClose={() => {
+          setShowUserRole(false);
+          setRoleFor(null);
+        }}
+        character={roleFor || selectedChar}
+        role={(roleFor || selectedChar) ? userRoles[(roleFor || selectedChar).id] : null}
         onSave={handleSaveUserRole}
       />
 
