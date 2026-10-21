@@ -1,12 +1,15 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import Sidebar from '../components/Sidebar';
 import ChatWindow from '../components/ChatWindow';
 import CharacterBrowser from '../components/CharacterBrowser';
 import SettingsModal from '../components/SettingsModal';
 import CreateCharacterModal from '../components/CreateCharacterModal';
 import UserRoleModal from '../components/UserRoleModal';
+import AuthGate from '../components/AuthGate';
+import Toast from '../components/Toast';
+import { useConfirm } from '../components/ConfirmDialog';
 import { normalizeUserRole, mergeUserProfile, USER_ROLE_FIELDS } from '../lib/userRole';
 import { normalizeRealism } from '../constants/scenario';
 import { stripTrailingPartialTag, finalizeReply, latestScene } from '../lib/scene';
@@ -22,16 +25,15 @@ import {
 
 // Last-activity time per character chat, for the sidebar's chat list. Histories saved before this
 // existed have no entry, so they are picked up from storage with time 0 (listed as older chats).
-function readChatActivity() {
+function readChatActivity(store) {
   let activity = {};
   try {
-    activity = JSON.parse(localStorage.getItem('user_chat_activity')) || {};
+    activity = JSON.parse(store.getItem('user_chat_activity')) || {};
   } catch (err) {
-    console.error('Failed to parse chat activity from localStorage:', err);
+    console.error('Failed to parse chat activity from storage:', err);
   }
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    if (key?.startsWith('chat_history_')) {
+  for (const key of store.keys()) {
+    if (key.startsWith('chat_history_')) {
       const id = key.slice('chat_history_'.length);
       if (!(id in activity)) activity[id] = 0;
     }
@@ -40,9 +42,9 @@ function readChatActivity() {
 }
 
 // One-line preview of a chat's last message, with *(action)* narration removed
-function lastMessagePreview(charId) {
+function lastMessagePreview(store, charId) {
   try {
-    const history = JSON.parse(localStorage.getItem(`chat_history_${charId}`) || '[]');
+    const history = JSON.parse(store.getItem(`chat_history_${charId}`) || '[]');
     const last = history[history.length - 1];
     if (!last?.text) return '';
     const text = last.text.replace(/\*\([^)]*\)\*/g, '').replace(/\*/g, '').replace(/\s+/g, ' ').trim();
@@ -51,6 +53,20 @@ function lastMessagePreview(charId) {
     return '';
   }
 }
+
+// What the chat shows when a reply can't be had, by the `kind` /api/chat returns (plus 'network' for a failed fetch)
+const REPLY_ERRORS = {
+  busy: { kind: 'error', title: 'ส่งข้อความไม่สำเร็จ', text: 'ตอนนี้ระบบ AI ของ Google คนใช้เยอะ ลองส่งอีกครั้งในอีกสักครู่' },
+  quota: {
+    kind: 'error',
+    title: 'วันนี้คุยกันจนโควต้าฟรีหมดแล้ว',
+    text: 'โควต้าจะกลับมาประมาณบ่าย 2–3 โมง (เวลาไทย) หรือใส่ Gemini API Key อื่นในตั้งค่า',
+    retry: false,
+  },
+  network: { kind: 'error', title: 'เชื่อมต่อไม่ได้', text: 'ตรวจอินเทอร์เน็ตแล้วลองส่งอีกครั้ง' },
+  signin: { kind: 'error', title: 'ต้องเข้าสู่ระบบใหม่', text: 'ออกจากระบบแล้วเข้าสู่ระบบอีกครั้ง', retry: false },
+  auth: { kind: 'error', title: 'Gemini API Key ใช้ไม่ได้', text: 'ตรวจ key ในหน้าตั้งค่า หรือในไฟล์ .env.local', retry: false },
+};
 
 // Newest messages that fit in `budget` characters; always keeps at least the latest message.
 function takeRecentMessages(messages, budget) {
@@ -64,7 +80,7 @@ function takeRecentMessages(messages, budget) {
   return recent;
 }
 
-export default function Home() {
+function RoleplayApp({ store, account, getAccessToken }) {
   const [characters, setCharacters] = useState(DEFAULT_CHARACTERS);
   const [selectedChar, setSelectedChar] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -79,6 +95,9 @@ export default function Home() {
   const [editingChar, setEditingChar] = useState(null);
   const [userRoles, setUserRoles] = useState({});
   const [notice, setNotice] = useState(null);
+  const [toast, setToast] = useState(null);
+  const closeToast = useCallback(() => setToast(null), []);
+  const [confirmDialog, askConfirm] = useConfirm();
   const [showUserRole, setShowUserRole] = useState(false);
   const [chatActivity, setChatActivity] = useState({});
   const [showHistory, setShowHistory] = useState(false);
@@ -87,48 +106,48 @@ export default function Home() {
 
   // Load saved API key, custom characters, and user persona profile on mount
   useEffect(() => {
-    const savedKey = localStorage.getItem('user_gemini_api_key');
+    const savedKey = store.getItem('user_gemini_api_key');
     if (savedKey) setApiKey(savedKey);
 
-    const savedModel = localStorage.getItem('user_gemini_model');
+    const savedModel = store.getItem('user_gemini_model');
     if (AVAILABLE_MODELS.some((m) => m.id === savedModel)) setModel(savedModel);
 
-    const savedChars = localStorage.getItem('user_custom_chars');
+    const savedChars = store.getItem('user_custom_chars');
     if (savedChars) {
       try {
         const parsed = JSON.parse(savedChars);
         setCharacters([...DEFAULT_CHARACTERS, ...parsed]);
       } catch (err) {
-        console.error('Failed to parse custom characters from localStorage:', err);
+        console.error('Failed to parse custom characters from storage:', err);
       }
     }
 
     try {
-      const savedSettings = JSON.parse(localStorage.getItem('user_response_settings'));
+      const savedSettings = JSON.parse(store.getItem('user_response_settings'));
       if (savedSettings) setResponseSettings(normalizeResponseSettings(savedSettings));
     } catch (err) {
-      console.error('Failed to parse response settings from localStorage:', err);
+      console.error('Failed to parse response settings from storage:', err);
     }
 
     try {
-      const savedRoles = JSON.parse(localStorage.getItem('user_character_roles'));
+      const savedRoles = JSON.parse(store.getItem('user_character_roles'));
       if (savedRoles && typeof savedRoles === 'object') {
         setUserRoles(
           Object.fromEntries(Object.entries(savedRoles).map(([id, role]) => [id, normalizeUserRole(role)]))
         );
       }
     } catch (err) {
-      console.error('Failed to parse character roles from localStorage:', err);
+      console.error('Failed to parse character roles from storage:', err);
     }
 
-    setChatActivity(readChatActivity());
+    setChatActivity(readChatActivity(store));
 
-    const savedProfile = localStorage.getItem('user_roleplay_profile');
+    const savedProfile = store.getItem('user_roleplay_profile');
     if (savedProfile) {
       try {
         setUserProfile(JSON.parse(savedProfile));
       } catch (err) {
-        console.error('Failed to parse user profile from localStorage:', err);
+        console.error('Failed to parse user profile from storage:', err);
       }
     }
   }, []);
@@ -136,19 +155,19 @@ export default function Home() {
   // Save updated API key
   const handleSaveApiKey = (newKey) => {
     setApiKey(newKey);
-    localStorage.setItem('user_gemini_api_key', newKey);
+    store.setItem('user_gemini_api_key', newKey);
   };
 
   // Save selected Gemini model
   const handleSaveModel = (newModel) => {
     setModel(newModel);
-    localStorage.setItem('user_gemini_model', newModel);
+    store.setItem('user_gemini_model', newModel);
   };
 
   const handleSaveResponseSettings = (settings) => {
     const normalized = normalizeResponseSettings(settings);
     setResponseSettings(normalized);
-    localStorage.setItem('user_response_settings', JSON.stringify(normalized));
+    store.setItem('user_response_settings', JSON.stringify(normalized));
   };
 
   // Save (or clear, when every field is empty) the user's role for one character
@@ -157,7 +176,7 @@ export default function Home() {
       const next = { ...prev };
       if (USER_ROLE_FIELDS.some((f) => role[f]?.trim())) next[charId] = role;
       else delete next[charId];
-      localStorage.setItem('user_character_roles', JSON.stringify(next));
+      store.setItem('user_character_roles', JSON.stringify(next));
       return next;
     });
   };
@@ -165,25 +184,25 @@ export default function Home() {
   // Save updated user persona profile
   const handleSaveUserProfile = (profile) => {
     setUserProfile(profile);
-    localStorage.setItem('user_roleplay_profile', JSON.stringify(profile));
+    store.setItem('user_roleplay_profile', JSON.stringify(profile));
   };
 
   const writeChatActivity = (update) => {
     setChatActivity((prev) => {
       const next = update({ ...prev });
-      localStorage.setItem('user_chat_activity', JSON.stringify(next));
+      store.setItem('user_chat_activity', JSON.stringify(next));
       return next;
     });
   };
 
   const saveHistory = (charId, history) => {
-    localStorage.setItem(`chat_history_${charId}`, JSON.stringify(history));
+    store.setItem(`chat_history_${charId}`, JSON.stringify(history));
     writeChatActivity((next) => ({ ...next, [charId]: Date.now() }));
   };
 
   // Forget a chat entirely: its history and its place in the sidebar's chat list
   const dropChat = (charId) => {
-    localStorage.removeItem(`chat_history_${charId}`);
+    store.removeItem(`chat_history_${charId}`);
     writeChatActivity((next) => {
       delete next[charId];
       return next;
@@ -194,9 +213,9 @@ export default function Home() {
     () =>
       characters
         .filter((c) => c.id in chatActivity)
-        .map((c) => ({ character: c, at: chatActivity[c.id], preview: lastMessagePreview(c.id) }))
+        .map((c) => ({ character: c, at: chatActivity[c.id], preview: lastMessagePreview(store, c.id) }))
         .sort((a, b) => b.at - a.at),
-    [characters, chatActivity]
+    [store, characters, chatActivity]
   );
 
   // Cancel the in-flight reply. `discard` skips saving the partial reply (history cleared or character deleted).
@@ -212,9 +231,9 @@ export default function Home() {
   // The role form opens by itself only the first time a character is opened; returns true that one time.
   const markRolePrompted = (charId) => {
     try {
-      const prompted = JSON.parse(localStorage.getItem('user_role_prompted') || '[]');
+      const prompted = JSON.parse(store.getItem('user_role_prompted') || '[]');
       if (prompted.includes(charId)) return false;
-      localStorage.setItem('user_role_prompted', JSON.stringify([...prompted, charId]));
+      store.setItem('user_role_prompted', JSON.stringify([...prompted, charId]));
       return true;
     } catch {
       return false;
@@ -228,7 +247,7 @@ export default function Home() {
     activeCharIdRef.current = char.id;
     setSelectedChar(char);
     if (!userRoles[char.id] && markRolePrompted(char.id)) setShowUserRole(true);
-    const savedHistory = localStorage.getItem(`chat_history_${char.id}`);
+    const savedHistory = store.getItem(`chat_history_${char.id}`);
     if (savedHistory) {
       try {
         const parsed = JSON.parse(savedHistory);
@@ -278,10 +297,14 @@ export default function Home() {
 
     try {
       const historyPayload = takeRecentMessages(baseMessages, HISTORY_CHAR_BUDGET);
+      const accessToken = await getAccessToken();
 
       const res = await fetch('/api/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
+        },
         signal: controller.signal,
         body: JSON.stringify({
           message: userMessage,
@@ -297,17 +320,11 @@ export default function Home() {
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP error ${res.status}`);
+        const error = new Error(errorData.error || `HTTP ${res.status}`);
+        error.kind = errorData.kind;
+        throw error;
       }
 
-      const usedModel = res.headers.get('X-Model-Used');
-      const failedModels = (res.headers.get('X-Models-Failed') || '').split(',').filter(Boolean);
-      if (failedModels.length > 0 && activeCharIdRef.current === charId) {
-        setNotice({
-          kind: 'info',
-          text: `ใช้โมเดลสำรอง ${usedModel} เพราะ ${failedModels.join(', ')} ใช้ไม่ได้ (โควต้าหมดหรือไม่ตอบสนอง)`,
-        });
-      }
       armStallTimer(STALL_TIMEOUT_MS);
 
       // Add empty placeholder for the incoming stream; `loading` stays true so the input stays locked.
@@ -346,15 +363,17 @@ export default function Home() {
           return last?.role === 'model' && !last.text ? prev.slice(0, -1) : prev;
         });
       }
-      if (controller.stalled && activeCharIdRef.current === charId) {
-        setNotice({
-          kind: 'warn',
-          text: accumulatedText
-            ? 'โมเดลหยุดตอบกลางทาง เก็บข้อความที่ได้ไว้แล้ว กด "สร้างคำตอบใหม่" เพื่อลองอีกครั้ง'
-            : 'โมเดลไม่ตอบสนอง กด "ลองใหม่" ใต้ข้อความของคุณเพื่อส่งอีกครั้ง',
-        });
-      } else if (failed) {
-        alert(`Error: ${err.message}`);
+      if (activeCharIdRef.current === charId) {
+        if (controller.stalled) {
+          setNotice(
+            accumulatedText
+              ? { kind: 'warn', title: 'ข้อความขาดหายกลางทาง', text: 'เก็บส่วนที่ได้ไว้แล้ว กด "สร้างคำตอบใหม่" ถ้าอยากได้คำตอบเต็ม' }
+              : { ...REPLY_ERRORS.busy, retry: true }
+          );
+        } else if (failed) {
+          const known = REPLY_ERRORS[err.kind] || (err instanceof TypeError ? REPLY_ERRORS.network : REPLY_ERRORS.busy);
+          setNotice({ ...known, detail: err.message, retry: !accumulatedText && known.retry !== false });
+        }
       }
     } finally {
       clearTimeout(stallTimer);
@@ -438,9 +457,9 @@ export default function Home() {
       realism: normalizeRealism(formData.realism),
     };
 
-    const existing = JSON.parse(localStorage.getItem('user_custom_chars') || '[]');
+    const existing = JSON.parse(store.getItem('user_custom_chars') || '[]');
     const updatedCustoms = [...existing, created];
-    localStorage.setItem('user_custom_chars', JSON.stringify(updatedCustoms));
+    store.setItem('user_custom_chars', JSON.stringify(updatedCustoms));
 
     setCharacters([...DEFAULT_CHARACTERS, ...updatedCustoms]);
     activeCharIdRef.current = created.id;
@@ -451,9 +470,9 @@ export default function Home() {
   // Update an existing custom persona in place, keeping its id and chat history
   const handleUpdateCharacter = (formData) => {
     const sanitized = { ...formData, realism: normalizeRealism(formData.realism) };
-    const existing = JSON.parse(localStorage.getItem('user_custom_chars') || '[]');
+    const existing = JSON.parse(store.getItem('user_custom_chars') || '[]');
     const updatedCustoms = existing.map((c) => (c.id === sanitized.id ? { ...c, ...sanitized } : c));
-    localStorage.setItem('user_custom_chars', JSON.stringify(updatedCustoms));
+    store.setItem('user_custom_chars', JSON.stringify(updatedCustoms));
 
     setCharacters([...DEFAULT_CHARACTERS, ...updatedCustoms]);
     if (selectedChar?.id === formData.id) {
@@ -473,14 +492,14 @@ export default function Home() {
 
   // Download custom characters, chat histories, profile and model choice as a JSON backup (API key excluded)
   const handleExportData = () => {
-    const customChars = JSON.parse(localStorage.getItem('user_custom_chars') || '[]');
+    const customChars = JSON.parse(store.getItem('user_custom_chars') || '[]');
     const chatHistories = {};
     for (const char of customChars) {
-      const saved = localStorage.getItem(`chat_history_${char.id}`);
+      const saved = store.getItem(`chat_history_${char.id}`);
       if (saved) chatHistories[char.id] = JSON.parse(saved);
     }
     for (const char of DEFAULT_CHARACTERS) {
-      const saved = localStorage.getItem(`chat_history_${char.id}`);
+      const saved = store.getItem(`chat_history_${char.id}`);
       if (saved) chatHistories[char.id] = JSON.parse(saved);
     }
 
@@ -516,26 +535,31 @@ export default function Home() {
       const validChars = backup.customCharacters
         .filter((c) => c && typeof c.id === 'string' && c.id.startsWith('custom_') && c.name && c.description && c.greeting)
         .map((c) => ({ ...c, realism: normalizeRealism(c.realism) }));
-      if (!confirm(`นำเข้าตัวละคร ${validChars.length} ตัว และเขียนทับประวัติแชท/โปรไฟล์ที่ซ้ำกัน ต้องการดำเนินการต่อหรือไม่?`)) return;
+      const ok = await askConfirm({
+        title: 'นำเข้า Backup?',
+        text: `ตัวละคร ${validChars.length} ตัวจะถูกเพิ่มเข้ามา ส่วนแชทและโปรไฟล์ที่ซ้ำกันจะถูกแทนที่ด้วยของในไฟล์`,
+        confirmLabel: 'นำเข้า',
+      });
+      if (!ok) return;
       stopStreaming({ discard: true });
 
-      const existing = JSON.parse(localStorage.getItem('user_custom_chars') || '[]');
+      const existing = JSON.parse(store.getItem('user_custom_chars') || '[]');
       const merged = [...existing.filter((c) => !validChars.some((v) => v.id === c.id)), ...validChars];
-      localStorage.setItem('user_custom_chars', JSON.stringify(merged));
+      store.setItem('user_custom_chars', JSON.stringify(merged));
       setCharacters([...DEFAULT_CHARACTERS, ...merged]);
 
       const knownIds = new Set([...DEFAULT_CHARACTERS, ...merged].map((c) => c.id));
       for (const [id, history] of Object.entries(backup.chatHistories || {})) {
         if (knownIds.has(id) && Array.isArray(history)) {
-          localStorage.setItem(`chat_history_${id}`, JSON.stringify(history));
+          store.setItem(`chat_history_${id}`, JSON.stringify(history));
         }
       }
 
-      const activity = readChatActivity();
+      const activity = readChatActivity(store);
       for (const [id, at] of Object.entries(backup.chatActivity || {})) {
-        if (knownIds.has(id) && Number.isFinite(at) && localStorage.getItem(`chat_history_${id}`)) activity[id] = at;
+        if (knownIds.has(id) && Number.isFinite(at) && store.getItem(`chat_history_${id}`)) activity[id] = at;
       }
-      localStorage.setItem('user_chat_activity', JSON.stringify(activity));
+      store.setItem('user_chat_activity', JSON.stringify(activity));
       setChatActivity(activity);
 
       if (backup.userProfile) handleSaveUserProfile(backup.userProfile);
@@ -548,20 +572,28 @@ export default function Home() {
       activeCharIdRef.current = null;
       setSelectedChar(null);
       setMessages([]);
-      alert('นำเข้าข้อมูลสำเร็จ');
+      setToast({ kind: 'success', title: 'นำเข้าข้อมูลสำเร็จ' });
     } catch (err) {
-      alert(`นำเข้าไม่สำเร็จ: ${err.message}`);
+      setToast({ kind: 'error', title: 'นำเข้าไม่สำเร็จ', text: err.message });
     }
   };
 
   // Delete a custom character
-  const handleDeleteCharacter = (charId) => {
-    if (!confirm('ต้องการลบตัวละครนี้ใช่หรือไม่?')) return;
+  const handleDeleteCharacter = async (charId) => {
+    const char = characters.find((c) => c.id === charId);
+    const ok = await askConfirm({
+      title: `ลบ ${char?.name || 'ตัวละครนี้'}?`,
+      text: 'ตัวละคร แชท และบทบาทของคุณกับตัวละครนี้จะหายไปทั้งหมด กู้คืนไม่ได้',
+      confirmLabel: 'ลบตัวละคร',
+      danger: true,
+      avatar: char?.avatar,
+    });
+    if (!ok) return;
     if (selectedChar?.id === charId) stopStreaming({ discard: true });
 
-    const existing = JSON.parse(localStorage.getItem('user_custom_chars') || '[]');
+    const existing = JSON.parse(store.getItem('user_custom_chars') || '[]');
     const filtered = existing.filter((c) => c.id !== charId);
-    localStorage.setItem('user_custom_chars', JSON.stringify(filtered));
+    store.setItem('user_custom_chars', JSON.stringify(filtered));
 
     setCharacters([...DEFAULT_CHARACTERS, ...filtered]);
     dropChat(charId);
@@ -575,19 +607,33 @@ export default function Home() {
   };
 
   // Clear chat history for the currently active character
-  const handleClearHistory = () => {
+  const handleClearHistory = async () => {
     if (!selectedChar) return;
-    if (confirm('ต้องการล้างประวัติการคุยกับตัวละครนี้ใช่หรือไม่?')) {
-      stopStreaming({ discard: true });
-      dropChat(selectedChar.id);
-      setMessages([{ role: 'model', text: selectedChar.greeting }]);
-    }
+    const char = selectedChar;
+    const ok = await askConfirm({
+      title: 'เริ่มคุยใหม่ตั้งแต่ต้น?',
+      text: `ข้อความทั้งหมดกับ ${char.name} จะถูกล้าง แล้วเริ่มจากคำทักทายแรกอีกครั้ง`,
+      confirmLabel: 'ล้างแชท',
+      danger: true,
+      avatar: char.avatar,
+    });
+    if (!ok || activeCharIdRef.current !== char.id) return;
+    stopStreaming({ discard: true });
+    dropChat(char.id);
+    setMessages([{ role: 'model', text: char.greeting }]);
   };
 
   // Remove a chat from the sidebar's chat list (and its history)
-  const handleClearChat = (charId) => {
-    if (!confirm('ต้องการลบแชทนี้ใช่หรือไม่? ประวัติการคุยทั้งหมดจะหายไป')) return;
+  const handleClearChat = async (charId) => {
     const char = characters.find((c) => c.id === charId);
+    const ok = await askConfirm({
+      title: `ลบแชทกับ ${char?.name || 'ตัวละครนี้'}?`,
+      text: 'ประวัติการคุยทั้งหมดจะหายไป ตัวละครยังอยู่และเริ่มคุยใหม่ได้',
+      confirmLabel: 'ลบแชท',
+      danger: true,
+      avatar: char?.avatar,
+    });
+    if (!ok) return;
     if (selectedChar?.id === charId) {
       stopStreaming({ discard: true });
       setMessages([{ role: 'model', text: char?.greeting || '' }]);
@@ -606,6 +652,7 @@ export default function Home() {
         onGoHome={handleBack}
         onExportData={handleExportData}
         onImportData={handleImportData}
+        account={account}
         onOpenSettings={() => setShowSettings(true)}
         onOpenCreateModal={() => {
           setShowHistory(false);
@@ -661,6 +708,9 @@ export default function Home() {
         onSaveUserProfile={handleSaveUserProfile}
       />
 
+      <Toast toast={toast} onClose={closeToast} />
+      {confirmDialog}
+
       {/* Per-character user role modal */}
       <UserRoleModal
         isOpen={showUserRole}
@@ -680,4 +730,7 @@ export default function Home() {
       />
     </div>
   );
+}
+export default function Home() {
+  return <AuthGate>{(session) => <RoleplayApp {...session} />}</AuthGate>;
 }
