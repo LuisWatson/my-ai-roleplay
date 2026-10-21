@@ -14,6 +14,13 @@ The owner builds it for themselves and their partner. Reply to the owner in Thai
 - No test suite. Verify changes in the browser; for prompt/parser logic, import the module in Node
   (imports have no `.js` extension, so a small resolve hook is needed).
 
+## Deploy
+
+- Live: https://my-ai-roleplay-one.vercel.app (Vercel Hobby). **Every push to `main` deploys to production.**
+- Env vars live in Vercel (Production). `NEXT_PUBLIC_*` must be type Config, not Secret; changing them needs a Redeploy.
+- A new domain must be added to Supabase → Auth → URL Configuration (Redirect URLs) and to the Google OAuth
+  client's JavaScript origins, or Google login on it fails.
+
 ## Where things live
 
 - `app/page.js` — all app state. Reads/writes go through a `store` prop with the localStorage API (`lib/store.js`):
@@ -58,8 +65,8 @@ blurred chat backgrounds that follow the scene, softer bubble colors, role form 
 
 1. **Login + per-user data** — done and tested with a real Google login on localhost (2026-10-21, see `worklog.md`).
    Supabase project `xksnjxsbpacsxmuhcrue`; Google OAuth client is in Testing mode. Decided: one shared Gemini key.
-   Left: partner's email (add to `allowed_emails` AND Google Auth Platform → Audience → Test users);
-   deploy on Vercel (add the Vercel URL to Supabase Redirect URLs and Google JavaScript origins).
+   Deployed to Vercel 2026-10-21. Left: partner's email (add to `allowed_emails` AND Google Auth Platform →
+   Audience → Test users); test login on the live site and on iPhone.
 2. Portraits for the other 11 characters (only Ava has one) — use the `character-portrait` skill.
 3. Create-character form: no fields yet for `background` or `defaultUserRole`.
 4. Ava portrait is a 924 KB PNG; could be WebP (~100 KB).

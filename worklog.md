@@ -4,6 +4,19 @@
 
 ---
 
+## 2026-10-21 — Deploy ขึ้น Vercel
+
+- เว็บจริง: **https://my-ai-roleplay-one.vercel.app** (Vercel Hobby, ทีม `luiswatsons-projects`, โปรเจกต์ `my-ai-roleplay`)
+  push ขึ้น `main` = deploy production อัตโนมัติ
+- Environment Variables (Production): `GEMINI_API_KEY` (Secret), `NEXT_PUBLIC_SUPABASE_URL` และ
+  `NEXT_PUBLIC_SUPABASE_ANON_KEY` (Config — Vercel ไม่ยอมให้ตัวที่ขึ้นต้น `NEXT_PUBLIC_` เป็น Secret)
+  แก้ค่าแล้วต้อง Redeploy เพราะ `NEXT_PUBLIC_*` ถูกฝังตอน build
+- Supabase → URL Configuration: Site URL = เว็บ Vercel; Redirect URLs = เว็บ Vercel + `http://localhost:3000`
+- Google OAuth client "Botbaat": JavaScript origins = `http://localhost:3000` + เว็บ Vercel
+- ตรวจแล้ว: หน้าเว็บ 200; `/api/chat` ไม่ล็อกอิน → 401 `signin` (แปลว่าเว็บจริงเห็นค่า Supabase)
+- ยังไม่ได้ทดสอบ: ล็อกอินจริงบนเว็บ Vercel และบน iPhone; 2 เครื่องพร้อมกัน; ลบตัวละคร / นำเข้า Backup โหมดล็อกอิน
+- หมายเหตุ: Google อาจใช้เวลา 5 นาทีถึงไม่กี่ชั่วโมงกว่า origin ใหม่จะมีผล
+
 ## 2026-10-21 — กันข้อมูลทับกันเมื่อใช้หลายเครื่อง
 
 - `lib/store.js`: cloud store จำ `updated_at` ของแต่ละแถว; `refresh()` ดึงเฉพาะเวลาแก้ไขก่อน แล้วดึงค่าเฉพาะแถวที่เปลี่ยน
