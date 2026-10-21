@@ -82,7 +82,7 @@ export default function ChatInput({ input, setInput, onSendMessage, onStop, load
             onKeyDown={handleKeyDown}
             disabled={loading}
             placeholder={`พิมพ์ *การกระทำ* "คำพูด" คุยกับ ${characterName || 'ตัวละคร'}...`}
-            className="chat-input-scroll flex-1 resize-none overflow-hidden bg-transparent border-0 py-2 text-sm leading-relaxed text-slate-100 placeholder-slate-500 px-1 focus:outline-none disabled:opacity-50"
+            className="chat-input-scroll flex-1 resize-none overflow-hidden bg-transparent border-0 py-2 text-base md:text-sm leading-relaxed text-slate-100 placeholder-slate-500 px-1 focus:outline-none disabled:opacity-50"
           />
           {loading ? (
             <button

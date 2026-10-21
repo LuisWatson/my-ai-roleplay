@@ -583,7 +583,7 @@ export default function Home() {
   };
 
   return (
-    <div className="flex h-screen bg-slate-900 text-slate-100 overflow-hidden font-sans">
+    <div className="flex h-dvh bg-slate-900 text-slate-100 overflow-hidden font-sans">
       {/* Left panel: app actions + chats already started */}
       <Sidebar
         recentChats={recentChats}
