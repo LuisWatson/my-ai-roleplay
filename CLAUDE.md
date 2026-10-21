@@ -58,6 +58,8 @@ The owner builds it for themselves and their partner. Reply to the owner in Thai
 - Memory journal (`lib/journal.js`, `chat_journal_<id>`): the model flags key moments with an extra
   `; ความทรงจำ=<title>` part in the scene tag (rule 13, only when the journal setting isn't 'off');
   messages carry `moment: { title, state, entryId }`; saved moments are sent with every message.
+- Character photos (`lib/imageResize.js`): uploads become 450×600 JPEG data URLs inside the character;
+  `withoutImages()` keeps them out of `/api/chat` requests.
 - Installable app: `app/manifest.js`, `appleWebApp` in `app/layout.js`, icons in `public/icons/` + `app/*icon.png`.
 - `components/UserRoleModal.jsx` — "บทบาทของฉัน"; opens by itself the first time a character is opened (`user_role_prompted` in the store). Nothing is required; empty fields use `defaultUserRole`.
 - `.claude/skills/character-portrait/` — how to generate a character portrait on tensor.art and wire it in.
