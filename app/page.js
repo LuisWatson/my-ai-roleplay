@@ -24,12 +24,14 @@ import {
   renameJournalEntry,
   journalForPrompt,
 } from '../lib/journal';
+import { latestRelation, settleRelation } from '../lib/relation';
 import { AVAILABLE_MODELS, DEFAULT_MODEL } from '../constants/models';
 import {
   DEFAULT_RESPONSE_SETTINGS,
   FIRST_RESPONSE_CLIENT_TIMEOUT_MS,
   STALL_TIMEOUT_MS,
   normalizeResponseSettings,
+  chatStyleKey,
 } from '../constants/chatSettings';
 
 // Last-activity time per character chat, for the sidebar's chat list. Histories saved before this
@@ -83,6 +85,11 @@ function withoutImages({ avatar, background, ...persona }) {
   return persona;
 }
 
+// What one swipe version of a reply holds (missing parts stay undefined, so switching clears them)
+function swipeVersion({ text, scene, moment, relation, choices, style }) {
+  return { text, scene, moment, relation, choices, style };
+}
+
 // A reply without its other swipe versions (once the story moves on, only the chosen one is kept)
 function withoutSwipes({ alts, altIndex, ...message }) {
   return message;
@@ -122,6 +129,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
   const [chatActivity, setChatActivity] = useState({});
   const [showHistory, setShowHistory] = useState(false);
   const [direction, setDirection] = useState(''); // story direction for the next reply only
+  const [chatStyle, setChatStyle] = useState('novel'); // 'novel' | 'dm' for the open chat
   const [memoryView, setMemoryView] = useState(null); // { summary, pins } while the memory panel is open
   const abortRef = useRef(null);
   const activeCharIdRef = useRef(null); // which character's chat is currently on screen
@@ -323,6 +331,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
     activeCharIdRef.current = char.id;
     setSelectedChar(char);
     setDirection('');
+    setChatStyle(store.getItem(chatStyleKey(char.id)) === 'dm' ? 'dm' : 'novel');
     if (!userRoles[char.id] && markRolePrompted(char.id)) setShowUserRole(true);
     setMessages(savedHistoryOrGreeting(store, char));
   };
@@ -435,6 +444,8 @@ function RoleplayApp({ store, account, getAccessToken }) {
           memory: memory?.summary,
           pinned: readPins(store, charId),
           journal: journalForPrompt(readJournal(store, charId)),
+          relation: latestRelation(baseMessages) || undefined,
+          chatStyle,
           direction: storyDirection.trim() || undefined,
         }),
       });
@@ -451,7 +462,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
       // Add empty placeholder for the incoming stream; `loading` stays true so the input stays locked.
       // Skipped (like every UI update below) when the user has already switched to another chat.
       if (activeCharIdRef.current === charId) {
-        setMessages((prev) => [...prev, { role: 'model', text: '' }]);
+        setMessages((prev) => [...prev, { role: 'model', text: '', ...(chatStyle === 'dm' && { style: 'dm' }) }]);
       }
 
       const reader = res.body.getReader();
@@ -501,7 +512,17 @@ function RoleplayApp({ store, account, getAccessToken }) {
     } finally {
       clearTimeout(stallTimer);
       if (accumulatedText && !controller.discard) {
-        const { cleanText, scene, moment: momentTitle } = finalizeReply(accumulatedText);
+        const {
+          cleanText,
+          scene,
+          moment: momentTitle,
+          relation: reportedRelation,
+          choices: reportedChoices,
+        } = finalizeReply(accumulatedText);
+        const relation = responseSettings.relationship
+          ? settleRelation(latestRelation(baseMessages), reportedRelation)
+          : undefined;
+        const choices = responseSettings.suggestions ? reportedChoices : undefined;
         // A moment the model flagged: saved right away ('auto') or offered under the reply ('ask')
         let moment;
         if (momentTitle && responseSettings.journal !== 'off') {
@@ -512,10 +533,18 @@ function RoleplayApp({ store, account, getAccessToken }) {
             moment = { title: momentTitle, state: 'pending' };
           }
         }
-        let reply = { role: 'model', text: cleanText, scene, ...(moment && { moment }) };
+        let reply = {
+          role: 'model',
+          text: cleanText,
+          scene,
+          ...(moment && { moment }),
+          ...(relation && { relation }),
+          ...(choices && { choices }),
+          ...(chatStyle === 'dm' && { style: 'dm' }),
+        };
         if (previous) {
-          const alts = previous.alts || [{ text: previous.text, scene: previous.scene, moment: previous.moment }];
-          reply = { ...reply, alts: [...alts, { text: cleanText, scene, moment }], altIndex: alts.length };
+          const alts = previous.alts || [swipeVersion(previous)];
+          reply = { ...reply, alts: [...alts, swipeVersion(reply)], altIndex: alts.length };
         }
         const finalMessages = [...baseMessages, reply];
         saveHistory(charId, finalMessages);
@@ -549,7 +578,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
     const userMessage = input.trim();
     setInput('');
     const settled = messages.map((m, i) => (i === messages.length - 1 && m.alts ? withoutSwipes(m) : m));
-    streamReply([...settled, { role: 'user', text: userMessage }], { direction });
+    streamReply([...settled, { role: 'user', text: userMessage, ...(chatStyle === 'dm' && { style: 'dm' }) }], { direction });
   };
 
   // Stop the reply the user is waiting for; whatever text has arrived is kept
@@ -562,6 +591,15 @@ function RoleplayApp({ store, account, getAccessToken }) {
   const handleRetry = () => {
     if (loading) return;
     if (messages[messages.length - 1]?.role === 'user') streamReply(messages, { direction });
+  };
+
+  // Switch the open chat between novel-style roleplay and short messaging-app chat
+  const handleToggleChatStyle = () => {
+    if (!selectedChar) return;
+    const next = chatStyle === 'dm' ? 'novel' : 'dm';
+    setChatStyle(next);
+    if (next === 'dm') store.setItem(chatStyleKey(selectedChar.id), 'dm');
+    else store.removeItem(chatStyleKey(selectedChar.id));
   };
 
   // Generate another version of the last reply; earlier versions stay as swipes
@@ -579,7 +617,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
     const altIndex = last.altIndex + delta;
     const alt = last.alts[altIndex];
     if (!alt) return;
-    persistMessages([...messages.slice(0, -1), { ...last, text: alt.text, scene: alt.scene, moment: alt.moment, altIndex }]);
+    persistMessages([...messages.slice(0, -1), { ...withoutSwipes(last), ...swipeVersion(alt), alts: last.alts, altIndex }]);
   };
 
   // Set a message's moment (and its current swipe version's), e.g. after saving it to the journal
@@ -660,6 +698,8 @@ function RoleplayApp({ store, account, getAccessToken }) {
 
     setCharacters([...DEFAULT_CHARACTERS, ...updatedCustoms]);
     activeCharIdRef.current = created.id;
+    setDirection('');
+    setChatStyle('novel');
     setSelectedChar(created);
     setMessages([{ role: 'model', text: created.greeting }]);
   };
@@ -816,6 +856,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
     dropChat(charId);
     store.removeItem(pinsKey(charId));
     store.removeItem(journalKey(charId));
+    store.removeItem(chatStyleKey(charId));
     handleSaveUserRole(charId, normalizeUserRole(null));
 
     if (selectedChar?.id === charId) {
@@ -948,6 +989,11 @@ function RoleplayApp({ store, account, getAccessToken }) {
           onSaveMoment={handleSaveMoment}
           onDismissMoment={handleDismissMoment}
           onUndoMoment={handleUndoMoment}
+          chatStyle={chatStyle}
+          onToggleChatStyle={handleToggleChatStyle}
+          showRelation={responseSettings.relationship}
+          showChoices={responseSettings.suggestions}
+          onPickChoice={setInput}
           onOpenMemory={openMemory}
           direction={direction}
           setDirection={setDirection}

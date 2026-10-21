@@ -211,6 +211,38 @@ export default function SettingsModal({
             </div>
 
             <div className="space-y-1.5">
+              {[
+                ['suggestions', '💡 ตัวเลือกแนะนำ', 'ปุ่มคำตอบแนะนำใต้ข้อความล่าสุด'],
+                ['relationship', '💗 ค่าความสัมพันธ์', 'ความผูกพัน ความไว้ใจ และอารมณ์ของตัวละคร'],
+              ].map(([key, label, hint]) => (
+                <button
+                  key={key}
+                  type="button"
+                  role="switch"
+                  aria-checked={localResponse[key]}
+                  onClick={() => setLocalResponse({ ...localResponse, [key]: !localResponse[key] })}
+                  className="w-full flex items-center gap-3 px-3 py-2 rounded-xl border border-slate-700 bg-slate-900 text-left transition hover:border-slate-600"
+                >
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-sm text-slate-200">{label}</span>
+                    <span className="block text-[11px] text-slate-500">{hint}</span>
+                  </span>
+                  <span
+                    className={`relative w-10 h-6 rounded-full flex-shrink-0 transition ${
+                      localResponse[key] ? 'bg-purple-600' : 'bg-slate-700'
+                    }`}
+                  >
+                    <span
+                      className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${
+                        localResponse[key] ? 'left-5' : 'left-1'
+                      }`}
+                    />
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            <div className="space-y-1.5">
               <label className="block text-xs font-medium text-slate-300">📖 สมุดความทรงจำ: เมื่อมีช่วงเวลาสำคัญ</label>
               <div className="space-y-1.5">
                 {JOURNAL_MODES.map((opt) => (

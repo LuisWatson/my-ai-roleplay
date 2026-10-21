@@ -5,6 +5,7 @@ import { ArrowLeft, Trash2, UserCog, X, MapPin, Clock, AlertCircle, RotateCcw, B
 import ChatMessage from './ChatMessage';
 import ChatInput from './ChatInput';
 import { latestScene } from '../lib/scene';
+import { latestRelation } from '../lib/relation';
 import { sceneBackgroundSrc } from '../constants/sceneBackgrounds';
 
 // Story-style lines shown while the reply is on its way; never about the app or the AI
@@ -50,6 +51,71 @@ function WaitingIndicator({ avatar, name }) {
           {line}...
         </span>
       </div>
+    </div>
+  );
+}
+
+// "+5" / "-3" next to a meter that just moved
+function Delta({ now, before }) {
+  if (!Number.isFinite(now) || !Number.isFinite(before) || now === before) return null;
+  const up = now > before;
+  return (
+    <span className={`text-[10px] font-medium animate-fadeIn ${up ? 'text-emerald-300' : 'text-rose-300'}`}>
+      {up ? '+' : ''}
+      {now - before}
+    </span>
+  );
+}
+
+/**
+ * How the character feels about the user right now: bond 💗, trust 🤝 (0–100) and mood, with the change
+ * from the reply before.
+ */
+function RelationPill({ relation, previous }) {
+  return (
+    <div
+      title="ความผูกพัน / ความไว้ใจ / อารมณ์ตอนนี้"
+      className="flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900/50 border border-white/10 backdrop-blur-md text-[11px] text-slate-300 shadow-sm"
+    >
+      {Number.isFinite(relation.bond) && (
+        <span className="flex items-center gap-1">
+          <span aria-hidden>💗</span>
+          <span className="tabular-nums">{relation.bond}</span>
+          <Delta now={relation.bond} before={previous?.bond} />
+        </span>
+      )}
+      {Number.isFinite(relation.trust) && (
+        <span className="flex items-center gap-1">
+          <span aria-hidden>🤝</span>
+          <span className="tabular-nums">{relation.trust}</span>
+          <Delta now={relation.trust} before={previous?.trust} />
+        </span>
+      )}
+      {relation.mood && (
+        <>
+          <span className="w-px h-3 bg-white/15" />
+          <span className="max-w-[9rem] truncate">{relation.mood}</span>
+        </>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Suggested next replies under the last reply; tapping one puts it in the input box to send or edit.
+ */
+function ChoiceChips({ choices, onPick }) {
+  return (
+    <div className="pl-10 flex flex-wrap gap-2 animate-fadeIn" aria-label="ตัวเลือกแนะนำ">
+      {choices.map((choice, i) => (
+        <button
+          key={i}
+          onClick={() => onPick(choice)}
+          className="max-w-full text-left px-3 py-1.5 rounded-2xl border border-purple-400/30 bg-purple-900/20 hover:bg-purple-800/30 text-xs text-purple-100 transition"
+        >
+          {choice}
+        </button>
+      ))}
     </div>
   );
 }
@@ -119,6 +185,11 @@ export default function ChatWindow({
   onSaveMoment,
   onDismissMoment,
   onUndoMoment,
+  chatStyle,
+  onToggleChatStyle,
+  showRelation,
+  showChoices,
+  onPickChoice,
   onRetry,
   onOpenMemory,
   direction,
@@ -130,6 +201,13 @@ export default function ChatWindow({
 }) {
   const chatEndRef = useRef(null);
   const scene = latestScene(messages);
+  // Relationship now, and before the latest reply that changed it (for the +/- shown next to it)
+  const shownRelation = showRelation ? latestRelation(messages) : null;
+  const lastRelationAt = messages.findLastIndex((m) => m.relation);
+  const previousRelation = lastRelationAt > 0 ? latestRelation(messages.slice(0, lastRelationAt)) : null;
+  const lastMessage = messages[messages.length - 1];
+  const choices =
+    showChoices && !loading && lastMessage?.role === 'model' && lastMessage.choices?.length ? lastMessage.choices : null;
   const backgroundSrc =
     (!selectedChar.fixedBackground && sceneBackgroundSrc(scene?.background)) || selectedChar.background;
 
@@ -214,20 +292,23 @@ export default function ChatWindow({
         </div>
       </header>
 
-      {/* Scene bar: current in-story location/time, reported by the model after each reply */}
-      {scene && (
-        <div className="flex justify-center pt-3 px-4 z-10">
-          <div className="flex items-center gap-2.5 px-3.5 py-1 rounded-full bg-slate-900/50 border border-white/10 backdrop-blur-md text-[11px] text-slate-300 shadow-sm">
-            <span className="flex items-center gap-1.5">
-              <Clock className="w-3 h-3 text-violet-300/80" />
-              {scene.time}
-            </span>
-            <span className="w-px h-3 bg-white/15" />
-            <span className="flex items-center gap-1.5">
-              <MapPin className="w-3 h-3 text-violet-300/80" />
-              {scene.location}
-            </span>
-          </div>
+      {/* Scene bar: current in-story location/time (and relationship), reported by the model after each reply */}
+      {(scene || shownRelation) && (
+        <div className="flex flex-wrap justify-center gap-1.5 pt-3 px-4 z-10">
+          {scene && (
+            <div className="flex items-center gap-2.5 px-3.5 py-1 rounded-full bg-slate-900/50 border border-white/10 backdrop-blur-md text-[11px] text-slate-300 shadow-sm">
+              <span className="flex items-center gap-1.5">
+                <Clock className="w-3 h-3 text-violet-300/80" />
+                {scene.time}
+              </span>
+              <span className="w-px h-3 bg-white/15" />
+              <span className="flex items-center gap-1.5">
+                <MapPin className="w-3 h-3 text-violet-300/80" />
+                {scene.location}
+              </span>
+            </div>
+          )}
+          {shownRelation && <RelationPill relation={shownRelation} previous={previousRelation} />}
         </div>
       )}
 
@@ -258,6 +339,7 @@ export default function ChatWindow({
         {loading && messages[messages.length - 1]?.role === 'user' && (
           <WaitingIndicator avatar={selectedChar.avatar} name={selectedChar.name} />
         )}
+        {choices && <ChoiceChips choices={choices} onPick={onPickChoice} />}
         <div ref={chatEndRef} />
       </div>
 
@@ -273,6 +355,8 @@ export default function ChatWindow({
         characterName={selectedChar.name}
         direction={direction}
         setDirection={setDirection}
+        chatStyle={chatStyle}
+        onToggleChatStyle={onToggleChatStyle}
       />
     </main>
   );

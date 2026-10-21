@@ -32,6 +32,8 @@ export async function POST(req) {
       memory,
       pinned,
       journal,
+      relation,
+      chatStyle,
       direction,
     } = await req.json();
 
@@ -40,7 +42,13 @@ export async function POST(req) {
 
     const genAI = new GoogleGenerativeAI(activeKey);
 
-    const { length, temperature, journal: journalMode } = normalizeResponseSettings(responseSettings);
+    const {
+      length,
+      temperature,
+      journal: journalMode,
+      suggestions,
+      relationship,
+    } = normalizeResponseSettings(responseSettings);
     const systemInstruction = buildSystemInstruction({
       persona,
       userProfile,
@@ -50,6 +58,10 @@ export async function POST(req) {
       pinned,
       journal,
       askMoments: journalMode !== 'off',
+      relation,
+      showRelation: relationship,
+      suggestChoices: suggestions,
+      chatStyle: chatStyle === 'dm' ? 'dm' : 'novel',
       direction,
     });
 

@@ -29,6 +29,31 @@ export function formatRoleplayText(text, role = 'model') {
 }
 
 /**
+ * Render a short-chat ("DM" mode) message: plain chat lines, with *what they did* muted and italic.
+ */
+function formatChatText(text) {
+  return (
+    <div className="space-y-1">
+      {text
+        .split('\n')
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .map((line, idx) =>
+          /^\*.*\*$/.test(line) ? (
+            <p key={idx} className="italic text-slate-400">
+              {line.slice(1, -1)}
+            </p>
+          ) : (
+            <p key={idx} className="text-slate-100">
+              {line}
+            </p>
+          )
+        )}
+    </div>
+  );
+}
+
+/**
  * Under a reply with a moment: "pending" offers to save it to the memory journal, "saved" confirms with an
  * undo. Nothing for "dismissed".
  */
@@ -158,7 +183,7 @@ export default function ChatMessage({
             </div>
           </div>
         ) : hasText ? (
-          formatRoleplayText(message.text, message.role)
+          message.style === 'dm' ? formatChatText(message.text) : formatRoleplayText(message.text, message.role)
         ) : (
           <span className="inline-flex items-center gap-1.5 py-1 px-1">
             <span className="w-2 h-2 rounded-full bg-purple-400 animate-bounce" />

@@ -14,7 +14,18 @@ export const JOURNAL_MODES = [
   { id: 'off', label: 'ปิด', hint: 'ไม่ต้องจับช่วงเวลาสำคัญ (ยังบันทึกเองได้)' },
 ];
 
-export const DEFAULT_RESPONSE_SETTINGS = { length: 'medium', temperature: 0.95, journal: 'ask' };
+// `suggestions`: reply buttons under the last reply; `relationship`: bond/trust/mood meters in the chat
+export const DEFAULT_RESPONSE_SETTINGS = {
+  length: 'medium',
+  temperature: 0.95,
+  journal: 'ask',
+  suggestions: true,
+  relationship: true,
+};
+
+// Per chat: novel-style roleplay or short messaging-app chat
+export const CHAT_STYLES = ['novel', 'dm'];
+export const chatStyleKey = (charId) => `chat_style_${charId}`;
 
 // Characters of recent chat sent to the model, counted back from the newest message.
 export const HISTORY_CHAR_BUDGET = 12000;
@@ -31,7 +42,9 @@ export function normalizeResponseSettings(raw) {
     ? Math.min(TEMPERATURE_MAX, Math.max(TEMPERATURE_MIN, temp))
     : DEFAULT_RESPONSE_SETTINGS.temperature;
   const journal = JOURNAL_MODES.some((m) => m.id === raw?.journal) ? raw.journal : DEFAULT_RESPONSE_SETTINGS.journal;
-  return { length, temperature, journal };
+  const suggestions = typeof raw?.suggestions === 'boolean' ? raw.suggestions : DEFAULT_RESPONSE_SETTINGS.suggestions;
+  const relationship = typeof raw?.relationship === 'boolean' ? raw.relationship : DEFAULT_RESPONSE_SETTINGS.relationship;
+  return { length, temperature, journal, suggestions, relationship };
 }
 
 // Client-side watchdogs. The server already waits up to 20s per model, so the first-response limit

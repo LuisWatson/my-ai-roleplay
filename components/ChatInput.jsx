@@ -24,6 +24,8 @@ export default function ChatInput({
   characterName,
   direction,
   setDirection,
+  chatStyle,
+  onToggleChatStyle,
 }) {
   const textareaRef = useRef(null);
   const [showDirection, setShowDirection] = useState(false);
@@ -123,7 +125,11 @@ export default function ChatInput({
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={loading}
-            placeholder={`พิมพ์ *การกระทำ* "คำพูด" คุยกับ ${characterName || 'ตัวละคร'}...`}
+            placeholder={
+              chatStyle === 'dm'
+                ? `แชทกับ ${characterName || 'ตัวละคร'}...`
+                : `พิมพ์ *การกระทำ* "คำพูด" คุยกับ ${characterName || 'ตัวละคร'}...`
+            }
             className="chat-input-scroll flex-1 resize-none overflow-hidden bg-transparent border-0 py-2 text-base md:text-sm leading-relaxed text-slate-100 placeholder-slate-500 px-1 focus:outline-none disabled:opacity-50"
           />
           {loading ? (
@@ -150,16 +156,29 @@ export default function ChatInput({
           )}
         </div>
         <div className="mt-1.5 px-1 flex items-center justify-between gap-2">
-          <button
-            type="button"
-            onClick={() => setShowDirection((v) => !v || Boolean(direction))}
-            className={`inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-[11px] transition ${
-              direction ? 'text-amber-300 bg-amber-500/10' : 'text-slate-400 hover:text-amber-200'
-            }`}
-          >
-            <Clapperboard className="w-3.5 h-3.5" />
-            <span>{direction ? 'มีคำกำกับเรื่อง' : 'กำกับเรื่อง'}</span>
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setShowDirection((v) => !v || Boolean(direction))}
+              className={`inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-[11px] transition ${
+                direction ? 'text-amber-300 bg-amber-500/10' : 'text-slate-400 hover:text-amber-200'
+              }`}
+            >
+              <Clapperboard className="w-3.5 h-3.5" />
+              <span>{direction ? 'มีคำกำกับเรื่อง' : 'กำกับเรื่อง'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={onToggleChatStyle}
+              title="สลับระหว่างแบบนิยายกับแชทสั้นแบบ LINE"
+              className={`inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-[11px] transition ${
+                chatStyle === 'dm' ? 'text-sky-300 bg-sky-500/10' : 'text-slate-400 hover:text-sky-200'
+              }`}
+            >
+              <span aria-hidden>{chatStyle === 'dm' ? '💬' : '📖'}</span>
+              <span>{chatStyle === 'dm' ? 'แชทสั้น' : 'นิยาย'}</span>
+            </button>
+          </div>
           <p className="hidden sm:block text-[11px] text-slate-500">
             <kbd className="font-sans text-slate-400">Enter</kbd> ส่ง ·{' '}
             <kbd className="font-sans text-slate-400">Shift + Enter</kbd> ขึ้นบรรทัดใหม่
