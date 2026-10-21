@@ -37,11 +37,13 @@ export default function CreateCharacterModal({
   onUpdateCharacter,
 }) {
   const [formData, setFormData] = useState(EMPTY_FORM);
+  const [formError, setFormError] = useState('');
 
   // Load the character being edited (or a blank form) whenever the modal opens
   useEffect(() => {
     if (isOpen) {
       setFormData(editingCharacter ? { ...EMPTY_FORM, ...editingCharacter } : EMPTY_FORM);
+      setFormError('');
     }
   }, [isOpen, editingCharacter]);
 
@@ -50,9 +52,10 @@ export default function CreateCharacterModal({
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!formData.name.trim() || !formData.description.trim() || !formData.greeting.trim()) {
-      alert('กรุณากรอกชื่อตัวละคร, ข้อมูลบทบาท (Persona), และประโยคทักทายแรกให้ครบถ้วน');
+      setFormError('กรอกชื่อตัวละคร ข้อมูลบทบาท (Persona) และประโยคทักทายแรกให้ครบก่อนนะ');
       return;
     }
+    setFormError('');
 
     if (editingCharacter) {
       onUpdateCharacter(formData);
@@ -239,6 +242,12 @@ export default function CreateCharacterModal({
               className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-slate-100 focus:outline-none focus:border-purple-500 transition resize-none"
             />
           </div>
+
+          {formError && (
+            <p role="alert" className="text-xs text-rose-300 bg-rose-950/40 border border-rose-500/30 rounded-xl px-3 py-2">
+              {formError}
+            </p>
+          )}
 
           <div className="flex justify-end gap-2 pt-3 border-t border-slate-700/60">
             <button

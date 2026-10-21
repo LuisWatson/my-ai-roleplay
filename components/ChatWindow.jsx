@@ -1,36 +1,100 @@
 'use client';
 
 import React, { useRef, useEffect, useState } from 'react';
-import { ArrowLeft, Trash2, UserCog, X, MapPin, Clock } from 'lucide-react';
+import { ArrowLeft, Trash2, UserCog, X, MapPin, Clock, AlertCircle, RotateCcw } from 'lucide-react';
 import ChatMessage from './ChatMessage';
 import ChatInput from './ChatInput';
 import { latestScene } from '../lib/scene';
 import { sceneBackgroundSrc } from '../constants/sceneBackgrounds';
 
-const SLOW_AFTER_SECONDS = 8;
+// Story-style lines shown while the reply is on its way; never about the app or the AI
+const WAITING_LINES = [
+  (name) => `${name}นิ่งคิดไปครู่หนึ่ง`,
+  (name) => `${name}เหลือบมองคุณ`,
+  (name) => `${name}เรียบเรียงคำพูดในใจ`,
+  (name) => `${name}สูดหายใจเบาๆ`,
+  (name) => `${name}กำลังจะพูดอะไรบางอย่าง`,
+];
+const WAITING_LINE_MS = 3500;
+
+// "Alex (อเล็กซ์)" → "Alex": the short name reads better inside a sentence
+const shortName = (name) => name.replace(/\s*\(.*\)\s*$/, '') || name;
 
 /**
- * "Typing" bubble that counts the seconds spent waiting and hints that the reply can be stopped when it is slow.
+ * Bubble shown while waiting for a reply: three soft dots and a rotating line of narration about the character.
  */
 function WaitingIndicator({ avatar, name }) {
-  const [seconds, setSeconds] = useState(0);
+  const [step, setStep] = useState(() => Math.floor(Math.random() * WAITING_LINES.length));
 
   useEffect(() => {
-    const timer = setInterval(() => setSeconds((s) => s + 1), 1000);
+    const timer = setInterval(() => setStep((s) => s + 1), WAITING_LINE_MS);
     return () => clearInterval(timer);
   }, []);
 
-  const slow = seconds >= SLOW_AFTER_SECONDS;
+  const line = WAITING_LINES[step % WAITING_LINES.length](shortName(name));
 
   return (
     <div className="flex items-start gap-2.5 animate-fadeIn">
       <img src={avatar} alt={name} className="w-8 h-8 rounded-full object-cover mt-1 border border-purple-400/20" />
-      <div className="bg-slate-800/90 border border-slate-700/80 px-4 py-3 rounded-2xl rounded-tl-none text-slate-300 text-sm flex items-center gap-2 shadow-md">
-        <span className="w-2 h-2 rounded-full bg-purple-400 animate-ping" />
-        <span className="text-xs text-slate-400">
-          {slow ? `โมเดลตอบช้า รอมา ${seconds} วินาที (กดปุ่มหยุดเพื่อยกเลิกได้)` : 'กำลังพิมพ์...'}
+      <div className="bg-slate-800/90 border border-slate-700/80 px-4 py-3 rounded-2xl rounded-tl-none flex items-center gap-3 shadow-md">
+        <span className="flex gap-1" aria-hidden>
+          {[0, 150, 300].map((delay) => (
+            <span
+              key={delay}
+              className="w-1.5 h-1.5 rounded-full bg-purple-300/80 animate-bounce"
+              style={{ animationDelay: `${delay}ms` }}
+            />
+          ))}
+        </span>
+        <span key={step} className="text-xs italic text-slate-400 animate-fadeIn">
+          {line}...
         </span>
       </div>
+    </div>
+  );
+}
+
+const NOTICE_STYLES = {
+  error: 'bg-rose-950/60 border-rose-500/40 text-rose-100',
+  warn: 'bg-amber-950/50 border-amber-500/40 text-amber-100',
+  info: 'bg-slate-800/80 border-slate-600/60 text-slate-200',
+};
+
+/**
+ * Card above the input for a reply that went wrong: friendly title and hint, optional retry,
+ * and the technical reason folded away for when it's needed.
+ */
+function NoticeCard({ notice, onRetry, onDismiss }) {
+  return (
+    <div
+      role="alert"
+      className={`mx-3 md:mx-4 mb-2 px-3.5 py-3 rounded-2xl border backdrop-blur-md shadow-lg flex items-start gap-3 animate-fadeIn ${
+        NOTICE_STYLES[notice.kind] || NOTICE_STYLES.info
+      }`}
+    >
+      <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5 opacity-80" />
+      <div className="flex-1 min-w-0 space-y-1">
+        {notice.title && <div className="text-sm font-medium">{notice.title}</div>}
+        <div className="text-xs opacity-85 leading-relaxed">{notice.text}</div>
+        {notice.detail && (
+          <details className="text-[11px] opacity-60">
+            <summary className="cursor-pointer select-none">รายละเอียด</summary>
+            <div className="mt-1 break-words">{notice.detail}</div>
+          </details>
+        )}
+        {notice.retry && (
+          <button
+            onClick={onRetry}
+            className="mt-1.5 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-medium transition"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            ลองส่งอีกครั้ง
+          </button>
+        )}
+      </div>
+      <button onClick={onDismiss} title="ปิด" className="opacity-60 hover:opacity-100 transition">
+        <X className="w-4 h-4" />
+      </button>
     </div>
   );
 }
@@ -178,20 +242,7 @@ export default function ChatWindow({
         <div ref={chatEndRef} />
       </div>
 
-      {notice && (
-        <div
-          className={`mx-3 md:mx-4 mb-2 px-3 py-2 rounded-xl text-xs flex items-start gap-2 border ${
-            notice.kind === 'warn'
-              ? 'bg-amber-950/40 border-amber-500/40 text-amber-200'
-              : 'bg-slate-800/80 border-slate-600/60 text-slate-300'
-          }`}
-        >
-          <span className="flex-1">{notice.text}</span>
-          <button onClick={onDismissNotice} title="ปิด" className="opacity-70 hover:opacity-100">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      )}
+      {notice && <NoticeCard notice={notice} onRetry={onRetry} onDismiss={onDismissNotice} />}
 
       {/* Message Input Controls */}
       <ChatInput
