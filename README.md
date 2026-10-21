@@ -15,7 +15,7 @@
 - **ความจำในบทสนทนา**: ส่งประวัติแชทล่าสุดให้โมเดลตามงบตัวอักษร (ดูค่า `HISTORY_CHAR_BUDGET` ใน `constants/chatSettings.js`) ช่วงต้นของแชทที่ยาวมากจะถูกตัดออก
 - **เลือกโมเดล Gemini**: เลือกได้ในหน้า Settings มีระบบสลับไปโมเดลสำรองอัตโนมัติเมื่อโมเดลที่เลือกใช้ไม่ได้ (รอโมเดลละไม่เกิน 20 วินาทีก่อนสลับ)
 - **สำรอง/นำเข้าข้อมูล**: Export/Import ไฟล์ JSON ของตัวละครที่สร้างเอง ประวัติแชท โปรไฟล์ บทบาทรายตัวละคร โมเดล และการตั้งค่าคำตอบ (ไม่รวม API Key)
-- **เก็บข้อมูลในเบราว์เซอร์**: ทุกอย่างบันทึกใน `localStorage` ไม่มีฐานข้อมูลฝั่งเซิร์ฟเวอร์
+- **เข้าสู่ระบบด้วย Google + เก็บข้อมูลบนบัญชี**: ผ่าน Supabase จำกัดเฉพาะอีเมลที่อนุญาต ใช้ได้ทุกเครื่อง (ถ้าไม่ตั้งค่า Supabase จะเก็บใน `localStorage` ของเบราว์เซอร์แทน)
 - **ดีไซน์ Dark Theme**: Tailwind CSS รองรับทั้ง Desktop และ Mobile (ปุ่มจัดการบนจอสัมผัสแสดงตลอด)
 
 ---
@@ -60,7 +60,34 @@ npm run dev
 ```
 เข้าใช้งานผ่านเบราว์เซอร์ที่ [http://localhost:3000](http://localhost:3000)
 
-> **หมายเหตุด้านความปลอดภัย**: `/api/chat` ไม่มีระบบยืนยันตัวตนหรือจำกัดอัตราการเรียก เหมาะกับการรันบนเครื่องตัวเอง หากนำไป deploy สาธารณะโดยตั้ง `GEMINI_API_KEY` ไว้บนเซิร์ฟเวอร์ ผู้ที่รู้ URL จะใช้ key นั้นได้ ควรเพิ่มการยืนยันตัวตนก่อน
+### 5. ตั้งค่าระบบเข้าสู่ระบบ (Supabase + Google) — ไม่บังคับตอนรันบนเครื่อง
+
+ถ้าข้ามขั้นนี้ แอปจะไม่มีหน้าล็อกอินและเก็บข้อมูลในเบราว์เซอร์อย่างเดียว ถ้าตั้งค่าแล้ว แต่ละคนล็อกอินด้วย Google
+และเห็นแชท/บทบาท/ตัวละครของตัวเองได้ทุกเครื่อง
+
+1. **สร้างโปรเจกต์ Supabase** ที่ [supabase.com](https://supabase.com) (แพ็กเกจฟรีพอ)
+2. **สร้างตาราง**: Supabase → SQL Editor → วางเนื้อหาไฟล์ `supabase/schema.sql` แล้วกด Run
+3. **ใส่อีเมลที่อนุญาต**: ใน SQL Editor รัน
+   ```sql
+   insert into public.allowed_emails (email) values ('you@gmail.com'), ('partner@gmail.com') on conflict do nothing;
+   ```
+4. **สร้าง Google OAuth Client** ที่ [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
+   - Create credentials → OAuth client ID → ชนิด **Web application** (ถ้าถูกถามให้ตั้ง OAuth consent screen ก่อน ให้ตั้งเป็น External แล้วเพิ่มอีเมลทั้งสองเป็น Test users)
+   - Authorized redirect URIs: `https://<project-ref>.supabase.co/auth/v1/callback` (คัดลอกได้จาก Supabase ในขั้นถัดไป)
+5. **เปิด Google ใน Supabase**: Authentication → Sign In / Providers → Google → ใส่ Client ID และ Client Secret จากขั้น 4
+6. **ตั้ง URL ที่ให้กลับมา**: Authentication → URL Configuration → Site URL `http://localhost:3000`
+   และเพิ่ม Redirect URL `http://localhost:3000` (ตอน deploy ค่อยเพิ่ม URL ของ Vercel)
+7. **ใส่ค่าใน `.env.local`** (Supabase → Project Settings → API):
+   ```env
+   NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon หรือ publishable key>
+   ```
+   แล้วรีสตาร์ต `npm run dev`
+
+ล็อกอินครั้งแรก ถ้าเบราว์เซอร์นั้นมีข้อมูลเก่าอยู่ แอปจะถามว่าจะย้ายขึ้นบัญชีไหม
+
+> **หมายเหตุด้านความปลอดภัย**: เมื่อตั้งค่า Supabase แล้ว `/api/chat` จะรับเฉพาะคำขอจากบัญชีที่อยู่ใน `allowed_emails`
+> ถ้า deploy (production) โดยไม่ตั้งค่า Supabase เซิร์ฟเวอร์จะปฏิเสธทุกคำขอแชท เพื่อไม่ให้คนอื่นใช้ `GEMINI_API_KEY` ได้
 
 ---
 

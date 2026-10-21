@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useState, useMemo } from 'react';
-import { Sparkles, Settings, Plus, Download, Upload, Search, Home, Trash2, X } from 'lucide-react';
+import { Sparkles, Settings, Plus, Download, Upload, Search, Home, Trash2, X, LogOut } from 'lucide-react';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -27,6 +27,7 @@ export default function Sidebar({
   onOpenCreateModal,
   onExportData,
   onImportData,
+  account,
   isOpen,
   onClose,
 }) {
@@ -194,6 +195,23 @@ export default function Sidebar({
             className="hidden"
           />
         </div>
+
+        {/* Signed-in account (only when login is set up) */}
+        {account && (
+          <div className="px-3 pb-3 pt-1 bg-slate-800/40 flex items-center gap-2">
+            <span className="flex-1 min-w-0 text-xs text-slate-400 truncate" title={account.email}>
+              {account.email}
+            </span>
+            <button
+              onClick={account.onSignOut}
+              title="ออกจากระบบ"
+              className="py-1.5 px-2.5 text-xs text-slate-400 hover:text-white hover:bg-slate-700/80 rounded-lg flex items-center gap-1.5 transition"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>ออกจากระบบ</span>
+            </button>
+          </div>
+        )}
       </aside>
     </>
   );
