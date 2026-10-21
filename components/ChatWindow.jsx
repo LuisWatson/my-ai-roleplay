@@ -65,7 +65,19 @@ export default function ChatWindow({
   }, [messages, loading]);
 
   return (
-    <main className="flex-1 flex flex-col bg-slate-900/95 relative overflow-hidden">
+    <main className="flex-1 flex flex-col bg-slate-900/95 relative overflow-hidden isolate">
+      {/* Blurred scene backdrop; negative z keeps it under the messages, the overlay keeps text readable */}
+      {selectedChar.background && (
+        <div aria-hidden className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
+          <img
+            src={selectedChar.background}
+            alt=""
+            className="w-full h-full object-cover scale-110 blur-md"
+          />
+          <div className="absolute inset-0 bg-slate-950/70" />
+        </div>
+      )}
+
       {/* Chat Header */}
       <header className="p-3.5 md:p-4 bg-slate-800/70 backdrop-blur-md border-b border-slate-700/80 flex items-center justify-between z-10">
         <div className="flex items-center gap-3">
@@ -121,16 +133,18 @@ export default function ChatWindow({
 
       {/* Scene bar: current in-story location/time, reported by the model after each reply */}
       {scene && (
-        <div className="px-4 py-1.5 bg-slate-950/70 border-b border-slate-800/80 backdrop-blur-sm flex items-center justify-center gap-3 text-[11px] text-slate-400 z-10">
-          <span className="flex items-center gap-1.5">
-            <Clock className="w-3 h-3 text-purple-400" />
-            {scene.time}
-          </span>
-          <span className="w-1 h-1 rounded-full bg-slate-700" />
-          <span className="flex items-center gap-1.5">
-            <MapPin className="w-3 h-3 text-purple-400" />
-            {scene.location}
-          </span>
+        <div className="flex justify-center pt-3 px-4 z-10">
+          <div className="flex items-center gap-2.5 px-3.5 py-1 rounded-full bg-slate-900/50 border border-white/10 backdrop-blur-md text-[11px] text-slate-300 shadow-sm">
+            <span className="flex items-center gap-1.5">
+              <Clock className="w-3 h-3 text-violet-300/80" />
+              {scene.time}
+            </span>
+            <span className="w-px h-3 bg-white/15" />
+            <span className="flex items-center gap-1.5">
+              <MapPin className="w-3 h-3 text-violet-300/80" />
+              {scene.location}
+            </span>
+          </div>
         </div>
       )}
 

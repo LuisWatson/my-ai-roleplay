@@ -6,7 +6,7 @@ import { parseRoleplayText } from '../lib/roleplayFormat';
 
 const PARAGRAPH_CLASS = {
   model: { speech: 'font-semibold text-white', narration: 'text-slate-400' },
-  user: { speech: 'font-semibold text-white', narration: 'text-purple-100/80' },
+  user: { speech: 'font-semibold text-white', narration: 'text-violet-200/70' },
 };
 
 /**
@@ -76,7 +76,7 @@ export default function ChatMessage({
       <div
         className={`w-full p-3.5 rounded-2xl text-sm leading-relaxed transition-all shadow-md ${
           isUser
-            ? 'bg-gradient-to-br from-purple-600 to-indigo-600 text-white rounded-tr-none'
+            ? 'bg-violet-500/15 border border-violet-300/25 text-violet-50 rounded-tr-none backdrop-blur-sm'
             : 'bg-slate-800/90 border border-slate-700/80 text-slate-100 rounded-tl-none backdrop-blur-sm'
         }`}
       >
