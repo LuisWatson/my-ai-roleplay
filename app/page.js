@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Sidebar from '../components/Sidebar';
 import ChatWindow from '../components/ChatWindow';
+import CharacterBrowser from '../components/CharacterBrowser';
 import SettingsModal from '../components/SettingsModal';
 import CreateCharacterModal from '../components/CreateCharacterModal';
 import UserRoleModal from '../components/UserRoleModal';
@@ -18,6 +19,38 @@ import {
   STALL_TIMEOUT_MS,
   normalizeResponseSettings,
 } from '../constants/chatSettings';
+
+// Last-activity time per character chat, for the sidebar's chat list. Histories saved before this
+// existed have no entry, so they are picked up from storage with time 0 (listed as older chats).
+function readChatActivity() {
+  let activity = {};
+  try {
+    activity = JSON.parse(localStorage.getItem('user_chat_activity')) || {};
+  } catch (err) {
+    console.error('Failed to parse chat activity from localStorage:', err);
+  }
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key?.startsWith('chat_history_')) {
+      const id = key.slice('chat_history_'.length);
+      if (!(id in activity)) activity[id] = 0;
+    }
+  }
+  return activity;
+}
+
+// One-line preview of a chat's last message, with *(action)* narration removed
+function lastMessagePreview(charId) {
+  try {
+    const history = JSON.parse(localStorage.getItem(`chat_history_${charId}`) || '[]');
+    const last = history[history.length - 1];
+    if (!last?.text) return '';
+    const text = last.text.replace(/\*\([^)]*\)\*/g, '').replace(/\*/g, '').replace(/\s+/g, ' ').trim();
+    return last.role === 'user' ? `คุณ: ${text}` : text;
+  } catch {
+    return '';
+  }
+}
 
 // Newest messages that fit in `budget` characters; always keeps at least the latest message.
 function takeRecentMessages(messages, budget) {
@@ -47,6 +80,8 @@ export default function Home() {
   const [userRoles, setUserRoles] = useState({});
   const [notice, setNotice] = useState(null);
   const [showUserRole, setShowUserRole] = useState(false);
+  const [chatActivity, setChatActivity] = useState({});
+  const [showHistory, setShowHistory] = useState(false);
   const abortRef = useRef(null);
   const activeCharIdRef = useRef(null); // which character's chat is currently on screen
 
@@ -85,6 +120,8 @@ export default function Home() {
     } catch (err) {
       console.error('Failed to parse character roles from localStorage:', err);
     }
+
+    setChatActivity(readChatActivity());
 
     const savedProfile = localStorage.getItem('user_roleplay_profile');
     if (savedProfile) {
@@ -131,9 +168,36 @@ export default function Home() {
     localStorage.setItem('user_roleplay_profile', JSON.stringify(profile));
   };
 
+  const writeChatActivity = (update) => {
+    setChatActivity((prev) => {
+      const next = update({ ...prev });
+      localStorage.setItem('user_chat_activity', JSON.stringify(next));
+      return next;
+    });
+  };
+
   const saveHistory = (charId, history) => {
     localStorage.setItem(`chat_history_${charId}`, JSON.stringify(history));
+    writeChatActivity((next) => ({ ...next, [charId]: Date.now() }));
   };
+
+  // Forget a chat entirely: its history and its place in the sidebar's chat list
+  const dropChat = (charId) => {
+    localStorage.removeItem(`chat_history_${charId}`);
+    writeChatActivity((next) => {
+      delete next[charId];
+      return next;
+    });
+  };
+
+  const recentChats = useMemo(
+    () =>
+      characters
+        .filter((c) => c.id in chatActivity)
+        .map((c) => ({ character: c, at: chatActivity[c.id], preview: lastMessagePreview(c.id) }))
+        .sort((a, b) => b.at - a.at),
+    [characters, chatActivity]
+  );
 
   // Cancel the in-flight reply. `discard` skips saving the partial reply (history cleared or character deleted).
   const stopStreaming = ({ discard = false } = {}) => {
@@ -148,6 +212,7 @@ export default function Home() {
   // Switch character and load their respective conversation history
   const handleSelectChar = (char) => {
     stopStreaming();
+    setShowHistory(false);
     activeCharIdRef.current = char.id;
     setSelectedChar(char);
     const savedHistory = localStorage.getItem(`chat_history_${char.id}`);
@@ -167,6 +232,7 @@ export default function Home() {
 
   const handleBack = () => {
     stopStreaming();
+    setShowHistory(false);
     activeCharIdRef.current = null;
     setSelectedChar(null);
   };
@@ -413,6 +479,7 @@ export default function Home() {
       chatHistories,
       userProfile,
       userRoles,
+      chatActivity,
       model,
       responseSettings,
     };
@@ -451,6 +518,13 @@ export default function Home() {
         }
       }
 
+      const activity = readChatActivity();
+      for (const [id, at] of Object.entries(backup.chatActivity || {})) {
+        if (knownIds.has(id) && Number.isFinite(at) && localStorage.getItem(`chat_history_${id}`)) activity[id] = at;
+      }
+      localStorage.setItem('user_chat_activity', JSON.stringify(activity));
+      setChatActivity(activity);
+
       if (backup.userProfile) handleSaveUserProfile(backup.userProfile);
       for (const [id, role] of Object.entries(backup.userRoles || {})) {
         if (knownIds.has(id)) handleSaveUserRole(id, normalizeUserRole(role));
@@ -477,7 +551,7 @@ export default function Home() {
     localStorage.setItem('user_custom_chars', JSON.stringify(filtered));
 
     setCharacters([...DEFAULT_CHARACTERS, ...filtered]);
-    localStorage.removeItem(`chat_history_${charId}`);
+    dropChat(charId);
     handleSaveUserRole(charId, normalizeUserRole(null));
 
     if (selectedChar?.id === charId) {
@@ -492,46 +566,73 @@ export default function Home() {
     if (!selectedChar) return;
     if (confirm('ต้องการล้างประวัติการคุยกับตัวละครนี้ใช่หรือไม่?')) {
       stopStreaming({ discard: true });
-      localStorage.removeItem(`chat_history_${selectedChar.id}`);
+      dropChat(selectedChar.id);
       setMessages([{ role: 'model', text: selectedChar.greeting }]);
     }
   };
 
+  // Remove a chat from the sidebar's chat list (and its history)
+  const handleClearChat = (charId) => {
+    if (!confirm('ต้องการลบแชทนี้ใช่หรือไม่? ประวัติการคุยทั้งหมดจะหายไป')) return;
+    const char = characters.find((c) => c.id === charId);
+    if (selectedChar?.id === charId) {
+      stopStreaming({ discard: true });
+      setMessages([{ role: 'model', text: char?.greeting || '' }]);
+    }
+    dropChat(charId);
+  };
+
   return (
     <div className="flex h-screen bg-slate-900 text-slate-100 overflow-hidden font-sans">
-      {/* Sidebar for character selection */}
+      {/* Left panel: app actions + chats already started */}
       <Sidebar
-        characters={characters}
+        recentChats={recentChats}
         selectedChar={selectedChar}
         onSelectChar={handleSelectChar}
-        onDeleteChar={handleDeleteCharacter}
-        onEditChar={handleEditCharacter}
+        onClearChat={handleClearChat}
+        onGoHome={handleBack}
         onExportData={handleExportData}
         onImportData={handleImportData}
         onOpenSettings={() => setShowSettings(true)}
-        onOpenCreateModal={() => setShowCreateModal(true)}
+        onOpenCreateModal={() => {
+          setShowHistory(false);
+          setShowCreateModal(true);
+        }}
+        isOpen={showHistory}
+        onClose={() => setShowHistory(false)}
       />
 
-      {/* Main chat window view */}
-      <ChatWindow
-        selectedChar={selectedChar}
-        onBack={handleBack}
-        messages={messages}
-        loading={loading}
-        input={input}
-        setInput={setInput}
-        onSendMessage={handleSendMessage}
-        onClearHistory={handleClearHistory}
-        onStopReply={handleStopReply}
-        onRegenerate={handleRegenerate}
-        onRetry={handleRetry}
-        notice={notice}
-        onDismissNotice={() => setNotice(null)}
-        onEditMessage={handleEditMessage}
-        onDeleteMessage={handleDeleteMessage}
-        hasUserRole={Boolean(selectedChar && userRoles[selectedChar.id])}
-        onOpenUserRole={() => setShowUserRole(true)}
-      />
+      {/* Center: the open chat, or the character grid when no chat is open */}
+      {selectedChar ? (
+        <ChatWindow
+          selectedChar={selectedChar}
+          onBack={handleBack}
+          messages={messages}
+          loading={loading}
+          input={input}
+          setInput={setInput}
+          onSendMessage={handleSendMessage}
+          onClearHistory={handleClearHistory}
+          onStopReply={handleStopReply}
+          onRegenerate={handleRegenerate}
+          onRetry={handleRetry}
+          notice={notice}
+          onDismissNotice={() => setNotice(null)}
+          onEditMessage={handleEditMessage}
+          onDeleteMessage={handleDeleteMessage}
+          hasUserRole={Boolean(userRoles[selectedChar.id])}
+          onOpenUserRole={() => setShowUserRole(true)}
+        />
+      ) : (
+        <CharacterBrowser
+          characters={characters}
+          onSelectChar={handleSelectChar}
+          onDeleteChar={handleDeleteCharacter}
+          onEditChar={handleEditCharacter}
+          onOpenCreateModal={() => setShowCreateModal(true)}
+          onOpenHistory={() => setShowHistory(true)}
+        />
+      )}
 
       {/* Settings modal with User Persona and API Key configuration */}
       <SettingsModal

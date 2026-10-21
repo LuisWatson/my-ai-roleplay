@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useEffect, useState } from 'react';
-import { ArrowLeft, Trash2, Sparkles, UserCog, X, MapPin, Clock } from 'lucide-react';
+import { ArrowLeft, Trash2, UserCog, X, MapPin, Clock } from 'lucide-react';
 import ChatMessage from './ChatMessage';
 import ChatInput from './ChatInput';
 import { latestScene } from '../lib/scene';
@@ -64,20 +64,6 @@ export default function ChatWindow({
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
 
-  if (!selectedChar) {
-    return (
-      <main className="hidden md:flex flex-1 flex-col items-center justify-center p-6 text-center bg-slate-900/90">
-        <div className="p-4 rounded-2xl bg-purple-950/30 border border-purple-500/20 mb-4 shadow-inner">
-          <Sparkles className="w-10 h-10 text-purple-400 animate-pulse" />
-        </div>
-        <h3 className="text-xl font-semibold text-slate-200">ยินดีต้อนรับสู่ Khui AI Personal</h3>
-        <p className="text-sm max-w-sm mt-2 text-slate-400 leading-relaxed">
-          เลือกตัวละครจากแถบด้านซ้ายเพื่อเริ่มต้นสวมบทบาท หรือสร้างตัวละครใหม่ตามจินตนาการของคุณได้ทันที
-        </p>
-      </main>
-    );
-  }
-
   return (
     <main className="flex-1 flex flex-col bg-slate-900/95 relative overflow-hidden">
       {/* Chat Header */}
@@ -85,8 +71,8 @@ export default function ChatWindow({
         <div className="flex items-center gap-3">
           <button
             onClick={onBack}
-            className="md:hidden p-1.5 hover:bg-slate-700 rounded-lg text-slate-400 transition"
-            title="กลับไปหน้ารายชื่อ"
+            className="p-1.5 hover:bg-slate-700 rounded-lg text-slate-400 transition"
+            title="กลับไปหน้าหลัก"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
@@ -110,19 +96,6 @@ export default function ChatWindow({
           </div>
         </div>
 
-        {scene && (
-          <div className="hidden md:flex items-center gap-3 text-[11px] text-slate-400 bg-slate-900/50 border border-slate-700/50 rounded-full px-3 py-1">
-            <span className="flex items-center gap-1" title="สถานที่ปัจจุบัน">
-              <MapPin className="w-3 h-3 text-purple-400" />
-              {scene.location}
-            </span>
-            <span className="flex items-center gap-1" title="เวลาปัจจุบัน">
-              <Clock className="w-3 h-3 text-purple-400" />
-              {scene.time}
-            </span>
-          </div>
-        )}
-
         <div className="flex items-center gap-1">
         <button
           onClick={onOpenUserRole}
@@ -145,6 +118,21 @@ export default function ChatWindow({
         </button>
         </div>
       </header>
+
+      {/* Scene bar: current in-story location/time, reported by the model after each reply */}
+      {scene && (
+        <div className="px-4 py-1.5 bg-slate-950/70 border-b border-slate-800/80 backdrop-blur-sm flex items-center justify-center gap-3 text-[11px] text-slate-400 z-10">
+          <span className="flex items-center gap-1.5">
+            <Clock className="w-3 h-3 text-purple-400" />
+            {scene.time}
+          </span>
+          <span className="w-1 h-1 rounded-full bg-slate-700" />
+          <span className="flex items-center gap-1.5">
+            <MapPin className="w-3 h-3 text-purple-400" />
+            {scene.location}
+          </span>
+        </div>
+      )}
 
       {/* Messages Scroll Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">

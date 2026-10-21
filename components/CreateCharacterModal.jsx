@@ -185,7 +185,7 @@ export default function CreateCharacterModal({
               required
               value={formData.greeting}
               onChange={(e) => setFormData({ ...formData, greeting: e.target.value })}
-              placeholder="เช่น *(เงยหน้าขึ้นมาสบตาพร้อมยิ้ม)* 'ไง! รอตั้งนานแล้วนะ'"
+              placeholder={'เช่น *เงยหน้าขึ้นมาสบตาพร้อมยิ้ม* "ไง! รอตั้งนานแล้วนะ"'}
               className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-slate-100 focus:outline-none focus:border-purple-500 transition resize-none"
             />
           </div>
@@ -235,7 +235,7 @@ export default function CreateCharacterModal({
               rows={3}
               value={formData.exampleDialogue}
               onChange={(e) => setFormData({ ...formData, exampleDialogue: e.target.value })}
-              placeholder={'เช่น\n"อะไรอีกล่ะเนี่ย ขี้เกียจจริงๆ เลยนะเรา"\n*(ถอนหายใจแล้วยิ้มมุมปาก)* "มานี่ มาให้พี่ดูหน่อย"'}
+              placeholder={'เช่น\n"อะไรอีกล่ะเนี่ย ขี้เกียจจริงๆ เลยนะเรา"\n*ถอนหายใจแล้วยิ้มมุมปาก* "มานี่ มาให้พี่ดูหน่อย"'}
               className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-slate-100 focus:outline-none focus:border-purple-500 transition resize-none"
             />
           </div>

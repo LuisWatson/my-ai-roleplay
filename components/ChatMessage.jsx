@@ -2,28 +2,30 @@
 
 import React, { useState } from 'react';
 import { Pencil, Trash2, RefreshCw, Check, X } from 'lucide-react';
+import { parseRoleplayText } from '../lib/roleplayFormat';
+
+const PARAGRAPH_CLASS = {
+  model: { speech: 'font-semibold text-white', narration: 'text-slate-400' },
+  user: { speech: 'font-semibold text-white', narration: 'text-purple-100/80' },
+};
 
 /**
- * Format message text to style action and emotion narrations enclosed in asterisks *(action)*.
+ * Render novel-style text: each spoken line bold, narration and *actions* muted, one paragraph each.
  * @param {string} text - Raw message string
- * @returns {React.ReactNode[]} Formatted elements
+ * @param {'model'|'user'} role
+ * @returns {React.ReactNode} Formatted elements
  */
-export function formatRoleplayText(text) {
-  if (!text) return null;
-  const parts = text.split(/(\*.*?\*)/g);
-  return parts.map((part, index) => {
-    if (part.startsWith('*') && part.endsWith('*')) {
-      return (
-        <span
-          key={index}
-          className="italic text-purple-300 font-light block my-1 bg-purple-950/20 px-2 py-0.5 rounded border-l-2 border-purple-500/50"
-        >
-          {part.slice(1, -1)}
-        </span>
-      );
-    }
-    return <span key={index}>{part}</span>;
-  });
+export function formatRoleplayText(text, role = 'model') {
+  const styles = PARAGRAPH_CLASS[role] || PARAGRAPH_CLASS.model;
+  return (
+    <div className="space-y-2.5">
+      {parseRoleplayText(text).map((para, idx) => (
+        <p key={idx} className={styles[para.type]}>
+          {para.text}
+        </p>
+      ))}
+    </div>
+  );
 }
 
 /**
@@ -70,7 +72,7 @@ export default function ChatMessage({
         />
       )}
 
-      <div className={`flex flex-col gap-1 max-w-[85%] md:max-w-[70%] ${isUser ? 'items-end' : 'items-start'}`}>
+      <div className={`flex flex-col gap-1 max-w-[85%] ${isUser ? 'md:max-w-[70%] items-end' : 'md:max-w-[80%] items-start'}`}>
       <div
         className={`w-full p-3.5 rounded-2xl text-sm leading-relaxed transition-all shadow-md ${
           isUser
@@ -97,7 +99,7 @@ export default function ChatMessage({
             </div>
           </div>
         ) : hasText ? (
-          formatRoleplayText(message.text)
+          formatRoleplayText(message.text, message.role)
         ) : (
           <span className="inline-flex items-center gap-1.5 py-1 px-1">
             <span className="w-2 h-2 rounded-full bg-purple-400 animate-bounce" />

@@ -75,7 +75,7 @@ npm run dev
 ├── components/
 │   ├── CharacterCard.jsx        # การ์ดตัวละคร (แก้ไข/ลบสำหรับตัวละครที่สร้างเอง)
 │   ├── ChatInput.jsx            # กล่องพิมพ์ข้อความ ปุ่มส่ง/หยุดตอบ
-│   ├── ChatMessage.jsx          # บับเบิลข้อความ จัดฟอร์แมต *(action)* และปุ่มแก้ไข/ลบ/สร้างใหม่
+│   ├── ChatMessage.jsx          # บับเบิลข้อความ จัดฟอร์แมตแบบนิยาย ("คำพูด" / *การกระทำ*) และปุ่มแก้ไข/ลบ/สร้างใหม่
 │   ├── ChatWindow.jsx           # หน้าต่างแชท Header และ Auto-scroll
 │   ├── CreateCharacterModal.jsx # สร้าง/แก้ไขตัวละคร
 │   ├── SettingsModal.jsx        # ตั้งค่า: โปรไฟล์ทั่วไป การตอบกลับ API Key และโมเดล

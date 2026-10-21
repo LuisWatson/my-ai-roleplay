@@ -1,7 +1,7 @@
 export const LENGTH_OPTIONS = [
-  { id: 'short', label: 'สั้น', hint: '1-2 ประโยค' },
-  { id: 'medium', label: 'กลาง', hint: '3-5 ประโยค' },
-  { id: 'long', label: 'ยาว', hint: 'หลายย่อหน้า' },
+  { id: 'short', label: 'สั้น', hint: '1-3 บรรทัด' },
+  { id: 'medium', label: 'กลาง', hint: '4-8 บรรทัด' },
+  { id: 'long', label: 'ยาว', hint: 'แบบนิยาย 10+ บรรทัด' },
 ];
 
 export const TEMPERATURE_MIN = 0.3;
