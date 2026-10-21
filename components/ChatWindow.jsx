@@ -91,7 +91,7 @@ export default function ChatWindow({
           />
         ))}
 
-        {loading && (
+        {loading && messages[messages.length - 1]?.role === 'user' && (
           <div className="flex items-start gap-2.5 animate-fadeIn">
             <img
               src={selectedChar.avatar}

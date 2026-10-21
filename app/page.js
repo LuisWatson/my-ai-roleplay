@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Sidebar from '../components/Sidebar';
 import ChatWindow from '../components/ChatWindow';
 import SettingsModal from '../components/SettingsModal';
@@ -20,6 +20,7 @@ export default function Home() {
   const [showSettings, setShowSettings] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingChar, setEditingChar] = useState(null);
+  const abortRef = useRef(null);
 
   // Load saved API key, custom characters, and user persona profile on mount
   useEffect(() => {
@@ -67,8 +68,22 @@ export default function Home() {
     localStorage.setItem('user_roleplay_profile', JSON.stringify(profile));
   };
 
+  const saveHistory = (charId, history) => {
+    localStorage.setItem(`chat_history_${charId}`, JSON.stringify(history));
+  };
+
+  // Cancel the in-flight reply. `discard` skips saving the partial reply (history cleared or character deleted).
+  const stopStreaming = ({ discard = false } = {}) => {
+    if (!abortRef.current) return;
+    abortRef.current.discard = discard;
+    abortRef.current.abort();
+    abortRef.current = null;
+    setLoading(false);
+  };
+
   // Switch character and load their respective conversation history
   const handleSelectChar = (char) => {
+    stopStreaming();
     setSelectedChar(char);
     const savedHistory = localStorage.getItem(`chat_history_${char.id}`);
     if (savedHistory) {
@@ -82,6 +97,11 @@ export default function Home() {
     setMessages([{ role: 'model', text: char.greeting }]);
   };
 
+  const handleBack = () => {
+    stopStreaming();
+    setSelectedChar(null);
+  };
+
   // Send message and stream response from Gemini API
   const handleSendMessage = async () => {
     if (!input.trim() || loading || !selectedChar) return;
@@ -89,9 +109,15 @@ export default function Home() {
     const userMessage = input.trim();
     setInput('');
 
+    const charId = selectedChar.id;
     const updatedMessages = [...messages, { role: 'user', text: userMessage }];
     setMessages(updatedMessages);
+    saveHistory(charId, updatedMessages);
     setLoading(true);
+
+    const controller = new AbortController();
+    abortRef.current = controller;
+    let accumulatedText = '';
 
     try {
       // Send up to the last 10 messages for conversational context
@@ -103,6 +129,7 @@ export default function Home() {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({
           message: userMessage,
           history: historyPayload.slice(0, -1),
@@ -118,13 +145,11 @@ export default function Home() {
         throw new Error(errorData.error || `HTTP error ${res.status}`);
       }
 
-      // Add empty placeholder for the incoming stream
+      // Add empty placeholder for the incoming stream; `loading` stays true so the input stays locked
       setMessages((prev) => [...prev, { role: 'model', text: '' }]);
-      setLoading(false);
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder('utf-8');
-      let accumulatedText = '';
 
       while (true) {
         const { done, value } = await reader.read();
@@ -142,14 +167,25 @@ export default function Home() {
           return nextState;
         });
       }
-
-      // Persist the complete dialogue in localStorage once stream finishes
-      const finalHistory = [...updatedMessages, { role: 'model', text: accumulatedText }];
-      localStorage.setItem(`chat_history_${selectedChar.id}`, JSON.stringify(finalHistory));
     } catch (err) {
-      alert(`Error: ${err.message}`);
+      if (!controller.signal.aborted) {
+        // Drop the empty placeholder bubble; keep any partial reply already received
+        if (!accumulatedText) {
+          setMessages((prev) => {
+            const last = prev[prev.length - 1];
+            return last?.role === 'model' && !last.text ? prev.slice(0, -1) : prev;
+          });
+        }
+        alert(`Error: ${err.message}`);
+      }
     } finally {
-      setLoading(false);
+      if (accumulatedText && !controller.discard) {
+        saveHistory(charId, [...updatedMessages, { role: 'model', text: accumulatedText }]);
+      }
+      if (abortRef.current === controller) {
+        abortRef.current = null;
+        setLoading(false);
+      }
     }
   };
 
@@ -234,6 +270,7 @@ export default function Home() {
         (c) => c && typeof c.id === 'string' && c.id.startsWith('custom_') && c.name && c.description && c.greeting
       );
       if (!confirm(`นำเข้าตัวละคร ${validChars.length} ตัว และเขียนทับประวัติแชท/โปรไฟล์ที่ซ้ำกัน ต้องการดำเนินการต่อหรือไม่?`)) return;
+      stopStreaming({ discard: true });
 
       const existing = JSON.parse(localStorage.getItem('user_custom_chars') || '[]');
       const merged = [...existing.filter((c) => !validChars.some((v) => v.id === c.id)), ...validChars];
@@ -261,6 +298,7 @@ export default function Home() {
   // Delete a custom character
   const handleDeleteCharacter = (charId) => {
     if (!confirm('ต้องการลบตัวละครนี้ใช่หรือไม่?')) return;
+    if (selectedChar?.id === charId) stopStreaming({ discard: true });
 
     const existing = JSON.parse(localStorage.getItem('user_custom_chars') || '[]');
     const filtered = existing.filter((c) => c.id !== charId);
@@ -279,6 +317,7 @@ export default function Home() {
   const handleClearHistory = () => {
     if (!selectedChar) return;
     if (confirm('ต้องการล้างประวัติการคุยกับตัวละครนี้ใช่หรือไม่?')) {
+      stopStreaming({ discard: true });
       localStorage.removeItem(`chat_history_${selectedChar.id}`);
       setMessages([{ role: 'model', text: selectedChar.greeting }]);
     }
@@ -302,7 +341,7 @@ export default function Home() {
       {/* Main chat window view */}
       <ChatWindow
         selectedChar={selectedChar}
-        onBack={() => setSelectedChar(null)}
+        onBack={handleBack}
         messages={messages}
         loading={loading}
         input={input}
