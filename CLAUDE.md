@@ -78,13 +78,13 @@ round 1 (swipes, story direction, memory panel, installable app).
 1. **Login + per-user data** — done and tested with a real Google login on localhost (2026-10-21, see `worklog.md`).
    Supabase project `xksnjxsbpacsxmuhcrue`; Google OAuth client is in Testing mode. Decided: one shared Gemini key.
    Deployed to Vercel 2026-10-21. Partner's email added to `allowed_emails` and Google Test users 2026-10-22
-   (a new account needs both). Left: partner's first login.
+   (a new account needs both). Partner has logged in.
 2. Portraits for the other 11 characters (only Ava has one) — use the `character-portrait` skill.
 3. Create-character form: no fields yet for `background` or `defaultUserRole`.
 4. Ava portrait is a 924 KB PNG; could be WebP (~100 KB).
 5. Not yet checked with real Gemini replies: does the model always add `พื้นหลัง=`?
 6. **Feature rounds agreed with the owner** (one round at a time, used for a few days before the next):
-   - Round 1 — done 2026-10-21 (see worklog). Owner still has to try "Add to Home Screen" on iPhone + login there.
+   - Round 1 — done 2026-10-21, live; home-screen install + login on iPhone confirmed working.
    - Round 2 (needs the model to add more to the trailing tag; parse it leniently, Flash Lite may get it wrong):
      suggested reply choices under each reply, relationship meters (WHIF-style), DM/short-chat mode,
      prompt tuning from the owner's examples of bad replies.
