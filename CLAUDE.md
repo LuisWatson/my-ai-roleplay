@@ -37,8 +37,9 @@ The owner builds it for themselves and their partner. Reply to the owner in Thai
 - `lib/geminiServer.js` — shared by API routes: `authorize`, `resolveApiKey`, `tryModels` (fallback + skip
   models whose daily quota is gone).
 - `lib/scene.js` — parses the tag the model ends every reply with:
-  `[ฉาก: สถานที่=...; เวลา=...; พื้นหลัง=<id>; ความทรงจำ=<title>]` (last two parts optional; labeled
-  `key=value` parts, unlabeled ones fall back to location/time/background). Keep it lenient.
+  `[ฉาก: สถานที่=...; เวลา=...; พื้นหลัง=<id>; ความทรงจำ=<title>; ความสัมพันธ์=ผูกพัน N, ไว้ใจ N, อารมณ์ x;
+  ตัวเลือก=a | b | c]` (everything after เวลา optional; labeled `key=value` parts, unlabeled ones fall back to
+  location/time/background). Keep it lenient.
 - `constants/models.js` — model list = default (first) + fallback order. Free tier only (owner's choice):
   Pro models return 429; newer Flash models allow only **20 requests/day each**, Flash Lite much more.
   **Don't spend the owner's quota on tests** — one short call per model at most.
@@ -60,6 +61,10 @@ The owner builds it for themselves and their partner. Reply to the owner in Thai
   messages carry `moment: { title, state, entryId }`; saved moments are sent with every message.
 - Character photos (`lib/imageResize.js`): uploads become 450×600 JPEG data URLs inside the character;
   `withoutImages()` keeps them out of `/api/chat` requests.
+- Round 2 (`lib/relation.js`, rules 14–15 in `lib/prompt.js`): relationship meters clamped ±10 per reply, stored
+  on replies as `relation`; suggested replies as `choices` (must be in the user's voice — models drift into the
+  character's); per-chat `chat_style_<id>` = 'dm' switches to short messaging-app chat (`style: 'dm'` on messages).
+  Settings `suggestions` / `relationship` turn them off and stop asking the model.
 - Installable app: `app/manifest.js`, `appleWebApp` in `app/layout.js`, icons in `public/icons/` + `app/*icon.png`.
 - `components/UserRoleModal.jsx` — "บทบาทของฉัน"; opens by itself the first time a character is opened (`user_role_prompted` in the store). Nothing is required; empty fields use `defaultUserRole`.
 - `.claude/skills/character-portrait/` — how to generate a character portrait on tensor.art and wire it in.
@@ -73,11 +78,11 @@ The owner builds it for themselves and their partner. Reply to the owner in Thai
 - Images: portraits PNG 768×1024 in `public/characters/`, backgrounds WebP via `sharp` (already in node_modules).
 - Mobile matters (owner tests on iPhone Safari): use `h-dvh`, not `h-screen`; inputs 16px on phones.
 
-## Status (2026-10-21)
+## Status (2026-10-22)
 
 Done: chat input redesign, rename to Botbaat, Ava portrait, scene backgrounds, role form, iPhone layout fix,
 Google login + cloud data, Vercel deploy, model fallback, in-app dialogs, multi-device refresh, long-term memory,
-round 1 (swipes, story direction, memory panel, installable app).
+round 1 (swipes, story direction, memory panel, installable app), memory journal, photo upload, round 2.
 
 ## TODO
 
@@ -91,9 +96,9 @@ round 1 (swipes, story direction, memory panel, installable app).
 5. Not yet checked with real Gemini replies: does the model always add `พื้นหลัง=`?
 6. **Feature rounds agreed with the owner** (one round at a time, used for a few days before the next):
    - Round 1 — done 2026-10-21, live; home-screen install + login on iPhone confirmed working.
-   - Round 2 (needs the model to add more to the trailing tag; parse it leniently, Flash Lite may get it wrong):
-     memory journal — done 2026-10-22; suggested reply choices under each reply, relationship meters (WHIF-style), DM/short-chat mode,
-     prompt tuning from the owner's examples of bad replies.
+   - Round 2 — memory journal, suggested replies, relationship meters, DM mode: done 2026-10-22.
+     Left: prompt tuning from the owner's examples of bad replies; maybe cap temperature for Lite models
+     (they make more Thai typos — owner declined for now).
    - Round 3: several stories per character, share custom characters with the partner, read replies aloud
      (browser Thai voice, free), special-day letters, lorebook.
    - Not now: group chat, character messages first, images in chat (no free image quota), Next 16 upgrade.
