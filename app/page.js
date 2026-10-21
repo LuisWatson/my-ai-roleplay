@@ -14,10 +14,10 @@ import { normalizeUserRole, mergeUserProfile, USER_ROLE_FIELDS } from '../lib/us
 import { normalizeRealism } from '../constants/scenario';
 import { stripTrailingPartialTag, finalizeReply, latestScene } from '../lib/scene';
 import { DEFAULT_CHARACTERS } from '../constants/characters';
+import { memoryKey, readMemory, chatWindow, nextMemoryBatch, fingerprint } from '../lib/memory';
 import { AVAILABLE_MODELS, DEFAULT_MODEL } from '../constants/models';
 import {
   DEFAULT_RESPONSE_SETTINGS,
-  HISTORY_CHAR_BUDGET,
   FIRST_RESPONSE_CLIENT_TIMEOUT_MS,
   STALL_TIMEOUT_MS,
   normalizeResponseSettings,
@@ -79,17 +79,6 @@ function savedHistoryOrGreeting(store, char) {
   return [{ role: 'model', text: char.greeting }];
 }
 
-// Newest messages that fit in `budget` characters; always keeps at least the latest message.
-function takeRecentMessages(messages, budget) {
-  const recent = [];
-  let used = 0;
-  for (let i = messages.length - 1; i >= 0; i--) {
-    used += messages[i].text.length;
-    if (recent.length > 0 && used > budget) break;
-    recent.unshift({ role: messages[i].role, text: messages[i].text });
-  }
-  return recent;
-}
 
 function RoleplayApp({ store, account, getAccessToken }) {
   const [characters, setCharacters] = useState(DEFAULT_CHARACTERS);
@@ -267,6 +256,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
   // Forget a chat entirely: its history and its place in the sidebar's chat list
   const dropChat = (charId) => {
     store.removeItem(`chat_history_${charId}`);
+    store.removeItem(memoryKey(charId));
     writeChatActivity((next) => {
       delete next[charId];
       return next;
@@ -321,10 +311,57 @@ function RoleplayApp({ store, account, getAccessToken }) {
     setSelectedChar(null);
   };
 
+  // Characters whose memory is being updated right now (one summary request per chat at a time)
+  const memoryJobsRef = useRef(new Set());
+
+  // After a reply: once enough older chat has piled up beyond what is sent with each message, have it
+  // summarized into the chat's long-term memory. Runs in the background; a failure is retried after the
+  // next reply.
+  const updateMemory = async (persona, chatMessages) => {
+    const charId = persona.id;
+    if (memoryJobsRef.current.has(charId)) return;
+    const memory = readMemory(store, charId, chatMessages);
+    const batch = nextMemoryBatch(chatMessages, memory);
+    if (!batch) return;
+
+    memoryJobsRef.current.add(charId);
+    try {
+      const accessToken = await getAccessToken();
+      const res = await fetch('/api/memory', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
+        },
+        body: JSON.stringify({
+          characterName: persona.name,
+          userName: mergeUserProfile(userProfile, userRoles[charId]).name,
+          previousSummary: memory?.summary || '',
+          messages: batch.messages,
+          apiKey,
+        }),
+      });
+      if (!res.ok) return;
+      const { summary } = await res.json();
+      if (!summary) return;
+
+      // Keep it only if the summarized messages are still the ones saved (not edited or cleared meanwhile)
+      const hash = fingerprint(chatMessages, batch.to);
+      const saved = JSON.parse(store.getItem(`chat_history_${charId}`) || '[]');
+      if (fingerprint(saved, batch.to) !== hash) return;
+      store.setItem(memoryKey(charId), JSON.stringify({ summary, covered: batch.to, hash }));
+    } catch (err) {
+      console.warn('Memory update failed:', err);
+    } finally {
+      memoryJobsRef.current.delete(charId);
+    }
+  };
+
   // Stream a reply for `baseMessages`, which must end with the user message being answered.
   const streamReply = async (baseMessages) => {
     if (loading || !selectedChar) return;
 
+    const persona = selectedChar;
     const charId = selectedChar.id;
     const userMessage = baseMessages[baseMessages.length - 1].text;
     setMessages(baseMessages);
@@ -348,7 +385,8 @@ function RoleplayApp({ store, account, getAccessToken }) {
     armStallTimer(FIRST_RESPONSE_CLIENT_TIMEOUT_MS);
 
     try {
-      const historyPayload = takeRecentMessages(baseMessages, HISTORY_CHAR_BUDGET);
+      const memory = readMemory(store, charId, baseMessages);
+      const historyPayload = chatWindow(baseMessages, memory);
       const accessToken = await getAccessToken();
 
       const res = await fetch('/api/chat', {
@@ -367,6 +405,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
           responseSettings: responseSettings,
           userProfile: mergeUserProfile(userProfile, userRoles[charId]),
           scene: latestScene(baseMessages) || undefined,
+          memory: memory?.summary,
         }),
       });
 
@@ -431,7 +470,9 @@ function RoleplayApp({ store, account, getAccessToken }) {
       clearTimeout(stallTimer);
       if (accumulatedText && !controller.discard) {
         const { cleanText, scene } = finalizeReply(accumulatedText);
-        saveHistory(charId, [...baseMessages, { role: 'model', text: cleanText, scene }]);
+        const finalMessages = [...baseMessages, { role: 'model', text: cleanText, scene }];
+        saveHistory(charId, finalMessages);
+        updateMemory(persona, finalMessages);
         // Only touch the currently displayed chat if it's still this one (the user may have switched away)
         if (activeCharIdRef.current === charId) {
           setMessages((prev) => {
@@ -546,13 +587,12 @@ function RoleplayApp({ store, account, getAccessToken }) {
   const handleExportData = () => {
     const customChars = JSON.parse(store.getItem('user_custom_chars') || '[]');
     const chatHistories = {};
-    for (const char of customChars) {
+    const chatMemories = {};
+    for (const char of [...customChars, ...DEFAULT_CHARACTERS]) {
       const saved = store.getItem(`chat_history_${char.id}`);
       if (saved) chatHistories[char.id] = JSON.parse(saved);
-    }
-    for (const char of DEFAULT_CHARACTERS) {
-      const saved = store.getItem(`chat_history_${char.id}`);
-      if (saved) chatHistories[char.id] = JSON.parse(saved);
+      const memory = store.getItem(memoryKey(char.id));
+      if (saved && memory) chatMemories[char.id] = JSON.parse(memory);
     }
 
     const backup = {
@@ -561,6 +601,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
       exportedAt: new Date().toISOString(),
       customCharacters: customChars,
       chatHistories,
+      chatMemories,
       userProfile,
       userRoles,
       chatActivity,
@@ -604,6 +645,10 @@ function RoleplayApp({ store, account, getAccessToken }) {
       for (const [id, history] of Object.entries(backup.chatHistories || {})) {
         if (knownIds.has(id) && Array.isArray(history)) {
           store.setItem(`chat_history_${id}`, JSON.stringify(history));
+          // The file's memory belongs to this history; readMemory() drops it if it doesn't match
+          const memory = backup.chatMemories?.[id];
+          if (memory) store.setItem(memoryKey(id), JSON.stringify(memory));
+          else store.removeItem(memoryKey(id));
         }
       }
 
