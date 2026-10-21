@@ -1,18 +1,31 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Brain, Pin, X, Plus } from 'lucide-react';
+import { Brain, Pin, X, Plus, BookHeart } from 'lucide-react';
 import { MAX_PINS, MAX_PIN_CHARS } from '../lib/memory';
+import JournalList from './JournalList';
 
 const FIELD_CLASS =
   'w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-base md:text-sm focus:outline-none focus:border-purple-500 text-slate-100 placeholder-slate-600 transition';
 
 /**
- * What a character remembers about this chat: facts the user pinned (always sent) and the automatic
- * summary of the older chat (editable, or forgotten so it is rebuilt). `summary` is null while the chat
- * is still short enough to be sent in full.
+ * What a character remembers. Tab "journal": saved key moments (edited right away). Tab "notes": facts the
+ * user pinned (always sent) and the automatic summary of the older chat (editable, or forgotten so it is
+ * rebuilt; null while the chat is still short enough to be sent in full), saved with the Save button.
  */
-export default function MemoryModal({ isOpen, onClose, character, summary, pins, onSave, onForgetSummary }) {
+export default function MemoryModal({
+  isOpen,
+  onClose,
+  character,
+  summary,
+  pins,
+  journal,
+  onSave,
+  onForgetSummary,
+  onRenameJournalEntry,
+  onDeleteJournalEntry,
+}) {
+  const [tab, setTab] = useState('journal');
   const [draftPins, setDraftPins] = useState([]);
   const [newPin, setNewPin] = useState('');
   const [draftSummary, setDraftSummary] = useState('');
@@ -23,6 +36,10 @@ export default function MemoryModal({ isOpen, onClose, character, summary, pins,
     setNewPin('');
     setDraftSummary(summary || '');
   }, [isOpen, pins, summary]);
+
+  useEffect(() => {
+    if (isOpen) setTab('journal');
+  }, [isOpen]);
 
   if (!isOpen || !character) return null;
 
@@ -58,10 +75,43 @@ export default function MemoryModal({ isOpen, onClose, character, summary, pins,
             <Brain className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h2 className="text-base font-bold">ความจำของ {character.name}</h2>
+            <h2 className="text-base font-bold">ความทรงจำของ {character.name}</h2>
             <p className="text-xs text-slate-400">สิ่งที่ตัวละครจำได้จากเรื่องที่คุยกัน</p>
           </div>
         </div>
+
+        <div className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-slate-900/70 border border-slate-700/60">
+          {[
+            ['journal', 'สมุดความทรงจำ', BookHeart],
+            ['notes', 'หมุดและสรุป', Pin],
+          ].map(([id, label, Icon]) => (
+            <button
+              key={id}
+              onClick={() => setTab(id)}
+              className={`flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm transition ${
+                tab === id ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Icon className="w-4 h-4" />
+              {label}
+              {id === 'journal' && journal?.length > 0 && (
+                <span className="text-[10px] px-1.5 rounded-full bg-amber-500/20 text-amber-200">{journal.length}</span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        {tab === 'journal' && (
+          <JournalList
+            entries={journal}
+            fallbackBackground={character.background}
+            onRename={onRenameJournalEntry}
+            onDelete={onDeleteJournalEntry}
+          />
+        )}
+
+        {tab === 'notes' && (
+          <>
 
         {/* Pinned facts */}
         <section className="space-y-2">
@@ -146,16 +196,21 @@ export default function MemoryModal({ isOpen, onClose, character, summary, pins,
           )}
         </section>
 
+          </>
+        )}
+
         <div className="flex justify-end gap-2 pt-3 border-t border-slate-700/60">
           <button onClick={onClose} className="px-4 py-2 bg-slate-700/70 hover:bg-slate-700 text-slate-300 text-sm rounded-xl transition">
-            ยกเลิก
+            {tab === 'journal' ? 'ปิด' : 'ยกเลิก'}
           </button>
+          {tab === 'notes' && (
           <button
             onClick={handleSave}
             className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-sm font-medium rounded-xl transition shadow-md shadow-purple-900/40"
           >
             บันทึก
           </button>
+          )}
         </div>
       </div>
     </div>

@@ -7,7 +7,14 @@ export const LENGTH_OPTIONS = [
 export const TEMPERATURE_MIN = 0.3;
 export const TEMPERATURE_MAX = 1.2;
 
-export const DEFAULT_RESPONSE_SETTINGS = { length: 'medium', temperature: 0.95 };
+// What happens when the model flags a key moment (see lib/journal.js)
+export const JOURNAL_MODES = [
+  { id: 'ask', label: 'ถามก่อนทุกครั้ง', hint: 'เด้งการ์ดถามว่าจะบันทึกไหม' },
+  { id: 'auto', label: 'บันทึกอัตโนมัติ', hint: 'บันทึกให้เลย กดเลิกทำได้' },
+  { id: 'off', label: 'ปิด', hint: 'ไม่ต้องจับช่วงเวลาสำคัญ (ยังบันทึกเองได้)' },
+];
+
+export const DEFAULT_RESPONSE_SETTINGS = { length: 'medium', temperature: 0.95, journal: 'ask' };
 
 // Characters of recent chat sent to the model, counted back from the newest message.
 export const HISTORY_CHAR_BUDGET = 12000;
@@ -23,7 +30,8 @@ export function normalizeResponseSettings(raw) {
   const temperature = Number.isFinite(temp)
     ? Math.min(TEMPERATURE_MAX, Math.max(TEMPERATURE_MIN, temp))
     : DEFAULT_RESPONSE_SETTINGS.temperature;
-  return { length, temperature };
+  const journal = JOURNAL_MODES.some((m) => m.id === raw?.journal) ? raw.journal : DEFAULT_RESPONSE_SETTINGS.journal;
+  return { length, temperature, journal };
 }
 
 // Client-side watchdogs. The server already waits up to 20s per model, so the first-response limit

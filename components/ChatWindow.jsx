@@ -116,6 +116,9 @@ export default function ChatWindow({
   onStopReply,
   onRegenerate,
   onSwipe,
+  onSaveMoment,
+  onDismissMoment,
+  onUndoMoment,
   onRetry,
   onOpenMemory,
   direction,
@@ -195,11 +198,11 @@ export default function ChatWindow({
         </button>
         <button
           onClick={onOpenMemory}
-          title="ความจำของตัวละคร"
+          title="ความทรงจำของตัวละคร"
           className="p-1.5 sm:p-2 rounded-lg transition flex items-center gap-1.5 text-xs hover:bg-slate-700/60 text-slate-400 hover:text-purple-300"
         >
           <Brain className="w-5 h-5" />
-          <span className="hidden sm:inline">ความจำ</span>
+          <span className="hidden sm:inline">ความทรงจำ</span>
         </button>
         <button
           onClick={onClearHistory}
@@ -242,6 +245,9 @@ export default function ChatWindow({
             }
             onRegenerate={onRegenerate}
             onSwipe={onSwipe}
+            onSaveMoment={(title) => onSaveMoment(idx, title)}
+            onDismissMoment={() => onDismissMoment(idx)}
+            onUndoMoment={() => onUndoMoment(idx)}
             canRetry={idx === messages.length - 1 && msg.role === 'user' && !loading}
             onRetry={onRetry}
             onEdit={(text) => onEditMessage(idx, text)}

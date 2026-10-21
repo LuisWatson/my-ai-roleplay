@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Key, Eye, EyeOff, X, User, Sliders, MessageSquare } from 'lucide-react';
 import { AVAILABLE_MODELS } from '../constants/models';
-import { LENGTH_OPTIONS, TEMPERATURE_MIN, TEMPERATURE_MAX } from '../constants/chatSettings';
+import { LENGTH_OPTIONS, TEMPERATURE_MIN, TEMPERATURE_MAX, JOURNAL_MODES } from '../constants/chatSettings';
 
 /**
  * Settings modal for configuring the user's Persona/Profile and Google Gemini API credentials.
@@ -207,6 +207,27 @@ export default function SettingsModal({
               <div className="flex justify-between text-[11px] text-slate-500">
                 <span>นิ่ง สม่ำเสมอ</span>
                 <span>หลากหลาย ฟุ้ง</span>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-medium text-slate-300">📖 สมุดความทรงจำ: เมื่อมีช่วงเวลาสำคัญ</label>
+              <div className="space-y-1.5">
+                {JOURNAL_MODES.map((opt) => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => setLocalResponse({ ...localResponse, journal: opt.id })}
+                    className={`w-full text-left px-3 py-2 rounded-xl border text-sm transition ${
+                      localResponse.journal === opt.id
+                        ? 'bg-purple-900/40 border-purple-500/60 text-purple-200'
+                        : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    <span className="font-medium">{opt.label}</span>
+                    <span className="ml-2 text-[11px] opacity-70">{opt.hint}</span>
+                  </button>
+                ))}
               </div>
             </div>
           </div>

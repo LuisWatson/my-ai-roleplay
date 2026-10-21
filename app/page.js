@@ -16,6 +16,14 @@ import { normalizeRealism } from '../constants/scenario';
 import { stripTrailingPartialTag, finalizeReply, latestScene } from '../lib/scene';
 import { DEFAULT_CHARACTERS } from '../constants/characters';
 import { memoryKey, pinsKey, readMemory, readPins, cleanPins, chatWindow, nextMemoryBatch, fingerprint } from '../lib/memory';
+import {
+  journalKey,
+  readJournal,
+  addJournalEntry,
+  removeJournalEntry,
+  renameJournalEntry,
+  journalForPrompt,
+} from '../lib/journal';
 import { AVAILABLE_MODELS, DEFAULT_MODEL } from '../constants/models';
 import {
   DEFAULT_RESPONSE_SETTINGS,
@@ -420,6 +428,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
           scene: latestScene(baseMessages) || undefined,
           memory: memory?.summary,
           pinned: readPins(store, charId),
+          journal: journalForPrompt(readJournal(store, charId)),
           direction: storyDirection.trim() || undefined,
         }),
       });
@@ -486,11 +495,21 @@ function RoleplayApp({ store, account, getAccessToken }) {
     } finally {
       clearTimeout(stallTimer);
       if (accumulatedText && !controller.discard) {
-        const { cleanText, scene } = finalizeReply(accumulatedText);
-        let reply = { role: 'model', text: cleanText, scene };
+        const { cleanText, scene, moment: momentTitle } = finalizeReply(accumulatedText);
+        // A moment the model flagged: saved right away ('auto') or offered under the reply ('ask')
+        let moment;
+        if (momentTitle && responseSettings.journal !== 'off') {
+          if (responseSettings.journal === 'auto') {
+            const entry = addJournalEntry(store, charId, { title: momentTitle, message: { text: cleanText }, scene });
+            moment = { title: momentTitle, state: 'saved', entryId: entry.id };
+          } else {
+            moment = { title: momentTitle, state: 'pending' };
+          }
+        }
+        let reply = { role: 'model', text: cleanText, scene, ...(moment && { moment }) };
         if (previous) {
-          const alts = previous.alts || [{ text: previous.text, scene: previous.scene }];
-          reply = { ...reply, alts: [...alts, { text: cleanText, scene }], altIndex: alts.length };
+          const alts = previous.alts || [{ text: previous.text, scene: previous.scene, moment: previous.moment }];
+          reply = { ...reply, alts: [...alts, { text: cleanText, scene, moment }], altIndex: alts.length };
         }
         const finalMessages = [...baseMessages, reply];
         saveHistory(charId, finalMessages);
@@ -554,7 +573,44 @@ function RoleplayApp({ store, account, getAccessToken }) {
     const altIndex = last.altIndex + delta;
     const alt = last.alts[altIndex];
     if (!alt) return;
-    persistMessages([...messages.slice(0, -1), { ...last, text: alt.text, scene: alt.scene, altIndex }]);
+    persistMessages([...messages.slice(0, -1), { ...last, text: alt.text, scene: alt.scene, moment: alt.moment, altIndex }]);
+  };
+
+  // Set a message's moment (and its current swipe version's), e.g. after saving it to the journal
+  const setMessageMoment = (index, moment) => {
+    persistMessages(
+      messages.map((m, i) => {
+        if (i !== index) return m;
+        const next = { ...m, moment };
+        if (m.alts) next.alts = m.alts.map((a, j) => (j === m.altIndex ? { ...a, moment } : a));
+        return next;
+      })
+    );
+  };
+
+  // Save message `index` to the journal, titled by the user or by the moment the model flagged
+  const handleSaveMoment = (index, title) => {
+    const message = messages[index];
+    const name = (title ?? message?.moment?.title ?? '').trim();
+    if (loading || !message || !selectedChar || !name) return;
+    // A user message has no scene of its own: use the reply to it, else the scene at that point
+    const scene = message.scene || messages[index + 1]?.scene || latestScene(messages.slice(0, index + 1));
+    const entry = addJournalEntry(store, selectedChar.id, { title: name, message, scene });
+    setMessageMoment(index, { title: name, state: 'saved', entryId: entry.id });
+  };
+
+  const handleDismissMoment = (index) => {
+    const moment = messages[index]?.moment;
+    if (loading || !moment) return;
+    setMessageMoment(index, { ...moment, state: 'dismissed' });
+  };
+
+  // Take a saved moment back out of the journal
+  const handleUndoMoment = (index) => {
+    const moment = messages[index]?.moment;
+    if (loading || !moment || !selectedChar) return;
+    if (moment.entryId) removeJournalEntry(store, selectedChar.id, moment.entryId);
+    setMessageMoment(index, { title: moment.title, state: 'dismissed' });
   };
 
   const persistMessages = (next) => {
@@ -631,6 +687,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
     const chatHistories = {};
     const chatMemories = {};
     const chatPins = {};
+    const chatJournals = {};
     for (const char of [...customChars, ...DEFAULT_CHARACTERS]) {
       const saved = store.getItem(`chat_history_${char.id}`);
       if (saved) chatHistories[char.id] = JSON.parse(saved);
@@ -638,6 +695,8 @@ function RoleplayApp({ store, account, getAccessToken }) {
       if (saved && memory) chatMemories[char.id] = JSON.parse(memory);
       const pins = readPins(store, char.id);
       if (pins.length > 0) chatPins[char.id] = pins;
+      const journal = readJournal(store, char.id);
+      if (journal.length > 0) chatJournals[char.id] = journal;
     }
 
     const backup = {
@@ -648,6 +707,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
       chatHistories,
       chatMemories,
       chatPins,
+      chatJournals,
       userProfile,
       userRoles,
       chatActivity,
@@ -701,6 +761,10 @@ function RoleplayApp({ store, account, getAccessToken }) {
         const cleaned = Array.isArray(pins) ? cleanPins(pins) : [];
         if (knownIds.has(id) && cleaned.length > 0) store.setItem(pinsKey(id), JSON.stringify(cleaned));
       }
+      for (const [id, journal] of Object.entries(backup.chatJournals || {})) {
+        const valid = Array.isArray(journal) ? journal.filter((e) => e && e.id && typeof e.title === 'string') : [];
+        if (knownIds.has(id) && valid.length > 0) store.setItem(journalKey(id), JSON.stringify(valid));
+      }
 
       const activity = readChatActivity(store);
       for (const [id, at] of Object.entries(backup.chatActivity || {})) {
@@ -745,6 +809,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
     setCharacters([...DEFAULT_CHARACTERS, ...filtered]);
     dropChat(charId);
     store.removeItem(pinsKey(charId));
+    store.removeItem(journalKey(charId));
     handleSaveUserRole(charId, normalizeUserRole(null));
 
     if (selectedChar?.id === charId) {
@@ -757,7 +822,11 @@ function RoleplayApp({ store, account, getAccessToken }) {
   const openMemory = () => {
     if (!selectedChar) return;
     const memory = readMemory(store, selectedChar.id, messages);
-    setMemoryView({ summary: memory ? memory.summary : null, pins: readPins(store, selectedChar.id) });
+    setMemoryView({
+      summary: memory ? memory.summary : null,
+      pins: readPins(store, selectedChar.id),
+      journal: readJournal(store, selectedChar.id),
+    });
   };
 
   const handleSaveMemory = ({ pins, summary }) => {
@@ -773,6 +842,28 @@ function RoleplayApp({ store, account, getAccessToken }) {
     }
   };
 
+  const handleRenameJournalEntry = (entryId, title) => {
+    if (!selectedChar) return;
+    renameJournalEntry(store, selectedChar.id, entryId, title);
+    setMemoryView((view) => view && { ...view, journal: readJournal(store, selectedChar.id) });
+  };
+
+  const handleDeleteJournalEntry = async (entry) => {
+    if (!selectedChar) return;
+    const ok = await askConfirm({
+      title: `ลบ "${entry.title}"?`,
+      text: 'ความทรงจำนี้จะหายจากสมุด และตัวละครจะไม่ได้รับรู้อีก',
+      confirmLabel: 'ลบความทรงจำ',
+      danger: true,
+    });
+    if (!ok) return;
+    removeJournalEntry(store, selectedChar.id, entry.id);
+    setMemoryView((view) => view && { ...view, journal: readJournal(store, selectedChar.id) });
+    // The reply it came from no longer shows it as saved
+    const index = messages.findIndex((m) => m.moment?.entryId === entry.id);
+    if (index >= 0) setMessageMoment(index, { title: messages[index].moment.title, state: 'dismissed' });
+  };
+
   // Drop the summary; the next replies rebuild it from the chat
   const handleForgetSummary = () => {
     if (selectedChar) store.removeItem(memoryKey(selectedChar.id));
@@ -784,7 +875,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
     const char = selectedChar;
     const ok = await askConfirm({
       title: 'เริ่มคุยใหม่ตั้งแต่ต้น?',
-      text: `ข้อความทั้งหมดกับ ${char.name} จะถูกล้าง แล้วเริ่มจากคำทักทายแรกอีกครั้ง (หมุดในความจำยังอยู่)`,
+      text: `ข้อความทั้งหมดกับ ${char.name} จะถูกล้าง แล้วเริ่มจากคำทักทายแรกอีกครั้ง (หมุดและสมุดความทรงจำยังอยู่)`,
       confirmLabel: 'ล้างแชท',
       danger: true,
       avatar: char.avatar,
@@ -848,6 +939,9 @@ function RoleplayApp({ store, account, getAccessToken }) {
           onStopReply={handleStopReply}
           onRegenerate={handleRegenerate}
           onSwipe={handleSwipe}
+          onSaveMoment={handleSaveMoment}
+          onDismissMoment={handleDismissMoment}
+          onUndoMoment={handleUndoMoment}
           onOpenMemory={openMemory}
           direction={direction}
           setDirection={setDirection}
@@ -894,6 +988,9 @@ function RoleplayApp({ store, account, getAccessToken }) {
         character={selectedChar}
         summary={memoryView?.summary ?? null}
         pins={memoryView?.pins}
+        journal={memoryView?.journal}
+        onRenameJournalEntry={handleRenameJournalEntry}
+        onDeleteJournalEntry={handleDeleteJournalEntry}
         onSave={handleSaveMemory}
         onForgetSummary={handleForgetSummary}
       />

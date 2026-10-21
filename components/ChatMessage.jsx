@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Pencil, Trash2, RefreshCw, Check, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Pencil, Trash2, RefreshCw, Check, X, ChevronLeft, ChevronRight, BookmarkPlus, BookHeart, Sparkles } from 'lucide-react';
 import { parseRoleplayText } from '../lib/roleplayFormat';
 
 const PARAGRAPH_CLASS = {
@@ -29,6 +29,54 @@ export function formatRoleplayText(text, role = 'model') {
 }
 
 /**
+ * Under a reply with a moment: "pending" offers to save it to the memory journal, "saved" confirms with an
+ * undo. Nothing for "dismissed".
+ */
+function MomentCard({ moment, disabled, onSave, onDismiss, onUndo }) {
+  if (moment.state === 'pending') {
+    return (
+      <div className="w-full rounded-2xl border border-amber-400/30 bg-gradient-to-br from-amber-500/10 to-purple-500/10 px-3.5 py-3 space-y-2 animate-fadeIn">
+        <div className="flex items-start gap-2 text-sm text-amber-100">
+          <Sparkles className="w-4 h-4 mt-0.5 flex-shrink-0 text-amber-300" />
+          <span>
+            <span className="text-amber-300/90">ช่วงเวลาสำคัญ:</span> {moment.title}
+          </span>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => onSave()}
+            disabled={disabled}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-100 text-xs font-medium transition disabled:opacity-40"
+          >
+            <BookHeart className="w-3.5 h-3.5" />
+            บันทึกไว้
+          </button>
+          <button
+            onClick={onDismiss}
+            disabled={disabled}
+            className="px-3 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-white/5 text-xs transition disabled:opacity-40"
+          >
+            ไม่เป็นไร
+          </button>
+        </div>
+      </div>
+    );
+  }
+  if (moment.state === 'saved') {
+    return (
+      <div className="flex items-center gap-1.5 px-1 text-[11px] text-amber-200/80 animate-fadeIn">
+        <BookHeart className="w-3.5 h-3.5 flex-shrink-0" />
+        <span className="truncate">บันทึกในสมุดความทรงจำแล้ว · {moment.title}</span>
+        <button onClick={onUndo} disabled={disabled} className="underline hover:text-amber-100 flex-shrink-0 disabled:opacity-40">
+          เลิกทำ
+        </button>
+      </div>
+    );
+  }
+  return null;
+}
+
+/**
  * Renders an individual chat message item with support for active streaming states.
  */
 export default function ChatMessage({
@@ -39,6 +87,9 @@ export default function ChatMessage({
   canRegenerate,
   onRegenerate,
   onSwipe,
+  onSaveMoment,
+  onDismissMoment,
+  onUndoMoment,
   canRetry,
   onRetry,
   onEdit,
@@ -48,6 +99,13 @@ export default function ChatMessage({
   const hasText = message.text && message.text.length > 0;
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState('');
+  const [momentDraft, setMomentDraft] = useState(null); // title being typed when saving by hand
+
+  const saveMomentDraft = () => {
+    if (!momentDraft?.trim()) return;
+    onSaveMoment(momentDraft);
+    setMomentDraft(null);
+  };
 
   const startEdit = () => {
     setDraft(message.text);
@@ -110,6 +168,40 @@ export default function ChatMessage({
         )}
       </div>
 
+      {message.moment && !isEditing && (
+        <MomentCard
+          moment={message.moment}
+          disabled={disabled}
+          onSave={() => onSaveMoment()}
+          onDismiss={onDismissMoment}
+          onUndo={onUndoMoment}
+        />
+      )}
+
+      {momentDraft !== null && (
+        <div className="w-full flex items-center gap-1.5 rounded-xl border border-amber-400/30 bg-slate-900/80 px-2.5 py-1.5 animate-fadeIn">
+          <BookHeart className="w-4 h-4 text-amber-300 flex-shrink-0" />
+          <input
+            autoFocus
+            value={momentDraft}
+            onChange={(e) => setMomentDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.nativeEvent.isComposing) saveMomentDraft();
+              if (e.key === 'Escape') setMomentDraft(null);
+            }}
+            maxLength={120}
+            placeholder="ตั้งชื่อช่วงเวลานี้ เช่น เดตแรกที่ทะเล"
+            className="flex-1 min-w-0 bg-transparent border-0 py-1 text-base md:text-sm text-slate-100 placeholder-slate-500 focus:outline-none"
+          />
+          <button onClick={() => setMomentDraft(null)} title="ยกเลิก" className={actionClass}>
+            <X className="w-4 h-4" />
+          </button>
+          <button onClick={saveMomentDraft} title="บันทึกลงสมุดความทรงจำ" className={`${actionClass} text-amber-300`}>
+            <Check className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {canRetry && !isEditing && (
         <button
           onClick={onRetry}
@@ -151,6 +243,15 @@ export default function ChatMessage({
               {canRegenerate && (
                 <button onClick={onRegenerate} title="สร้างคำตอบใหม่" className={actionClass}>
                   <RefreshCw className="w-3.5 h-3.5" />
+                </button>
+              )}
+              {message.moment?.state !== 'saved' && (
+                <button
+                  onClick={() => setMomentDraft(message.moment?.title || '')}
+                  title="บันทึกช่วงเวลานี้ลงสมุดความทรงจำ"
+                  className={actionClass}
+                >
+                  <BookmarkPlus className="w-3.5 h-3.5" />
                 </button>
               )}
               <button onClick={startEdit} title="แก้ไขข้อความ" className={actionClass}>
