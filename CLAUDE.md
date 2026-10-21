@@ -13,6 +13,23 @@ The owner builds it for themselves and their partner. Reply to the owner in Thai
 - Don't run a second `next dev` in this folder: both share `.next` and one's env leaks into the other.
 - No test suite. Verify changes in the browser; for prompt/parser logic, import the module in Node
   (imports have no `.js` extension, so a small resolve hook is needed).
+- **Testing without logging in** (Claude can't sign in to Google for the owner): copy the project to a temp folder
+  (robocopy, skip `.next`/`.git`), give the copy a `.env.local` with only `GEMINI_API_KEY`, run `npx next dev -p 3002`
+  there. No Supabase vars → no login, localStorage only. Delete the copy afterwards. Also `next build` there
+  before pushing, since the main folder's `.next` belongs to the running dev server.
+- Shell heredocs in this environment mangle backslashes (`\n`, `\\s`): write edit scripts / regexes with the
+  editor tools, not inline `node - <<EOF`.
+
+## Continuing on another computer
+
+1. `git clone https://github.com/LuisWatson/my-ai-roleplay.git` (private repo — sign in to GitHub), then `npm install`.
+2. Create `.env.local` (never committed):
+   - `GEMINI_API_KEY=` — the owner's key (aistudio.google.com → API keys)
+   - `NEXT_PUBLIC_SUPABASE_URL=https://xksnjxsbpacsxmuhcrue.supabase.co`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY=` — publishable key `sb_publishable_…` (Supabase → Project Settings → API Keys,
+     or copy from Vercel → Settings → Environment Variables)
+3. `npm run dev` → http://localhost:3000 — Google login works there (localhost is an allowed redirect/origin).
+4. Read `worklog.md` (newest first) for what was done and what is open. Pushing to `main` deploys to production.
 
 ## Deploy
 
@@ -48,7 +65,15 @@ The owner builds it for themselves and their partner. Reply to the owner in Thai
 - Errors: never `alert()`. Chat errors → notice card in `ChatWindow` (by `kind` from `/api/chat`); elsewhere → `Toast`.
   Waiting text stays in-story (character narration), never about the app/AI.
 - `constants/characters.js` — 12 preset characters. Optional fields:
-  `avatar`, `background`, `defaultUserRole { description, background }`, `fixedBackground`, `userRoleHint`.
+  `avatar`, `background`, `defaultUserRole { description, background }`, `fixedBackground`, `userRoleHint`,
+  `profile { age, occupation, appearance, personality, likes, dislikes, story }` and
+  `cast: [{ name, relation, personality }]` (presets get both from `constants/characterProfiles.js`; custom
+  characters from the create form). Both go into the prompt (`profileText` / `castText`).
+- `components/CharacterProfile.jsx` — tapping a card on the home grid opens the character's profile sheet
+  (bio / your role / people around them / greeting, relation + journal count, "เริ่มแชท"/"คุยต่อ");
+  the sidebar chat list still opens chats directly.
+- Other people in a scene: rule 11 lets the model voice them; rule 4 makes it prefix their speech with `name:`;
+  `lib/roleplayFormat.js` turns that into `speaker` and `ChatMessage` shows a name label in that person's colour.
 - `constants/sceneBackgrounds.js` — 8 scene background ids → `public/characters/backgrounds/scenes/<id>.webp`.
 - `components/ChatWindow.jsx` — blurred backdrop (scene background, else character background), floating scene pill.
 - Swipes: a regenerated model message keeps `alts: [{ text, scene }]` + `altIndex` (only the last reply);
@@ -82,7 +107,8 @@ The owner builds it for themselves and their partner. Reply to the owner in Thai
 
 Done: chat input redesign, rename to Botbaat, Ava portrait, scene backgrounds, role form, iPhone layout fix,
 Google login + cloud data, Vercel deploy, model fallback, in-app dialogs, multi-device refresh, long-term memory,
-round 1 (swipes, story direction, memory panel, installable app), memory journal, photo upload, round 2.
+round 1 (swipes, story direction, memory panel, installable app), memory journal, photo upload, round 2,
+blocked-reply handling, relationship in header, speaker labels, character profiles + supporting cast.
 
 ## TODO
 
@@ -91,7 +117,8 @@ round 1 (swipes, story direction, memory panel, installable app), memory journal
    Deployed to Vercel 2026-10-21. Partner's email added to `allowed_emails` and Google Test users 2026-10-22
    (a new account needs both). Partner has logged in.
 2. Portraits for the other 11 characters (only Ava has one) — use the `character-portrait` skill.
-3. Create-character form: no fields yet for `background` or `defaultUserRole`.
+3. Create-character form: has profile + cast now, but still no fields for `background` (chat backdrop) or
+   `defaultUserRole`. Profiles could later get a picture gallery (several images, swipe 1/3) once portraits exist.
 4. Ava portrait is a 924 KB PNG; could be WebP (~100 KB).
 5. Not yet checked with real Gemini replies: does the model always add `พื้นหลัง=`?
 6. **Feature rounds agreed with the owner** (one round at a time, used for a few days before the next):
