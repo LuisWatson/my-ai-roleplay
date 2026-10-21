@@ -50,7 +50,7 @@ export default function CharacterCard({ character, isSelected, onSelect, onDelet
       </div>
 
       {isCustom && (
-        <div className="opacity-0 group-hover:opacity-100 transition-all absolute right-2 flex gap-0.5">
+        <div className="[@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-within:opacity-100 transition-all absolute right-2 flex gap-0.5">
           {onEdit && (
             <button
               onClick={handleEdit}
