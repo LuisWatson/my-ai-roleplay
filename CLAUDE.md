@@ -49,6 +49,12 @@ The owner builds it for themselves and their partner. Reply to the owner in Thai
   `avatar`, `background`, `defaultUserRole { description, background }`, `fixedBackground`, `userRoleHint`.
 - `constants/sceneBackgrounds.js` — 8 scene background ids → `public/characters/backgrounds/scenes/<id>.webp`.
 - `components/ChatWindow.jsx` — blurred backdrop (scene background, else character background), floating scene pill.
+- Swipes: a regenerated model message keeps `alts: [{ text, scene }]` + `altIndex` (only the last reply);
+  dropped when the user sends the next message.
+- Story direction ("กำกับเรื่อง", `ChatInput`): one-shot out-of-story instruction sent as `direction`; never saved.
+- `components/MemoryModal.jsx` — pins (`chat_pins_<id>`, always sent, survive clearing the chat) and the
+  editable auto summary.
+- Installable app: `app/manifest.js`, `appleWebApp` in `app/layout.js`, icons in `public/icons/` + `app/*icon.png`.
 - `components/UserRoleModal.jsx` — "บทบาทของฉัน"; opens by itself the first time a character is opened (`user_role_prompted` in the store). Nothing is required; empty fields use `defaultUserRole`.
 - `.claude/skills/character-portrait/` — how to generate a character portrait on tensor.art and wire it in.
 
@@ -63,8 +69,9 @@ The owner builds it for themselves and their partner. Reply to the owner in Thai
 
 ## Status (2026-10-21)
 
-Done: chat input redesign with `**` / `""` insert buttons, rename to Botbaat, Ava portrait,
-blurred chat backgrounds that follow the scene, softer bubble colors, role form + per-character defaults, iPhone layout fix.
+Done: chat input redesign, rename to Botbaat, Ava portrait, scene backgrounds, role form, iPhone layout fix,
+Google login + cloud data, Vercel deploy, model fallback, in-app dialogs, multi-device refresh, long-term memory,
+round 1 (swipes, story direction, memory panel, installable app).
 
 ## TODO
 
@@ -76,6 +83,14 @@ blurred chat backgrounds that follow the scene, softer bubble colors, role form 
 3. Create-character form: no fields yet for `background` or `defaultUserRole`.
 4. Ava portrait is a 924 KB PNG; could be WebP (~100 KB).
 5. Not yet checked with real Gemini replies: does the model always add `พื้นหลัง=`?
+6. **Feature rounds agreed with the owner** (one round at a time, used for a few days before the next):
+   - Round 1 — done 2026-10-21 (see worklog). Owner still has to try "Add to Home Screen" on iPhone + login there.
+   - Round 2 (needs the model to add more to the trailing tag; parse it leniently, Flash Lite may get it wrong):
+     suggested reply choices under each reply, relationship meters (WHIF-style), DM/short-chat mode,
+     prompt tuning from the owner's examples of bad replies.
+   - Round 3: several stories per character, share custom characters with the partner, read replies aloud
+     (browser Thai voice, free), special-day letters, lorebook.
+   - Not now: group chat, character messages first, images in chat (no free image quota), Next 16 upgrade.
 
 ## Security note
 
