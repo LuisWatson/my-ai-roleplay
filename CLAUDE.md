@@ -37,7 +37,8 @@ The owner builds it for themselves and their partner. Reply to the owner in Thai
 - `lib/geminiServer.js` — shared by API routes: `authorize`, `resolveApiKey`, `tryModels` (fallback + skip
   models whose daily quota is gone).
 - `lib/scene.js` — parses the tag the model ends every reply with:
-  `[ฉาก: สถานที่=...; เวลา=...; พื้นหลัง=<id>]` (the `พื้นหลัง=` part is optional).
+  `[ฉาก: สถานที่=...; เวลา=...; พื้นหลัง=<id>; ความทรงจำ=<title>]` (last two parts optional; labeled
+  `key=value` parts, unlabeled ones fall back to location/time/background). Keep it lenient.
 - `constants/models.js` — model list = default (first) + fallback order. Free tier only (owner's choice):
   Pro models return 429; newer Flash models allow only **20 requests/day each**, Flash Lite much more.
   **Don't spend the owner's quota on tests** — one short call per model at most.
@@ -52,8 +53,11 @@ The owner builds it for themselves and their partner. Reply to the owner in Thai
 - Swipes: a regenerated model message keeps `alts: [{ text, scene }]` + `altIndex` (only the last reply);
   dropped when the user sends the next message.
 - Story direction ("กำกับเรื่อง", `ChatInput`): one-shot out-of-story instruction sent as `direction`; never saved.
-- `components/MemoryModal.jsx` — pins (`chat_pins_<id>`, always sent, survive clearing the chat) and the
-  editable auto summary.
+- `components/MemoryModal.jsx` — tabs: memory journal (`components/JournalList.jsx`) and pins (`chat_pins_<id>`,
+  always sent, survive clearing the chat) + the editable auto summary.
+- Memory journal (`lib/journal.js`, `chat_journal_<id>`): the model flags key moments with an extra
+  `; ความทรงจำ=<title>` part in the scene tag (rule 13, only when the journal setting isn't 'off');
+  messages carry `moment: { title, state, entryId }`; saved moments are sent with every message.
 - Installable app: `app/manifest.js`, `appleWebApp` in `app/layout.js`, icons in `public/icons/` + `app/*icon.png`.
 - `components/UserRoleModal.jsx` — "บทบาทของฉัน"; opens by itself the first time a character is opened (`user_role_prompted` in the store). Nothing is required; empty fields use `defaultUserRole`.
 - `.claude/skills/character-portrait/` — how to generate a character portrait on tensor.art and wire it in.
@@ -86,7 +90,7 @@ round 1 (swipes, story direction, memory panel, installable app).
 6. **Feature rounds agreed with the owner** (one round at a time, used for a few days before the next):
    - Round 1 — done 2026-10-21, live; home-screen install + login on iPhone confirmed working.
    - Round 2 (needs the model to add more to the trailing tag; parse it leniently, Flash Lite may get it wrong):
-     suggested reply choices under each reply, relationship meters (WHIF-style), DM/short-chat mode,
+     memory journal — done 2026-10-22; suggested reply choices under each reply, relationship meters (WHIF-style), DM/short-chat mode,
      prompt tuning from the owner's examples of bad replies.
    - Round 3: several stories per character, share custom characters with the partner, read replies aloud
      (browser Thai voice, free), special-day letters, lorebook.
