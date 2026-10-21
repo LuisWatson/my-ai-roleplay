@@ -4,6 +4,7 @@ const avatarFor = (seed) => `https://api.dicebear.com/9.x/adventurer/svg?seed=${
  * Default preset characters available in the application.
  * `userRoleHint` is shown as a placeholder in the "my role" form to suggest what the user could be to this character.
  * `defaultUserRole` is used for any role field the user leaves empty.
+ * `fixedBackground` keeps the chat backdrop on the character's own world instead of generic scene backgrounds.
  */
 export const DEFAULT_CHARACTERS = [
   {
@@ -145,6 +146,7 @@ export const DEFAULT_CHARACTERS = [
   },
   {
     id: 'maya',
+    fixedBackground: true,
     scenario:
       'โลกแฟนตาซีที่มีเวทมนตร์และสิ่งมีชีวิตเหนือธรรมชาติ คุณเป็นนักเดินทางที่หลงเข้ามาในป่าหมอกและพบกระท่อมของมายา',
     realism: 'open',
@@ -163,6 +165,7 @@ export const DEFAULT_CHARACTERS = [
   },
   {
     id: 'captain_nava',
+    fixedBackground: true,
     scenario:
       'โลกไซไฟในอนาคต คุณเป็นลูกเรือหรือผู้โดยสารบนยานสำรวจอวกาศ "Horizon" ที่กัปตันนาวาเป็นผู้บังคับการ',
     realism: 'open',

@@ -5,6 +5,7 @@ import { ArrowLeft, Trash2, UserCog, X, MapPin, Clock } from 'lucide-react';
 import ChatMessage from './ChatMessage';
 import ChatInput from './ChatInput';
 import { latestScene } from '../lib/scene';
+import { sceneBackgroundSrc } from '../constants/sceneBackgrounds';
 
 const SLOW_AFTER_SECONDS = 8;
 
@@ -58,6 +59,8 @@ export default function ChatWindow({
 }) {
   const chatEndRef = useRef(null);
   const scene = latestScene(messages);
+  const backgroundSrc =
+    (!selectedChar.fixedBackground && sceneBackgroundSrc(scene?.background)) || selectedChar.background;
 
   // Auto-scroll to latest message or indicator
   useEffect(() => {
@@ -67,12 +70,13 @@ export default function ChatWindow({
   return (
     <main className="flex-1 flex flex-col bg-slate-900/95 relative overflow-hidden isolate">
       {/* Blurred scene backdrop; negative z keeps it under the messages, the overlay keeps text readable */}
-      {selectedChar.background && (
+      {backgroundSrc && (
         <div aria-hidden className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
           <img
-            src={selectedChar.background}
+            key={backgroundSrc}
+            src={backgroundSrc}
             alt=""
-            className="w-full h-full object-cover scale-110 blur-md"
+            className="w-full h-full object-cover scale-110 blur-md animate-fadeIn"
           />
           <div className="absolute inset-0 bg-slate-950/70" />
         </div>
