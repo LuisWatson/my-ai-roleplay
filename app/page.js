@@ -5,8 +5,27 @@ import Sidebar from '../components/Sidebar';
 import ChatWindow from '../components/ChatWindow';
 import SettingsModal from '../components/SettingsModal';
 import CreateCharacterModal from '../components/CreateCharacterModal';
+import UserRoleModal from '../components/UserRoleModal';
+import { normalizeUserRole, mergeUserProfile, USER_ROLE_FIELDS } from '../lib/userRole';
 import { DEFAULT_CHARACTERS } from '../constants/characters';
 import { AVAILABLE_MODELS, DEFAULT_MODEL } from '../constants/models';
+import {
+  DEFAULT_RESPONSE_SETTINGS,
+  HISTORY_CHAR_BUDGET,
+  normalizeResponseSettings,
+} from '../constants/chatSettings';
+
+// Newest messages that fit in `budget` characters; always keeps at least the latest message.
+function takeRecentMessages(messages, budget) {
+  const recent = [];
+  let used = 0;
+  for (let i = messages.length - 1; i >= 0; i--) {
+    used += messages[i].text.length;
+    if (recent.length > 0 && used > budget) break;
+    recent.unshift({ role: messages[i].role, text: messages[i].text });
+  }
+  return recent;
+}
 
 export default function Home() {
   const [characters, setCharacters] = useState(DEFAULT_CHARACTERS);
@@ -17,9 +36,12 @@ export default function Home() {
   const [apiKey, setApiKey] = useState('');
   const [userProfile, setUserProfile] = useState({ name: '', callMe: '', description: '' });
   const [model, setModel] = useState(DEFAULT_MODEL);
+  const [responseSettings, setResponseSettings] = useState(DEFAULT_RESPONSE_SETTINGS);
   const [showSettings, setShowSettings] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingChar, setEditingChar] = useState(null);
+  const [userRoles, setUserRoles] = useState({});
+  const [showUserRole, setShowUserRole] = useState(false);
   const abortRef = useRef(null);
 
   // Load saved API key, custom characters, and user persona profile on mount
@@ -38,6 +60,24 @@ export default function Home() {
       } catch (err) {
         console.error('Failed to parse custom characters from localStorage:', err);
       }
+    }
+
+    try {
+      const savedSettings = JSON.parse(localStorage.getItem('user_response_settings'));
+      if (savedSettings) setResponseSettings(normalizeResponseSettings(savedSettings));
+    } catch (err) {
+      console.error('Failed to parse response settings from localStorage:', err);
+    }
+
+    try {
+      const savedRoles = JSON.parse(localStorage.getItem('user_character_roles'));
+      if (savedRoles && typeof savedRoles === 'object') {
+        setUserRoles(
+          Object.fromEntries(Object.entries(savedRoles).map(([id, role]) => [id, normalizeUserRole(role)]))
+        );
+      }
+    } catch (err) {
+      console.error('Failed to parse character roles from localStorage:', err);
     }
 
     const savedProfile = localStorage.getItem('user_roleplay_profile');
@@ -60,6 +100,23 @@ export default function Home() {
   const handleSaveModel = (newModel) => {
     setModel(newModel);
     localStorage.setItem('user_gemini_model', newModel);
+  };
+
+  const handleSaveResponseSettings = (settings) => {
+    const normalized = normalizeResponseSettings(settings);
+    setResponseSettings(normalized);
+    localStorage.setItem('user_response_settings', JSON.stringify(normalized));
+  };
+
+  // Save (or clear, when every field is empty) the user's role for one character
+  const handleSaveUserRole = (charId, role) => {
+    setUserRoles((prev) => {
+      const next = { ...prev };
+      if (USER_ROLE_FIELDS.some((f) => role[f]?.trim())) next[charId] = role;
+      else delete next[charId];
+      localStorage.setItem('user_character_roles', JSON.stringify(next));
+      return next;
+    });
   };
 
   // Save updated user persona profile
@@ -120,11 +177,7 @@ export default function Home() {
     let accumulatedText = '';
 
     try {
-      // Send up to the last 10 messages for conversational context
-      const historyPayload = updatedMessages.slice(-10).map((m) => ({
-        role: m.role,
-        text: m.text,
-      }));
+      const historyPayload = takeRecentMessages(updatedMessages, HISTORY_CHAR_BUDGET);
 
       const res = await fetch('/api/chat', {
         method: 'POST',
@@ -136,7 +189,8 @@ export default function Home() {
           persona: selectedChar,
           apiKey: apiKey,
           model: model,
-          userProfile: userProfile,
+          responseSettings: responseSettings,
+          userProfile: mergeUserProfile(userProfile, userRoles[charId]),
         }),
       });
 
@@ -247,7 +301,9 @@ export default function Home() {
       customCharacters: customChars,
       chatHistories,
       userProfile,
+      userRoles,
       model,
+      responseSettings,
     };
 
     const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
@@ -285,7 +341,11 @@ export default function Home() {
       }
 
       if (backup.userProfile) handleSaveUserProfile(backup.userProfile);
+      for (const [id, role] of Object.entries(backup.userRoles || {})) {
+        if (knownIds.has(id)) handleSaveUserRole(id, normalizeUserRole(role));
+      }
       if (AVAILABLE_MODELS.some((m) => m.id === backup.model)) handleSaveModel(backup.model);
+      if (backup.responseSettings) handleSaveResponseSettings(backup.responseSettings);
 
       setSelectedChar(null);
       setMessages([]);
@@ -306,6 +366,7 @@ export default function Home() {
 
     setCharacters([...DEFAULT_CHARACTERS, ...filtered]);
     localStorage.removeItem(`chat_history_${charId}`);
+    handleSaveUserRole(charId, normalizeUserRole(null));
 
     if (selectedChar?.id === charId) {
       setSelectedChar(null);
@@ -348,6 +409,8 @@ export default function Home() {
         setInput={setInput}
         onSendMessage={handleSendMessage}
         onClearHistory={handleClearHistory}
+        hasUserRole={Boolean(selectedChar && userRoles[selectedChar.id])}
+        onOpenUserRole={() => setShowUserRole(true)}
       />
 
       {/* Settings modal with User Persona and API Key configuration */}
@@ -358,8 +421,19 @@ export default function Home() {
         onSaveApiKey={handleSaveApiKey}
         model={model}
         onSaveModel={handleSaveModel}
+        responseSettings={responseSettings}
+        onSaveResponseSettings={handleSaveResponseSettings}
         userProfile={userProfile}
         onSaveUserProfile={handleSaveUserProfile}
+      />
+
+      {/* Per-character user role modal */}
+      <UserRoleModal
+        isOpen={showUserRole}
+        onClose={() => setShowUserRole(false)}
+        character={selectedChar}
+        role={selectedChar ? userRoles[selectedChar.id] : null}
+        onSave={handleSaveUserRole}
       />
 
       {/* Create character modal */}

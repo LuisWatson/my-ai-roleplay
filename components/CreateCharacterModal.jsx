@@ -18,6 +18,7 @@ const EMPTY_FORM = {
   category: 'สร้างเอง',
   description: '',
   greeting: '',
+  exampleDialogue: '',
   avatar: DEFAULT_AVATAR,
 };
 
@@ -182,6 +183,20 @@ export default function CreateCharacterModal({
               value={formData.greeting}
               onChange={(e) => setFormData({ ...formData, greeting: e.target.value })}
               placeholder="เช่น *(เงยหน้าขึ้นมาสบตาพร้อมยิ้ม)* 'ไง! รอตั้งนานแล้วนะ'"
+              className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-slate-100 focus:outline-none focus:border-purple-500 transition resize-none"
+            />
+          </div>
+
+          {/* Example dialogue */}
+          <div>
+            <label className="block text-xs font-medium text-slate-300 mb-1">
+              ตัวอย่างบทพูด (ไม่บังคับ) ช่วยให้ตัวละครพูดมีเอกลักษณ์ขึ้น
+            </label>
+            <textarea
+              rows={3}
+              value={formData.exampleDialogue}
+              onChange={(e) => setFormData({ ...formData, exampleDialogue: e.target.value })}
+              placeholder={'เช่น\n"อะไรอีกล่ะเนี่ย ขี้เกียจจริงๆ เลยนะเรา"\n*(ถอนหายใจแล้วยิ้มมุมปาก)* "มานี่ มาให้พี่ดูหน่อย"'}
               className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-slate-100 focus:outline-none focus:border-purple-500 transition resize-none"
             />
           </div>

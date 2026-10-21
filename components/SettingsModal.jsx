@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Key, Eye, EyeOff, X, User, Sliders } from 'lucide-react';
+import { Key, Eye, EyeOff, X, User, Sliders, MessageSquare } from 'lucide-react';
 import { AVAILABLE_MODELS } from '../constants/models';
+import { LENGTH_OPTIONS, TEMPERATURE_MIN, TEMPERATURE_MAX } from '../constants/chatSettings';
 
 /**
  * Settings modal for configuring the user's Persona/Profile and Google Gemini API credentials.
@@ -14,12 +15,15 @@ export default function SettingsModal({
   onSaveApiKey,
   model,
   onSaveModel,
+  responseSettings,
+  onSaveResponseSettings,
   userProfile,
   onSaveUserProfile,
 }) {
-  const [activeTab, setActiveTab] = useState('persona'); // 'persona' | 'api'
+  const [activeTab, setActiveTab] = useState('persona'); // 'persona' | 'response' | 'api'
   const [localKey, setLocalKey] = useState(apiKey || '');
   const [localModel, setLocalModel] = useState(model);
+  const [localResponse, setLocalResponse] = useState(responseSettings);
   const [showPassword, setShowPassword] = useState(false);
 
   // Local state for user persona
@@ -34,19 +38,21 @@ export default function SettingsModal({
     if (isOpen) {
       setLocalKey(apiKey || '');
       setLocalModel(model);
+      setLocalResponse(responseSettings);
       setLocalProfile({
         name: userProfile?.name || '',
         callMe: userProfile?.callMe || '',
         description: userProfile?.description || '',
       });
     }
-  }, [isOpen, apiKey, model, userProfile]);
+  }, [isOpen, apiKey, model, responseSettings, userProfile]);
 
   if (!isOpen) return null;
 
   const handleSave = () => {
     onSaveApiKey(localKey.trim());
     onSaveModel(localModel);
+    onSaveResponseSettings(localResponse);
     if (onSaveUserProfile) {
       onSaveUserProfile(localProfile);
     }
@@ -84,7 +90,18 @@ export default function SettingsModal({
             }`}
           >
             <User className="w-4 h-4" />
-            <span>โปรไฟล์ผู้ใช้ (User Persona)</span>
+            <span>โปรไฟล์ทั่วไป</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('response')}
+            className={`pb-2.5 px-3 text-xs font-semibold flex items-center gap-1.5 border-b-2 transition-all ${
+              activeTab === 'response'
+                ? 'border-purple-500 text-purple-300'
+                : 'border-transparent text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <MessageSquare className="w-4 h-4" />
+            <span>การตอบกลับ</span>
           </button>
           <button
             onClick={() => setActiveTab('api')}
@@ -103,7 +120,7 @@ export default function SettingsModal({
         {activeTab === 'persona' && (
           <div className="space-y-3.5">
             <p className="text-xs text-slate-400 leading-relaxed bg-slate-900/60 p-3 rounded-xl border border-slate-700/50">
-              กำหนดข้อมูลและตัวตนของคุณเพื่อให้ตัวละคร AI รู้จัก สวมบทบาทได้แนบเนียน และเรียกชื่อคุณได้อย่างเป็นธรรมชาติ
+              ค่าเริ่มต้นที่ใช้กับทุกตัวละคร หากต้องการกำหนดบทบาทแยกรายตัวละคร (เช่น เป็นเพื่อนร่วมงานของมิว แต่เป็นแฟนของไอริน) ให้กดปุ่ม "บทบาทของฉัน" ในหน้าแชทของตัวละครนั้น
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -149,7 +166,53 @@ export default function SettingsModal({
           </div>
         )}
 
-        {/* Tab 2: Gemini API Key */}
+        {/* Tab 2: Response style */}
+        {activeTab === 'response' && (
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="block text-xs font-medium text-slate-300">ความยาวคำตอบ</label>
+              <div className="grid grid-cols-3 gap-2">
+                {LENGTH_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => setLocalResponse({ ...localResponse, length: opt.id })}
+                    className={`py-2 rounded-xl border text-sm transition ${
+                      localResponse.length === opt.id
+                        ? 'bg-purple-900/40 border-purple-500/60 text-purple-200'
+                        : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    <div className="font-medium">{opt.label}</div>
+                    <div className="text-[11px] opacity-70">{opt.hint}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="flex justify-between text-xs font-medium text-slate-300">
+                <span>ความสร้างสรรค์ (Temperature)</span>
+                <span className="text-purple-300 font-mono">{localResponse.temperature.toFixed(2)}</span>
+              </label>
+              <input
+                type="range"
+                min={TEMPERATURE_MIN}
+                max={TEMPERATURE_MAX}
+                step={0.05}
+                value={localResponse.temperature}
+                onChange={(e) => setLocalResponse({ ...localResponse, temperature: Number(e.target.value) })}
+                className="w-full accent-purple-500"
+              />
+              <div className="flex justify-between text-[11px] text-slate-500">
+                <span>นิ่ง สม่ำเสมอ</span>
+                <span>หลากหลาย ฟุ้ง</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tab 3: Gemini API Key */}
         {activeTab === 'api' && (
           <div className="space-y-3.5">
             <p className="text-xs text-slate-400 leading-relaxed bg-slate-900/60 p-3 rounded-xl border border-slate-700/50">

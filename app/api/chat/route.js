@@ -1,5 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { AVAILABLE_MODELS } from '../../../constants/models';
+import { normalizeResponseSettings } from '../../../constants/chatSettings';
+import { buildSystemInstruction } from '../../../lib/prompt';
 
 const CANDIDATE_MODELS = AVAILABLE_MODELS.map((m) => m.id);
 
@@ -8,7 +10,7 @@ const CANDIDATE_MODELS = AVAILABLE_MODELS.map((m) => m.id);
  */
 export async function POST(req) {
   try {
-    const { message, history, persona, apiKey, model: requestedModel, userProfile } = await req.json();
+    const { message, history, persona, apiKey, model: requestedModel, userProfile, responseSettings } = await req.json();
 
     const activeKey = process.env.GEMINI_API_KEY || apiKey;
 
@@ -21,27 +23,8 @@ export async function POST(req) {
 
     const genAI = new GoogleGenerativeAI(activeKey);
 
-    const userName = userProfile?.name?.trim() || 'ผู้ใช้';
-    const userCallMe = userProfile?.callMe?.trim() || userName;
-    const userDesc = userProfile?.description?.trim();
-
-    const systemInstruction = `
-คุณคือตัวละครชื่อ "${persona.name}"
-รายละเอียดและบทบาทของคุณ: ${persona.description}
-ประโยคที่คุณได้ทักทายผู้ใช้ไปตอนแรกคือ: "${persona.greeting || ''}"
-
-[ข้อมูลคู่สนทนาของคุณ]:
-- ชื่อคู่สนทนา: ${userName}
-- คำสรรพนามหรือชื่อที่คุณต้องใช้เรียกคู่สนทนา: "${userCallMe}"
-${userDesc ? `- ข้อมูล/ความสัมพันธ์กับคู่สนทนา: ${userDesc}` : ''}
-
-[กฎการตอบกลับ]:
-1. สวมบทบาทเป็น ${persona.name} อย่างเคร่งครัด ห้ามหลุดออกจากบทบาทเด็ดขาด
-2. ตอบกลับเป็นภาษาไทยที่เป็นธรรมชาติ สอดคล้องกับบุคลิก
-3. บรรยายการกระทำ สีหน้า หรืออารมณ์ ไว้ในวงเล็บดอกจันเสมอ เช่น *(ยิ้มหวานพร้อมจิบกาแฟ)*
-4. ให้ตอบกลับสั้นยาวตามความเหมาะสมของบทสนทนา
-5. เรียกคู่สนทนาด้วยชื่อหรือสรรพนาม "${userCallMe}" ให้สอดคล้องกับความสัมพันธ์
-`;
+    const { length, temperature } = normalizeResponseSettings(responseSettings);
+    const systemInstruction = buildSystemInstruction({ persona, userProfile, length });
 
     // Ensure chat history conforms to Gemini SDK requirements:
     // 1. First message must be from 'user'
@@ -64,6 +47,14 @@ ${userDesc ? `- ข้อมูล/ความสัมพันธ์กับ
       }
     }
 
+    // A failed or aborted send leaves history ending on a user turn; fold it into the outgoing message
+    // so Gemini never sees two consecutive user turns.
+    let outgoingMessage = message;
+    if (formattedHistory.length > 0 && formattedHistory[formattedHistory.length - 1].role === 'user') {
+      outgoingMessage = `${formattedHistory.pop().parts[0].text}
+${message}`;
+    }
+
     // Try primary requested model or fallback through available fast models
     const modelsToTry = requestedModel
       ? [requestedModel, ...CANDIDATE_MODELS.filter((m) => m !== requestedModel)]
@@ -82,11 +73,11 @@ ${userDesc ? `- ข้อมูล/ความสัมพันธ์กับ
         const chat = model.startChat({
           history: formattedHistory,
           generationConfig: {
-            temperature: 0.95,
+            temperature,
           },
         });
 
-        resultStream = await chat.sendMessageStream(message);
+        resultStream = await chat.sendMessageStream(outgoingMessage);
         break; // Successfully initiated stream
       } catch (err) {
         lastError = err;

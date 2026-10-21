@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useEffect } from 'react';
-import { ArrowLeft, Trash2, Sparkles } from 'lucide-react';
+import { ArrowLeft, Trash2, Sparkles, UserCog } from 'lucide-react';
 import ChatMessage from './ChatMessage';
 import ChatInput from './ChatInput';
 
@@ -17,6 +17,8 @@ export default function ChatWindow({
   setInput,
   onSendMessage,
   onClearHistory,
+  hasUserRole,
+  onOpenUserRole,
 }) {
   const chatEndRef = useRef(null);
 
@@ -71,6 +73,19 @@ export default function ChatWindow({
           </div>
         </div>
 
+        <div className="flex items-center gap-1">
+        <button
+          onClick={onOpenUserRole}
+          title="บทบาทของฉันกับตัวละครนี้"
+          className={`p-2 rounded-lg transition flex items-center gap-1.5 text-xs ${
+            hasUserRole
+              ? 'bg-purple-900/40 text-purple-300 border border-purple-500/40'
+              : 'hover:bg-slate-700/60 text-slate-400 hover:text-purple-300'
+          }`}
+        >
+          <UserCog className="w-5 h-5" />
+          <span className="hidden sm:inline">บทบาทของฉัน</span>
+        </button>
         <button
           onClick={onClearHistory}
           title="ล้างประวัติการสนทนา"
@@ -78,6 +93,7 @@ export default function ChatWindow({
         >
           <Trash2 className="w-5 h-5" />
         </button>
+        </div>
       </header>
 
       {/* Messages Scroll Area */}
