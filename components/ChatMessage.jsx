@@ -9,21 +9,57 @@ const PARAGRAPH_CLASS = {
   user: { speech: 'font-semibold text-white', narration: 'text-violet-200/70' },
 };
 
+// Other people in the scene: each speaker always gets the same colour (by name), label + speech
+const SPEAKER_STYLES = [
+  { label: 'text-amber-300', speech: 'text-amber-100', bar: 'border-amber-400/60' },
+  { label: 'text-sky-300', speech: 'text-sky-100', bar: 'border-sky-400/60' },
+  { label: 'text-emerald-300', speech: 'text-emerald-100', bar: 'border-emerald-400/60' },
+  { label: 'text-pink-300', speech: 'text-pink-100', bar: 'border-pink-400/60' },
+  { label: 'text-orange-300', speech: 'text-orange-100', bar: 'border-orange-400/60' },
+  { label: 'text-lime-300', speech: 'text-lime-100', bar: 'border-lime-400/60' },
+];
+
+function speakerStyle(name) {
+  let h = 0;
+  for (const ch of name) h = (h * 31 + ch.codePointAt(0)) >>> 0;
+  return SPEAKER_STYLES[h % SPEAKER_STYLES.length];
+}
+
+// "เอวา (Ava)" → also matches a label written as "เอวา" or "Ava"
+function isMainCharacter(speaker, characterName) {
+  if (!characterName) return false;
+  const names = [characterName, ...characterName.split(/[()]/)].map((n) => n.trim()).filter(Boolean);
+  return names.includes(speaker.trim());
+}
+
 /**
  * Render novel-style text: each spoken line bold, narration and *actions* muted, one paragraph each.
+ * Speech by someone other than the main character (a "name:" line) gets that person's name and colour.
  * @param {string} text - Raw message string
  * @param {'model'|'user'} role
+ * @param {string} [characterName] - the chat's character, whose own lines need no label
  * @returns {React.ReactNode} Formatted elements
  */
-export function formatRoleplayText(text, role = 'model') {
+export function formatRoleplayText(text, role = 'model', characterName) {
   const styles = PARAGRAPH_CLASS[role] || PARAGRAPH_CLASS.model;
   return (
     <div className="space-y-2.5">
-      {parseRoleplayText(text).map((para, idx) => (
-        <p key={idx} className={styles[para.type]}>
-          {para.text}
-        </p>
-      ))}
+      {parseRoleplayText(text).map((para, idx) => {
+        if (para.speaker && !isMainCharacter(para.speaker, characterName)) {
+          const style = speakerStyle(para.speaker);
+          return (
+            <div key={idx} className={`border-l-2 pl-2.5 ${style.bar}`}>
+              <div className={`text-[11px] font-medium ${style.label}`}>{para.speaker}</div>
+              <p className={`font-semibold ${style.speech}`}>{para.text}</p>
+            </div>
+          );
+        }
+        return (
+          <p key={idx} className={styles[para.type]}>
+            {para.text}
+          </p>
+        );
+      })}
     </div>
   );
 }
@@ -184,7 +220,9 @@ export default function ChatMessage({
             </div>
           </div>
         ) : hasText ? (
-          message.style === 'dm' ? formatChatText(message.text) : formatRoleplayText(message.text, message.role)
+          message.style === 'dm'
+            ? formatChatText(message.text)
+            : formatRoleplayText(message.text, message.role, characterName)
         ) : (
           <span className="inline-flex items-center gap-1.5 py-1 px-1">
             <span className="w-2 h-2 rounded-full bg-purple-400 animate-bounce" />
