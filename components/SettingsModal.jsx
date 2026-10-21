@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Key, Eye, EyeOff, X, User, Sliders } from 'lucide-react';
+import { AVAILABLE_MODELS } from '../constants/models';
 
 /**
  * Settings modal for configuring the user's Persona/Profile and Google Gemini API credentials.
@@ -11,11 +12,14 @@ export default function SettingsModal({
   onClose,
   apiKey,
   onSaveApiKey,
+  model,
+  onSaveModel,
   userProfile,
   onSaveUserProfile,
 }) {
   const [activeTab, setActiveTab] = useState('persona'); // 'persona' | 'api'
   const [localKey, setLocalKey] = useState(apiKey || '');
+  const [localModel, setLocalModel] = useState(model);
   const [showPassword, setShowPassword] = useState(false);
 
   // Local state for user persona
@@ -29,18 +33,20 @@ export default function SettingsModal({
   useEffect(() => {
     if (isOpen) {
       setLocalKey(apiKey || '');
+      setLocalModel(model);
       setLocalProfile({
         name: userProfile?.name || '',
         callMe: userProfile?.callMe || '',
         description: userProfile?.description || '',
       });
     }
-  }, [isOpen, apiKey, userProfile]);
+  }, [isOpen, apiKey, model, userProfile]);
 
   if (!isOpen) return null;
 
   const handleSave = () => {
     onSaveApiKey(localKey.trim());
+    onSaveModel(localModel);
     if (onSaveUserProfile) {
       onSaveUserProfile(localProfile);
     }
@@ -89,7 +95,7 @@ export default function SettingsModal({
             }`}
           >
             <Key className="w-4 h-4" />
-            <span>Gemini API Key</span>
+            <span>API Key & โมเดล</span>
           </button>
         </div>
 
@@ -168,6 +174,22 @@ export default function SettingsModal({
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-medium text-slate-300">โมเดล Gemini</label>
+              <select
+                value={localModel}
+                onChange={(e) => setLocalModel(e.target.value)}
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-purple-500 text-slate-100 transition"
+              >
+                {AVAILABLE_MODELS.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.label}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-slate-500">หากโมเดลที่เลือกใช้ไม่ได้ ระบบจะสลับไปโมเดลสำรองอัตโนมัติ</p>
             </div>
           </div>
         )}

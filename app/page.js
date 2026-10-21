@@ -6,6 +6,7 @@ import ChatWindow from '../components/ChatWindow';
 import SettingsModal from '../components/SettingsModal';
 import CreateCharacterModal from '../components/CreateCharacterModal';
 import { DEFAULT_CHARACTERS } from '../constants/characters';
+import { AVAILABLE_MODELS, DEFAULT_MODEL } from '../constants/models';
 
 export default function Home() {
   const [characters, setCharacters] = useState(DEFAULT_CHARACTERS);
@@ -15,13 +16,18 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [apiKey, setApiKey] = useState('');
   const [userProfile, setUserProfile] = useState({ name: '', callMe: '', description: '' });
+  const [model, setModel] = useState(DEFAULT_MODEL);
   const [showSettings, setShowSettings] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingChar, setEditingChar] = useState(null);
 
   // Load saved API key, custom characters, and user persona profile on mount
   useEffect(() => {
     const savedKey = localStorage.getItem('user_gemini_api_key');
     if (savedKey) setApiKey(savedKey);
+
+    const savedModel = localStorage.getItem('user_gemini_model');
+    if (AVAILABLE_MODELS.some((m) => m.id === savedModel)) setModel(savedModel);
 
     const savedChars = localStorage.getItem('user_custom_chars');
     if (savedChars) {
@@ -47,6 +53,12 @@ export default function Home() {
   const handleSaveApiKey = (newKey) => {
     setApiKey(newKey);
     localStorage.setItem('user_gemini_api_key', newKey);
+  };
+
+  // Save selected Gemini model
+  const handleSaveModel = (newModel) => {
+    setModel(newModel);
+    localStorage.setItem('user_gemini_model', newModel);
   };
 
   // Save updated user persona profile
@@ -96,6 +108,7 @@ export default function Home() {
           history: historyPayload.slice(0, -1),
           persona: selectedChar,
           apiKey: apiKey,
+          model: model,
           userProfile: userProfile,
         }),
       });
@@ -156,6 +169,95 @@ export default function Home() {
     setMessages([{ role: 'model', text: created.greeting }]);
   };
 
+  // Update an existing custom persona in place, keeping its id and chat history
+  const handleUpdateCharacter = (formData) => {
+    const existing = JSON.parse(localStorage.getItem('user_custom_chars') || '[]');
+    const updatedCustoms = existing.map((c) => (c.id === formData.id ? { ...c, ...formData } : c));
+    localStorage.setItem('user_custom_chars', JSON.stringify(updatedCustoms));
+
+    setCharacters([...DEFAULT_CHARACTERS, ...updatedCustoms]);
+    if (selectedChar?.id === formData.id) {
+      setSelectedChar(updatedCustoms.find((c) => c.id === formData.id));
+    }
+  };
+
+  const closeCharacterModal = () => {
+    setShowCreateModal(false);
+    setEditingChar(null);
+  };
+
+  const handleEditCharacter = (char) => {
+    setEditingChar(char);
+    setShowCreateModal(true);
+  };
+
+  // Download custom characters, chat histories, profile and model choice as a JSON backup (API key excluded)
+  const handleExportData = () => {
+    const customChars = JSON.parse(localStorage.getItem('user_custom_chars') || '[]');
+    const chatHistories = {};
+    for (const char of customChars) {
+      const saved = localStorage.getItem(`chat_history_${char.id}`);
+      if (saved) chatHistories[char.id] = JSON.parse(saved);
+    }
+    for (const char of DEFAULT_CHARACTERS) {
+      const saved = localStorage.getItem(`chat_history_${char.id}`);
+      if (saved) chatHistories[char.id] = JSON.parse(saved);
+    }
+
+    const backup = {
+      app: 'my-ai-roleplay',
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      customCharacters: customChars,
+      chatHistories,
+      userProfile,
+      model,
+    };
+
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `khui-ai-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // Restore a backup file: custom characters are merged by id, histories and profile are overwritten
+  const handleImportData = async (file) => {
+    try {
+      const backup = JSON.parse(await file.text());
+      if (backup?.app !== 'my-ai-roleplay' || !Array.isArray(backup.customCharacters)) {
+        throw new Error('ไม่ใช่ไฟล์ Backup ของแอปนี้');
+      }
+      const validChars = backup.customCharacters.filter(
+        (c) => c && typeof c.id === 'string' && c.id.startsWith('custom_') && c.name && c.description && c.greeting
+      );
+      if (!confirm(`นำเข้าตัวละคร ${validChars.length} ตัว และเขียนทับประวัติแชท/โปรไฟล์ที่ซ้ำกัน ต้องการดำเนินการต่อหรือไม่?`)) return;
+
+      const existing = JSON.parse(localStorage.getItem('user_custom_chars') || '[]');
+      const merged = [...existing.filter((c) => !validChars.some((v) => v.id === c.id)), ...validChars];
+      localStorage.setItem('user_custom_chars', JSON.stringify(merged));
+      setCharacters([...DEFAULT_CHARACTERS, ...merged]);
+
+      const knownIds = new Set([...DEFAULT_CHARACTERS, ...merged].map((c) => c.id));
+      for (const [id, history] of Object.entries(backup.chatHistories || {})) {
+        if (knownIds.has(id) && Array.isArray(history)) {
+          localStorage.setItem(`chat_history_${id}`, JSON.stringify(history));
+        }
+      }
+
+      if (backup.userProfile) handleSaveUserProfile(backup.userProfile);
+      if (AVAILABLE_MODELS.some((m) => m.id === backup.model)) handleSaveModel(backup.model);
+
+      setSelectedChar(null);
+      setMessages([]);
+      alert('นำเข้าข้อมูลสำเร็จ');
+    } catch (err) {
+      alert(`นำเข้าไม่สำเร็จ: ${err.message}`);
+    }
+  };
+
   // Delete a custom character
   const handleDeleteCharacter = (charId) => {
     if (!confirm('ต้องการลบตัวละครนี้ใช่หรือไม่?')) return;
@@ -190,6 +292,9 @@ export default function Home() {
         selectedChar={selectedChar}
         onSelectChar={handleSelectChar}
         onDeleteChar={handleDeleteCharacter}
+        onEditChar={handleEditCharacter}
+        onExportData={handleExportData}
+        onImportData={handleImportData}
         onOpenSettings={() => setShowSettings(true)}
         onOpenCreateModal={() => setShowCreateModal(true)}
       />
@@ -212,6 +317,8 @@ export default function Home() {
         onClose={() => setShowSettings(false)}
         apiKey={apiKey}
         onSaveApiKey={handleSaveApiKey}
+        model={model}
+        onSaveModel={handleSaveModel}
         userProfile={userProfile}
         onSaveUserProfile={handleSaveUserProfile}
       />
@@ -219,8 +326,10 @@ export default function Home() {
       {/* Create character modal */}
       <CreateCharacterModal
         isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
+        onClose={closeCharacterModal}
         onCreateCharacter={handleCreateCharacter}
+        editingCharacter={editingChar}
+        onUpdateCharacter={handleUpdateCharacter}
       />
     </div>
   );

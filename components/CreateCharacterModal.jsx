@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sparkles, X, Image as ImageIcon } from 'lucide-react';
 import { DEFAULT_AVATAR } from '../constants/characters';
 
@@ -12,18 +12,34 @@ const PRESET_AVATARS = [
   'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
 ];
 
+const EMPTY_FORM = {
+  name: '',
+  tagline: '',
+  category: 'สร้างเอง',
+  description: '',
+  greeting: '',
+  avatar: DEFAULT_AVATAR,
+};
+
 /**
- * Modal form component for authoring and adding a new character persona.
+ * Modal form component for authoring a new character persona, or editing an existing one
+ * when `editingCharacter` is provided.
  */
-export default function CreateCharacterModal({ isOpen, onClose, onCreateCharacter }) {
-  const [formData, setFormData] = useState({
-    name: '',
-    tagline: '',
-    category: 'สร้างเอง',
-    description: '',
-    greeting: '',
-    avatar: DEFAULT_AVATAR,
-  });
+export default function CreateCharacterModal({
+  isOpen,
+  onClose,
+  onCreateCharacter,
+  editingCharacter,
+  onUpdateCharacter,
+}) {
+  const [formData, setFormData] = useState(EMPTY_FORM);
+
+  // Load the character being edited (or a blank form) whenever the modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setFormData(editingCharacter ? { ...EMPTY_FORM, ...editingCharacter } : EMPTY_FORM);
+    }
+  }, [isOpen, editingCharacter]);
 
   if (!isOpen) return null;
 
@@ -34,16 +50,11 @@ export default function CreateCharacterModal({ isOpen, onClose, onCreateCharacte
       return;
     }
 
-    onCreateCharacter(formData);
-    // Reset form
-    setFormData({
-      name: '',
-      tagline: '',
-      category: 'สร้างเอง',
-      description: '',
-      greeting: '',
-      avatar: DEFAULT_AVATAR,
-    });
+    if (editingCharacter) {
+      onUpdateCharacter(formData);
+    } else {
+      onCreateCharacter(formData);
+    }
     onClose();
   };
 
@@ -62,7 +73,7 @@ export default function CreateCharacterModal({ isOpen, onClose, onCreateCharacte
             <Sparkles className="w-5 h-5 text-purple-400" />
           </div>
           <div>
-            <h2 className="text-base font-bold">สร้างตัวละครใหม่</h2>
+            <h2 className="text-base font-bold">{editingCharacter ? 'แก้ไขตัวละคร' : 'สร้างตัวละครใหม่'}</h2>
             <p className="text-xs text-slate-400">กำหนดบุคลิกและบทบาทสำหรับ Roleplay</p>
           </div>
         </div>
@@ -187,7 +198,7 @@ export default function CreateCharacterModal({ isOpen, onClose, onCreateCharacte
               type="submit"
               className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-sm font-medium rounded-xl transition shadow-md shadow-purple-900/40"
             >
-              สร้างตัวละคร
+              {editingCharacter ? 'บันทึกการแก้ไข' : 'สร้างตัวละคร'}
             </button>
           </div>
         </form>

@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { AVAILABLE_MODELS } from '../../../constants/models';
 
-const CANDIDATE_MODELS = ['gemini-3.5-flash', 'gemini-3.8-flash', 'gemini-flash-latest'];
+const CANDIDATE_MODELS = AVAILABLE_MODELS.map((m) => m.id);
 
 /**
  * Handles incoming chat messages and streams responses back from Google Gemini.

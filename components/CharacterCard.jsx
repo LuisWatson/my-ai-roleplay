@@ -1,12 +1,12 @@
 'use client';
 
 import React from 'react';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Pencil } from 'lucide-react';
 
 /**
  * Character card item displayed in the sidebar list.
  */
-export default function CharacterCard({ character, isSelected, onSelect, onDelete }) {
+export default function CharacterCard({ character, isSelected, onSelect, onDelete, onEdit }) {
   const isCustom = character.id && character.id.startsWith('custom_');
 
   const handleDelete = (e) => {
@@ -14,6 +14,11 @@ export default function CharacterCard({ character, isSelected, onSelect, onDelet
     if (onDelete) {
       onDelete(character.id);
     }
+  };
+
+  const handleEdit = (e) => {
+    e.stopPropagation();
+    onEdit(character);
   };
 
   return (
@@ -30,7 +35,7 @@ export default function CharacterCard({ character, isSelected, onSelect, onDelet
         alt={character.name}
         className="w-12 h-12 rounded-full object-cover border border-purple-400/30 flex-shrink-0 shadow-sm"
       />
-      <div className="flex-1 min-w-0 pr-6">
+      <div className="flex-1 min-w-0 pr-16">
         <div className="flex items-center gap-1.5">
           <h3 className="font-semibold text-sm text-slate-100 truncate">{character.name}</h3>
           {character.category && (
@@ -44,14 +49,27 @@ export default function CharacterCard({ character, isSelected, onSelect, onDelet
         </p>
       </div>
 
-      {isCustom && onDelete && (
-        <button
-          onClick={handleDelete}
-          title="ลบตัวละครนี้"
-          className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-500/20 text-slate-400 hover:text-red-400 rounded-lg transition-all absolute right-2"
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
+      {isCustom && (
+        <div className="opacity-0 group-hover:opacity-100 transition-all absolute right-2 flex gap-0.5">
+          {onEdit && (
+            <button
+              onClick={handleEdit}
+              title="แก้ไขตัวละครนี้"
+              className="p-1.5 hover:bg-purple-500/20 text-slate-400 hover:text-purple-300 rounded-lg"
+            >
+              <Pencil className="w-4 h-4" />
+            </button>
+          )}
+          {onDelete && (
+            <button
+              onClick={handleDelete}
+              title="ลบตัวละครนี้"
+              className="p-1.5 hover:bg-red-500/20 text-slate-400 hover:text-red-400 rounded-lg"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
+        </div>
       )}
     </div>
   );
