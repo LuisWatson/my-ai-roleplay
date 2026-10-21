@@ -1,7 +1,7 @@
 import './globals.css';
 
 export const metadata = {
-  title: 'My AI Roleplay',
+  title: 'Botbaat',
   description: 'Personal AI Roleplay App',
 };
 

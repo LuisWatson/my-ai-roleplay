@@ -72,7 +72,7 @@ export default function Sidebar({
             <div className="p-1.5 rounded-lg bg-gradient-to-tr from-purple-600 to-indigo-600 shadow-sm shadow-purple-900/40">
               <Sparkles className="w-5 h-5 text-white" />
             </div>
-            <h1 className="font-bold text-base text-white tracking-wide">Khui AI Personal</h1>
+            <h1 className="font-bold text-base text-white tracking-wide">Botbaat</h1>
           </div>
           <div className="flex items-center">
             <button
