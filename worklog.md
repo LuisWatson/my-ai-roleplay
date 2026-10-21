@@ -4,6 +4,12 @@
 
 ---
 
+## 2026-10-22 — เพิ่มแฟนเข้าระบบ
+
+- เพิ่มอีเมลแฟนใน Supabase `allowed_emails` (เช็กแล้ว 1 แถว) และใน Google Auth Platform → Audience → Test users
+  (ตอนนี้ 2 test users) — ทำผ่าน Chrome ตามที่เจ้าของขอ
+- ยังไม่ได้ทดสอบ: แฟนล็อกอินจริง
+
 ## 2026-10-21 — รอบ 1: swipe, กำกับเรื่อง, หน้าความจำ, ติดตั้งเป็นแอป
 
 (แผนทั้งหมด 3 รอบ — ดู TODO ใน `CLAUDE.md`; มาจากการเทียบกับ Character.AI, SillyTavern, Nomi, Kindroid,

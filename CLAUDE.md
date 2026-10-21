@@ -77,8 +77,8 @@ round 1 (swipes, story direction, memory panel, installable app).
 
 1. **Login + per-user data** — done and tested with a real Google login on localhost (2026-10-21, see `worklog.md`).
    Supabase project `xksnjxsbpacsxmuhcrue`; Google OAuth client is in Testing mode. Decided: one shared Gemini key.
-   Deployed to Vercel 2026-10-21. Left: partner's email (add to `allowed_emails` AND Google Auth Platform →
-   Audience → Test users); test login on the live site and on iPhone.
+   Deployed to Vercel 2026-10-21. Partner's email added to `allowed_emails` and Google Test users 2026-10-22
+   (a new account needs both). Left: partner's first login.
 2. Portraits for the other 11 characters (only Ava has one) — use the `character-portrait` skill.
 3. Create-character form: no fields yet for `background` or `defaultUserRole`.
 4. Ava portrait is a 924 KB PNG; could be WebP (~100 KB).
