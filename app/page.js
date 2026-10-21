@@ -77,6 +77,12 @@ const REPLY_ERRORS = {
   auth: { kind: 'error', title: 'Gemini API Key ใช้ไม่ได้', text: 'ตรวจ key ในหน้าตั้งค่า หรือในไฟล์ .env.local', retry: false },
 };
 
+// The character as sent to the server: the model never sees the pictures, and an uploaded photo is a
+// large data URL, so leave them out of every request
+function withoutImages({ avatar, background, ...persona }) {
+  return persona;
+}
+
 // A reply without its other swipe versions (once the story moves on, only the chosen one is kept)
 function withoutSwipes({ alts, altIndex, ...message }) {
   return message;
@@ -420,7 +426,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
         body: JSON.stringify({
           message: userMessage,
           history: historyPayload.slice(0, -1),
-          persona: selectedChar,
+          persona: withoutImages(selectedChar),
           apiKey: apiKey,
           model: model,
           responseSettings: responseSettings,
