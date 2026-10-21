@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useRef, useEffect, useState } from 'react';
-import { ArrowLeft, Trash2, Sparkles, UserCog, X } from 'lucide-react';
+import { ArrowLeft, Trash2, Sparkles, UserCog, X, MapPin, Clock } from 'lucide-react';
 import ChatMessage from './ChatMessage';
 import ChatInput from './ChatInput';
+import { latestScene } from '../lib/scene';
 
 const SLOW_AFTER_SECONDS = 8;
 
@@ -56,6 +57,7 @@ export default function ChatWindow({
   onDeleteMessage,
 }) {
   const chatEndRef = useRef(null);
+  const scene = latestScene(messages);
 
   // Auto-scroll to latest message or indicator
   useEffect(() => {
@@ -107,6 +109,19 @@ export default function ChatWindow({
             </p>
           </div>
         </div>
+
+        {scene && (
+          <div className="hidden md:flex items-center gap-3 text-[11px] text-slate-400 bg-slate-900/50 border border-slate-700/50 rounded-full px-3 py-1">
+            <span className="flex items-center gap-1" title="สถานที่ปัจจุบัน">
+              <MapPin className="w-3 h-3 text-purple-400" />
+              {scene.location}
+            </span>
+            <span className="flex items-center gap-1" title="เวลาปัจจุบัน">
+              <Clock className="w-3 h-3 text-purple-400" />
+              {scene.time}
+            </span>
+          </div>
+        )}
 
         <div className="flex items-center gap-1">
         <button

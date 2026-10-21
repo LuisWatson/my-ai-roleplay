@@ -3,6 +3,7 @@ import { AVAILABLE_MODELS } from '../../../constants/models';
 import { normalizeResponseSettings } from '../../../constants/chatSettings';
 import { buildSystemInstruction } from '../../../lib/prompt';
 import { withTimeout } from '../../../lib/withTimeout';
+import { classifyGeminiError, describeFailures, statusForFailures } from '../../../lib/geminiErrors';
 
 const CANDIDATE_MODELS = AVAILABLE_MODELS.map((m) => m.id);
 
@@ -14,7 +15,7 @@ const FIRST_RESPONSE_TIMEOUT_MS = 20000;
  */
 export async function POST(req) {
   try {
-    const { message, history, persona, apiKey, model: requestedModel, userProfile, responseSettings } = await req.json();
+    const { message, history, persona, apiKey, model: requestedModel, userProfile, responseSettings, scene } = await req.json();
 
     const activeKey = apiKey?.trim() || process.env.GEMINI_API_KEY;
 
@@ -28,7 +29,7 @@ export async function POST(req) {
     const genAI = new GoogleGenerativeAI(activeKey);
 
     const { length, temperature } = normalizeResponseSettings(responseSettings);
-    const systemInstruction = buildSystemInstruction({ persona, userProfile, length });
+    const systemInstruction = buildSystemInstruction({ persona, userProfile, length, scene });
 
     // Ensure chat history conforms to Gemini SDK requirements:
     // 1. First message must be from 'user'
@@ -65,9 +66,8 @@ ${message}`;
       : CANDIDATE_MODELS;
 
     let resultStream = null;
-    let lastError = null;
     let usedModel = null;
-    const failedModels = [];
+    const failures = [];
 
     for (const mName of modelsToTry) {
       try {
@@ -91,16 +91,19 @@ ${message}`;
         usedModel = mName;
         break; // Successfully initiated stream
       } catch (err) {
-        lastError = err;
-        failedModels.push(mName);
-        console.warn(`Model ${mName} failed, trying fallback:`, err.message);
+        const kind = classifyGeminiError(err);
+        failures.push({ model: mName, kind });
+        console.warn(`Model ${mName} failed (${kind}):`, err.message);
+        // A bad key fails identically on every model, so don't spend more requests on it
+        if (kind === 'auth') break;
       }
     }
 
     if (!resultStream) {
-      // Every model failed: report all of them, not just the last one tried
-      const detail = failedModels.length > 0 ? ` (ลองแล้ว: ${failedModels.join(', ')})` : '';
-      throw new Error(`ไม่สามารถเชื่อมต่อโมเดล AI ได้ในขณะนี้${detail} ลองใหม่อีกครั้งในอีกสักครู่ — ${lastError?.message ?? ''}`);
+      return new Response(JSON.stringify({ error: describeFailures(failures) }), {
+        status: statusForFailures(failures),
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     // Stream text chunks directly using ReadableStream
@@ -128,7 +131,7 @@ ${message}`;
         'Cache-Control': 'no-cache, no-transform',
         'Transfer-Encoding': 'chunked',
         'X-Model-Used': usedModel,
-        'X-Models-Failed': failedModels.join(','),
+        'X-Models-Failed': failures.map((f) => f.model).join(','),
       },
     });
   } catch (error) {

@@ -7,6 +7,8 @@ import SettingsModal from '../components/SettingsModal';
 import CreateCharacterModal from '../components/CreateCharacterModal';
 import UserRoleModal from '../components/UserRoleModal';
 import { normalizeUserRole, mergeUserProfile, USER_ROLE_FIELDS } from '../lib/userRole';
+import { normalizeRealism } from '../constants/scenario';
+import { stripTrailingPartialTag, finalizeReply, latestScene } from '../lib/scene';
 import { DEFAULT_CHARACTERS } from '../constants/characters';
 import { AVAILABLE_MODELS, DEFAULT_MODEL } from '../constants/models';
 import {
@@ -46,6 +48,7 @@ export default function Home() {
   const [notice, setNotice] = useState(null);
   const [showUserRole, setShowUserRole] = useState(false);
   const abortRef = useRef(null);
+  const activeCharIdRef = useRef(null); // which character's chat is currently on screen
 
   // Load saved API key, custom characters, and user persona profile on mount
   useEffect(() => {
@@ -145,6 +148,7 @@ export default function Home() {
   // Switch character and load their respective conversation history
   const handleSelectChar = (char) => {
     stopStreaming();
+    activeCharIdRef.current = char.id;
     setSelectedChar(char);
     const savedHistory = localStorage.getItem(`chat_history_${char.id}`);
     if (savedHistory) {
@@ -163,6 +167,7 @@ export default function Home() {
 
   const handleBack = () => {
     stopStreaming();
+    activeCharIdRef.current = null;
     setSelectedChar(null);
   };
 
@@ -207,6 +212,7 @@ export default function Home() {
           model: model,
           responseSettings: responseSettings,
           userProfile: mergeUserProfile(userProfile, userRoles[charId]),
+          scene: latestScene(baseMessages) || undefined,
         }),
       });
 
@@ -217,16 +223,19 @@ export default function Home() {
 
       const usedModel = res.headers.get('X-Model-Used');
       const failedModels = (res.headers.get('X-Models-Failed') || '').split(',').filter(Boolean);
-      if (failedModels.length > 0) {
+      if (failedModels.length > 0 && activeCharIdRef.current === charId) {
         setNotice({
           kind: 'info',
-          text: `ใช้โมเดลสำรอง ${usedModel} เพราะ ${failedModels.join(', ')} ไม่ตอบสนอง`,
+          text: `ใช้โมเดลสำรอง ${usedModel} เพราะ ${failedModels.join(', ')} ใช้ไม่ได้ (โควต้าหมดหรือไม่ตอบสนอง)`,
         });
       }
       armStallTimer(STALL_TIMEOUT_MS);
 
-      // Add empty placeholder for the incoming stream; `loading` stays true so the input stays locked
-      setMessages((prev) => [...prev, { role: 'model', text: '' }]);
+      // Add empty placeholder for the incoming stream; `loading` stays true so the input stays locked.
+      // Skipped (like every UI update below) when the user has already switched to another chat.
+      if (activeCharIdRef.current === charId) {
+        setMessages((prev) => [...prev, { role: 'model', text: '' }]);
+      }
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder('utf-8');
@@ -238,26 +247,27 @@ export default function Home() {
         armStallTimer(STALL_TIMEOUT_MS);
         const chunk = decoder.decode(value, { stream: true });
         accumulatedText += chunk;
+        if (activeCharIdRef.current !== charId) continue;
 
         setMessages((prev) => {
           const nextState = [...prev];
           const lastIndex = nextState.length - 1;
           if (lastIndex >= 0 && nextState[lastIndex].role === 'model') {
-            nextState[lastIndex] = { ...nextState[lastIndex], text: accumulatedText };
+            nextState[lastIndex] = { ...nextState[lastIndex], text: stripTrailingPartialTag(accumulatedText) };
           }
           return nextState;
         });
       }
     } catch (err) {
       const failed = !controller.signal.aborted;
-      if ((failed || controller.userStopped || controller.stalled) && !accumulatedText) {
+      if ((failed || controller.userStopped || controller.stalled) && !accumulatedText && activeCharIdRef.current === charId) {
         // Drop the empty placeholder bubble; keep any partial reply already received
         setMessages((prev) => {
           const last = prev[prev.length - 1];
           return last?.role === 'model' && !last.text ? prev.slice(0, -1) : prev;
         });
       }
-      if (controller.stalled) {
+      if (controller.stalled && activeCharIdRef.current === charId) {
         setNotice({
           kind: 'warn',
           text: accumulatedText
@@ -270,7 +280,19 @@ export default function Home() {
     } finally {
       clearTimeout(stallTimer);
       if (accumulatedText && !controller.discard) {
-        saveHistory(charId, [...baseMessages, { role: 'model', text: accumulatedText }]);
+        const { cleanText, scene } = finalizeReply(accumulatedText);
+        saveHistory(charId, [...baseMessages, { role: 'model', text: cleanText, scene }]);
+        // Only touch the currently displayed chat if it's still this one (the user may have switched away)
+        if (activeCharIdRef.current === charId) {
+          setMessages((prev) => {
+            const nextState = [...prev];
+            const lastIndex = nextState.length - 1;
+            if (lastIndex >= 0 && nextState[lastIndex].role === 'model') {
+              nextState[lastIndex] = { ...nextState[lastIndex], text: cleanText, scene };
+            }
+            return nextState;
+          });
+        }
       }
       if (abortRef.current === controller) {
         abortRef.current = null;
@@ -334,6 +356,7 @@ export default function Home() {
     const created = {
       ...formData,
       id: `custom_${Date.now()}`,
+      realism: normalizeRealism(formData.realism),
     };
 
     const existing = JSON.parse(localStorage.getItem('user_custom_chars') || '[]');
@@ -341,14 +364,16 @@ export default function Home() {
     localStorage.setItem('user_custom_chars', JSON.stringify(updatedCustoms));
 
     setCharacters([...DEFAULT_CHARACTERS, ...updatedCustoms]);
+    activeCharIdRef.current = created.id;
     setSelectedChar(created);
     setMessages([{ role: 'model', text: created.greeting }]);
   };
 
   // Update an existing custom persona in place, keeping its id and chat history
   const handleUpdateCharacter = (formData) => {
+    const sanitized = { ...formData, realism: normalizeRealism(formData.realism) };
     const existing = JSON.parse(localStorage.getItem('user_custom_chars') || '[]');
-    const updatedCustoms = existing.map((c) => (c.id === formData.id ? { ...c, ...formData } : c));
+    const updatedCustoms = existing.map((c) => (c.id === sanitized.id ? { ...c, ...sanitized } : c));
     localStorage.setItem('user_custom_chars', JSON.stringify(updatedCustoms));
 
     setCharacters([...DEFAULT_CHARACTERS, ...updatedCustoms]);
@@ -408,9 +433,9 @@ export default function Home() {
       if (backup?.app !== 'my-ai-roleplay' || !Array.isArray(backup.customCharacters)) {
         throw new Error('ไม่ใช่ไฟล์ Backup ของแอปนี้');
       }
-      const validChars = backup.customCharacters.filter(
-        (c) => c && typeof c.id === 'string' && c.id.startsWith('custom_') && c.name && c.description && c.greeting
-      );
+      const validChars = backup.customCharacters
+        .filter((c) => c && typeof c.id === 'string' && c.id.startsWith('custom_') && c.name && c.description && c.greeting)
+        .map((c) => ({ ...c, realism: normalizeRealism(c.realism) }));
       if (!confirm(`นำเข้าตัวละคร ${validChars.length} ตัว และเขียนทับประวัติแชท/โปรไฟล์ที่ซ้ำกัน ต้องการดำเนินการต่อหรือไม่?`)) return;
       stopStreaming({ discard: true });
 
@@ -433,6 +458,7 @@ export default function Home() {
       if (AVAILABLE_MODELS.some((m) => m.id === backup.model)) handleSaveModel(backup.model);
       if (backup.responseSettings) handleSaveResponseSettings(backup.responseSettings);
 
+      activeCharIdRef.current = null;
       setSelectedChar(null);
       setMessages([]);
       alert('นำเข้าข้อมูลสำเร็จ');
@@ -455,6 +481,7 @@ export default function Home() {
     handleSaveUserRole(charId, normalizeUserRole(null));
 
     if (selectedChar?.id === charId) {
+      activeCharIdRef.current = null;
       setSelectedChar(null);
       setMessages([]);
     }

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Sparkles, X, Image as ImageIcon } from 'lucide-react';
 import { DEFAULT_AVATAR } from '../constants/characters';
+import { REALISM_OPTIONS, DEFAULT_REALISM } from '../constants/scenario';
 
 const PRESET_AVATARS = [
   'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
@@ -19,6 +20,8 @@ const EMPTY_FORM = {
   description: '',
   greeting: '',
   exampleDialogue: '',
+  scenario: '',
+  realism: DEFAULT_REALISM,
   avatar: DEFAULT_AVATAR,
 };
 
@@ -185,6 +188,42 @@ export default function CreateCharacterModal({
               placeholder="เช่น *(เงยหน้าขึ้นมาสบตาพร้อมยิ้ม)* 'ไง! รอตั้งนานแล้วนะ'"
               className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-slate-100 focus:outline-none focus:border-purple-500 transition resize-none"
             />
+          </div>
+
+          {/* Scenario / world setting */}
+          <div>
+            <label className="block text-xs font-medium text-slate-300 mb-1">
+              ฉาก / โลกของเรื่อง (ไม่บังคับ)
+            </label>
+            <textarea
+              rows={2}
+              value={formData.scenario}
+              onChange={(e) => setFormData({ ...formData, scenario: e.target.value })}
+              placeholder="เช่น เรียนมหาวิทยาลัยเดียวกัน ชั้นปีเดียวกัน รู้จักกันมาตั้งแต่เด็ก"
+              className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-slate-100 focus:outline-none focus:border-purple-500 transition resize-none"
+            />
+          </div>
+
+          {/* Realism level */}
+          <div>
+            <label className="block text-xs font-medium text-slate-300 mb-1.5">ความสมจริงของเรื่อง</label>
+            <div className="grid grid-cols-3 gap-2">
+              {REALISM_OPTIONS.map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => setFormData({ ...formData, realism: opt.id })}
+                  title={opt.hint}
+                  className={`py-2 rounded-xl border text-xs transition ${
+                    formData.realism === opt.id
+                      ? 'bg-purple-900/40 border-purple-500/60 text-purple-200'
+                      : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Example dialogue */}
