@@ -7,6 +7,11 @@ import { normalizeUserRole } from '../lib/userRole';
 const FIELD_CLASS =
   'w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-purple-500 text-slate-100 placeholder-slate-600 transition';
 
+function DefaultHint({ value }) {
+  if (!value) return null;
+  return <p className="mt-1 text-[11px] text-slate-500">ถ้าเว้นว่าง: {value}</p>;
+}
+
 /**
  * Modal for defining who the user is to one specific character (name, relationship, personality, likes, dislikes).
  * Empty fields fall back to the general profile in Settings.
@@ -20,6 +25,7 @@ export default function UserRoleModal({ isOpen, onClose, character, role, onSave
 
   if (!isOpen || !character) return null;
 
+  const defaults = character.defaultUserRole || {};
   const update = (field) => (e) => setForm({ ...form, [field]: e.target.value });
 
   const handleSave = () => {
@@ -48,7 +54,7 @@ export default function UserRoleModal({ isOpen, onClose, character, role, onSave
           </div>
           <div>
             <h2 className="text-base font-bold">บทบาทของฉันกับ {character.name}</h2>
-            <p className="text-xs text-slate-400">เว้นว่าง = ใช้ค่าจากโปรไฟล์ทั่วไปใน Settings</p>
+            <p className="text-xs text-slate-400">ไม่ต้องกรอกครบ ช่องที่เว้นว่างจะใช้ค่าเริ่มต้นของตัวละคร</p>
           </div>
         </div>
 
@@ -72,6 +78,19 @@ export default function UserRoleModal({ isOpen, onClose, character, role, onSave
             placeholder={character.userRoleHint || 'เช่น เพื่อนร่วมงาน เพื่อนสนิท แฟน รุ่นน้อง'}
             className={`${FIELD_CLASS} resize-none`}
           />
+          <DefaultHint value={defaults.description} />
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-slate-300 mb-1">ประวัติของฉัน (อาชีพ / การเรียน / ที่มา)</label>
+          <textarea
+            rows={2}
+            value={form.background}
+            onChange={update('background')}
+            placeholder="เช่น นักศึกษาปี 2 คณะบริหาร อยู่หอใกล้มหาลัย"
+            className={`${FIELD_CLASS} resize-none`}
+          />
+          <DefaultHint value={defaults.background} />
         </div>
 
         <div>
@@ -102,7 +121,7 @@ export default function UserRoleModal({ isOpen, onClose, character, role, onSave
           </button>
           <div className="flex gap-2">
             <button onClick={onClose} className="px-4 py-2 bg-slate-700/70 hover:bg-slate-700 text-slate-300 text-sm rounded-xl transition">
-              ยกเลิก
+              ข้ามไปก่อน
             </button>
             <button
               onClick={handleSave}

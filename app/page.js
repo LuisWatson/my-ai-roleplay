@@ -209,12 +209,25 @@ export default function Home() {
     setLoading(false);
   };
 
+  // The role form opens by itself only the first time a character is opened; returns true that one time.
+  const markRolePrompted = (charId) => {
+    try {
+      const prompted = JSON.parse(localStorage.getItem('user_role_prompted') || '[]');
+      if (prompted.includes(charId)) return false;
+      localStorage.setItem('user_role_prompted', JSON.stringify([...prompted, charId]));
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
   // Switch character and load their respective conversation history
   const handleSelectChar = (char) => {
     stopStreaming();
     setShowHistory(false);
     activeCharIdRef.current = char.id;
     setSelectedChar(char);
+    if (!userRoles[char.id] && markRolePrompted(char.id)) setShowUserRole(true);
     const savedHistory = localStorage.getItem(`chat_history_${char.id}`);
     if (savedHistory) {
       try {

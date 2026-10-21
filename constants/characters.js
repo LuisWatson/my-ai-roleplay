@@ -3,6 +3,7 @@ const avatarFor = (seed) => `https://api.dicebear.com/9.x/adventurer/svg?seed=${
 /**
  * Default preset characters available in the application.
  * `userRoleHint` is shown as a placeholder in the "my role" form to suggest what the user could be to this character.
+ * `defaultUserRole` is used for any role field the user leaves empty.
  */
 export const DEFAULT_CHARACTERS = [
   {
@@ -18,6 +19,7 @@ export const DEFAULT_CHARACTERS = [
     background: '/characters/backgrounds/ava.webp',
     category: 'เพื่อนสนิท',
     userRoleHint: 'เช่น เพื่อนสนิทที่โตมาด้วยกัน หรือรุ่นพี่ที่เธอแอบชอบ',
+    defaultUserRole: { description: 'เพื่อนสนิทที่โตมาด้วยกันตั้งแต่เด็ก', background: 'นักศึกษาปี 3 มหาวิทยาลัยเดียวกับเอวา ชั้นปีเดียวกัน' },
   },
   {
     id: 'leo',
@@ -31,6 +33,7 @@ export const DEFAULT_CHARACTERS = [
     avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
     category: 'รุ่นพี่',
     userRoleHint: 'เช่น รุ่นน้องที่พี่เลโอเอ็นดู หรือลูกค้าที่จ้างออกแบบบ้าน',
+    defaultUserRole: { description: 'รุ่นน้องที่พี่เลโอเอ็นดูและคอยดูแล', background: 'พนักงานบริษัทวัย 24 ปี ทำงานในเมืองเดียวกับเลโอ' },
   },
   {
     id: 'mew',
@@ -48,6 +51,7 @@ export const DEFAULT_CHARACTERS = [
     avatar: avatarFor('Mew'),
     category: 'เพื่อนร่วมงาน',
     userRoleHint: 'เช่น เพื่อนร่วมทีมที่นั่งติดกัน หรือพนักงานใหม่ที่มิวคอยสอนงาน',
+    defaultUserRole: { description: 'เพื่อนร่วมทีมฝ่ายการตลาดที่นั่งโต๊ะติดกัน', background: 'พนักงานฝ่ายการตลาด ทำงานที่บริษัทนี้มาได้ปีกว่า' },
   },
   {
     id: 'dr_phat',
@@ -65,6 +69,7 @@ export const DEFAULT_CHARACTERS = [
     avatar: avatarFor('DrPhat'),
     category: 'อาจารย์',
     userRoleHint: 'เช่น นักศึกษาปริญญาโทที่กำลังทำวิทยานิพนธ์',
+    defaultUserRole: { description: 'นักศึกษาในที่ปรึกษาของดร.ภัทร', background: 'นักศึกษาปริญญาโทที่กำลังทำวิทยานิพนธ์' },
   },
   {
     id: 'irin',
@@ -82,6 +87,7 @@ export const DEFAULT_CHARACTERS = [
     avatar: avatarFor('Irin'),
     category: 'แฟน',
     userRoleHint: 'เช่น แฟนที่คบกันมาสองปี ชอบทำอาหารให้ไอรินกิน',
+    defaultUserRole: { description: 'แฟนที่คบกันมาได้ระยะหนึ่ง', background: 'คนทำงานออฟฟิศ อาศัยอยู่ในเมืองเดียวกับไอริน' },
   },
   {
     id: 'sasi',
@@ -99,6 +105,7 @@ export const DEFAULT_CHARACTERS = [
     avatar: avatarFor('Sasi'),
     category: 'เจ้านาย',
     userRoleHint: 'เช่น ผู้จัดการโปรเจกต์ที่รายงานตรงต่อคุณศศิ',
+    defaultUserRole: { description: 'ลูกน้องที่รายงานตรงต่อคุณศศิ', background: 'หัวหน้าทีมในฝ่ายที่คุณศศิดูแล' },
   },
   {
     id: 'tonkla',
@@ -116,6 +123,7 @@ export const DEFAULT_CHARACTERS = [
     avatar: avatarFor('Tonkla'),
     category: 'น้องข้างบ้าน',
     userRoleHint: 'เช่น พี่ข้างบ้านที่ทำงานโปรแกรมเมอร์ และเคยสอนเลขต้นกล้า',
+    defaultUserRole: { description: 'พี่ข้างบ้านที่ต้นกล้านับถือ', background: 'วัยทำงาน อยู่บ้านติดกับต้นกล้าในหมู่บ้านชานเมือง' },
   },
   {
     id: 'chef_arm',
@@ -133,6 +141,7 @@ export const DEFAULT_CHARACTERS = [
     avatar: avatarFor('ChefArm'),
     category: 'เชฟ',
     userRoleHint: 'เช่น ลูกมือใหม่ในร้าน หรือลูกค้าประจำที่ชอบมาลองเมนู',
+    defaultUserRole: { description: 'ลูกค้าประจำของร้าน', background: 'คนทำงานที่เดินผ่านซอยร้านเชฟอาร์มเป็นประจำ' },
   },
   {
     id: 'maya',
@@ -150,6 +159,7 @@ export const DEFAULT_CHARACTERS = [
     avatar: avatarFor('Maya'),
     category: 'แฟนตาซี',
     userRoleHint: 'เช่น นักผจญภัยที่หลงเข้าป่าหมอกเพื่อตามหาสมุนไพรหายาก',
+    defaultUserRole: { description: 'นักเดินทางแปลกหน้าที่เพิ่งพบมายา', background: 'นักเดินทางที่หลงเข้ามาในป่าหมอก' },
   },
   {
     id: 'captain_nava',
@@ -167,6 +177,7 @@ export const DEFAULT_CHARACTERS = [
     avatar: avatarFor('Nava'),
     category: 'ไซไฟ',
     userRoleHint: 'เช่น นักบินคนใหม่ หรือวิศวกรประจำยานที่ไว้ใจกัปตันที่สุด',
+    defaultUserRole: { description: 'ลูกเรือใต้บังคับบัญชาของกัปตันนาวา', background: 'ลูกเรือประจำยานสำรวจ Horizon' },
   },
   {
     id: 'belle',
@@ -184,6 +195,7 @@ export const DEFAULT_CHARACTERS = [
     avatar: avatarFor('Belle'),
     category: 'ผู้รับฟัง',
     userRoleHint: 'เช่น ลูกค้าประจำที่มานั่งเงียบๆ ทุกคืนวันศุกร์',
+    defaultUserRole: { description: 'ลูกค้าประจำที่แวะมานั่งคุยเป็นครั้งคราว', background: 'คนทำงานที่ชอบแวะบาร์นี้หลังเลิกงาน' },
   },
   {
     id: 'coach_boss',
@@ -201,6 +213,7 @@ export const DEFAULT_CHARACTERS = [
     avatar: avatarFor('CoachBoss'),
     category: 'โค้ช',
     userRoleHint: 'เช่น ลูกศิษย์มือใหม่ที่อยากลดน้ำหนัก แต่ขี้เกียจเป็นนิสัย',
+    defaultUserRole: { description: 'ลูกศิษย์ที่จ้างโค้ชบอสเป็นเทรนเนอร์ส่วนตัว', background: 'สมาชิกฟิตเนสมือใหม่ เพิ่งเริ่มออกกำลังกาย' },
   },
 ];
 
