@@ -30,6 +30,8 @@ export async function POST(req) {
       responseSettings,
       scene,
       memory,
+      pinned,
+      direction,
     } = await req.json();
 
     const { key: activeKey, error: keyError } = resolveApiKey(apiKey);
@@ -38,7 +40,7 @@ export async function POST(req) {
     const genAI = new GoogleGenerativeAI(activeKey);
 
     const { length, temperature } = normalizeResponseSettings(responseSettings);
-    const systemInstruction = buildSystemInstruction({ persona, userProfile, length, scene, memory });
+    const systemInstruction = buildSystemInstruction({ persona, userProfile, length, scene, memory, pinned, direction });
 
     // Ensure chat history conforms to Gemini SDK requirements:
     // 1. First message must be from 'user'

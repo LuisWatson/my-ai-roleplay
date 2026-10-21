@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Pencil, Trash2, RefreshCw, Check, X } from 'lucide-react';
+import { Pencil, Trash2, RefreshCw, Check, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { parseRoleplayText } from '../lib/roleplayFormat';
 
 const PARAGRAPH_CLASS = {
@@ -38,6 +38,7 @@ export default function ChatMessage({
   disabled,
   canRegenerate,
   onRegenerate,
+  onSwipe,
   canRetry,
   onRetry,
   onEdit,
@@ -120,19 +121,46 @@ export default function ChatMessage({
         </button>
       )}
 
-      {hasText && !isEditing && !disabled && (
-        <div className="flex gap-0.5 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
-          {canRegenerate && (
-            <button onClick={onRegenerate} title="สร้างคำตอบใหม่" className={actionClass}>
-              <RefreshCw className="w-3.5 h-3.5" />
-            </button>
+      {hasText && !isEditing && (canRegenerate || !disabled) && (
+        <div className="flex items-center gap-0.5">
+          {canRegenerate && message.alts?.length > 1 && (
+            <div className="flex items-center gap-0.5 mr-1 text-[11px] text-slate-400" aria-label="เลือกคำตอบ">
+              <button
+                onClick={() => onSwipe(-1)}
+                disabled={disabled || message.altIndex === 0}
+                title="คำตอบก่อนหน้า"
+                className={`${actionClass} disabled:opacity-30 disabled:pointer-events-none`}
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <span className="tabular-nums min-w-[2.5rem] text-center">
+                {message.altIndex + 1} / {message.alts.length}
+              </span>
+              <button
+                onClick={() => onSwipe(1)}
+                disabled={disabled || message.altIndex === message.alts.length - 1}
+                title="คำตอบถัดไป"
+                className={`${actionClass} disabled:opacity-30 disabled:pointer-events-none`}
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
           )}
-          <button onClick={startEdit} title="แก้ไขข้อความ" className={actionClass}>
-            <Pencil className="w-3.5 h-3.5" />
-          </button>
-          <button onClick={onDelete} title="ลบข้อความ" className={`${actionClass} hover:text-red-400`}>
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
+          {!disabled && (
+            <div className="flex gap-0.5 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+              {canRegenerate && (
+                <button onClick={onRegenerate} title="สร้างคำตอบใหม่" className={actionClass}>
+                  <RefreshCw className="w-3.5 h-3.5" />
+                </button>
+              )}
+              <button onClick={startEdit} title="แก้ไขข้อความ" className={actionClass}>
+                <Pencil className="w-3.5 h-3.5" />
+              </button>
+              <button onClick={onDelete} title="ลบข้อความ" className={`${actionClass} hover:text-red-400`}>
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
         </div>
       )}
       </div>

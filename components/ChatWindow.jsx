@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useEffect, useState } from 'react';
-import { ArrowLeft, Trash2, UserCog, X, MapPin, Clock, AlertCircle, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Trash2, UserCog, X, MapPin, Clock, AlertCircle, RotateCcw, Brain } from 'lucide-react';
 import ChatMessage from './ChatMessage';
 import ChatInput from './ChatInput';
 import { latestScene } from '../lib/scene';
@@ -115,7 +115,11 @@ export default function ChatWindow({
   onOpenUserRole,
   onStopReply,
   onRegenerate,
+  onSwipe,
   onRetry,
+  onOpenMemory,
+  direction,
+  setDirection,
   notice,
   onDismissNotice,
   onEditMessage,
@@ -147,8 +151,8 @@ export default function ChatWindow({
       )}
 
       {/* Chat Header */}
-      <header className="p-3.5 md:p-4 bg-slate-800/70 backdrop-blur-md border-b border-slate-700/80 flex items-center justify-between z-10">
-        <div className="flex items-center gap-3">
+      <header className="p-3.5 md:p-4 bg-slate-800/70 backdrop-blur-md border-b border-slate-700/80 flex items-center justify-between gap-2 z-10">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <button
             onClick={onBack}
             className="p-1.5 hover:bg-slate-700 rounded-lg text-slate-400 transition"
@@ -159,28 +163,28 @@ export default function ChatWindow({
           <img
             src={selectedChar.avatar}
             alt={selectedChar.name}
-            className="w-10 h-10 rounded-full object-cover border border-purple-400/40 shadow-sm"
+            className="w-10 h-10 rounded-full object-cover border border-purple-400/40 shadow-sm flex-shrink-0"
           />
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="font-semibold text-sm md:text-base text-slate-100">{selectedChar.name}</h2>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 min-w-0">
+              <h2 className="font-semibold text-sm md:text-base text-slate-100 truncate">{selectedChar.name}</h2>
               {selectedChar.category && (
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-900/40 text-purple-300 border border-purple-500/30">
+                <span className="hidden min-[400px]:inline text-[10px] px-2 py-0.5 rounded-full bg-purple-900/40 flex-shrink-0 whitespace-nowrap text-purple-300 border border-purple-500/30">
                   {selectedChar.category}
                 </span>
               )}
             </div>
-            <p className="text-xs text-slate-400 truncate max-w-[200px] sm:max-w-md">
+            <p className="text-xs text-slate-400 truncate sm:max-w-md">
               {selectedChar.tagline || selectedChar.description}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
         <button
           onClick={onOpenUserRole}
           title="บทบาทของฉันกับตัวละครนี้"
-          className={`p-2 rounded-lg transition flex items-center gap-1.5 text-xs ${
+          className={`p-1.5 sm:p-2 rounded-lg transition flex items-center gap-1.5 text-xs ${
             hasUserRole
               ? 'bg-purple-900/40 text-purple-300 border border-purple-500/40'
               : 'hover:bg-slate-700/60 text-slate-400 hover:text-purple-300'
@@ -190,9 +194,17 @@ export default function ChatWindow({
           <span className="hidden sm:inline">บทบาทของฉัน</span>
         </button>
         <button
+          onClick={onOpenMemory}
+          title="ความจำของตัวละคร"
+          className="p-1.5 sm:p-2 rounded-lg transition flex items-center gap-1.5 text-xs hover:bg-slate-700/60 text-slate-400 hover:text-purple-300"
+        >
+          <Brain className="w-5 h-5" />
+          <span className="hidden sm:inline">ความจำ</span>
+        </button>
+        <button
           onClick={onClearHistory}
           title="ล้างประวัติการสนทนา"
-          className="p-2 hover:bg-slate-700/60 rounded-lg text-slate-400 hover:text-red-400 transition"
+          className="p-1.5 sm:p-2 hover:bg-slate-700/60 rounded-lg text-slate-400 hover:text-red-400 transition"
         >
           <Trash2 className="w-5 h-5" />
         </button>
@@ -229,6 +241,7 @@ export default function ChatWindow({
               idx === messages.length - 1 && msg.role === 'model' && messages.some((m) => m.role === 'user')
             }
             onRegenerate={onRegenerate}
+            onSwipe={onSwipe}
             canRetry={idx === messages.length - 1 && msg.role === 'user' && !loading}
             onRetry={onRetry}
             onEdit={(text) => onEditMessage(idx, text)}
@@ -252,6 +265,8 @@ export default function ChatWindow({
         onStop={onStopReply}
         loading={loading}
         characterName={selectedChar.name}
+        direction={direction}
+        setDirection={setDirection}
       />
     </main>
   );

@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
-import { Send, Square } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Send, Square, Clapperboard, X } from 'lucide-react';
 
 const MAX_HEIGHT_PX = 200;
 
@@ -12,10 +12,27 @@ const INSERT_BUTTONS = [
 
 /**
  * Chat input that grows with the text, so a long *action* "speech" message stays readable while typing.
- * Enter sends, Shift+Enter adds a new line.
+ * Enter sends, Shift+Enter adds a new line. "กำกับเรื่อง" opens a field for an out-of-story instruction
+ * that applies to the next reply (sent or regenerated) and then clears.
  */
-export default function ChatInput({ input, setInput, onSendMessage, onStop, loading, characterName }) {
+export default function ChatInput({
+  input,
+  setInput,
+  onSendMessage,
+  onStop,
+  loading,
+  characterName,
+  direction,
+  setDirection,
+}) {
   const textareaRef = useRef(null);
+  const [showDirection, setShowDirection] = useState(false);
+  const directionOpen = showDirection || Boolean(direction);
+
+  // Once a reply has used the direction (it is cleared then), fold the box away again
+  useEffect(() => {
+    if (!loading && !direction) setShowDirection(false);
+  }, [loading]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const el = textareaRef.current;
@@ -54,6 +71,31 @@ export default function ChatInput({ input, setInput, onSendMessage, onStop, load
   return (
     <div className="px-3 pt-3 pb-2 md:px-4 md:pt-4 bg-slate-900/60 backdrop-blur-md border-t border-slate-800">
       <div className="max-w-4xl mx-auto">
+        {directionOpen && (
+          <div className="mb-2 flex items-center gap-2 rounded-xl bg-amber-950/40 border border-amber-500/30 px-3 py-1.5 animate-fadeIn">
+            <Clapperboard className="w-4 h-4 text-amber-300 flex-shrink-0" />
+            <input
+              type="text"
+              autoFocus={showDirection && !direction}
+              value={direction}
+              onChange={(e) => setDirection(e.target.value)}
+              maxLength={500}
+              placeholder="กำกับคำตอบถัดไป เช่น ให้ฝนเริ่มตก, ข้ามไปตอนเย็น, ให้เธองอนหนักขึ้น"
+              className="flex-1 min-w-0 bg-transparent border-0 py-1 text-base md:text-sm text-amber-50 placeholder-amber-200/40 focus:outline-none"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                setDirection('');
+                setShowDirection(false);
+              }}
+              title="ยกเลิกการกำกับ"
+              className="p-1 rounded-md text-amber-200/60 hover:text-amber-100 transition"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
         <div className="flex items-end gap-2 rounded-2xl bg-slate-800/70 border border-slate-700/70 px-2 py-2 shadow-lg shadow-black/20 transition focus-within:border-purple-500/70 focus-within:ring-2 focus-within:ring-purple-500/20">
           <div className="flex gap-1.5 flex-shrink-0">
             {INSERT_BUTTONS.map(({ label, open, close, tip }) => (
@@ -107,10 +149,22 @@ export default function ChatInput({ input, setInput, onSendMessage, onStop, load
             </button>
           )}
         </div>
-        <p className="hidden sm:block mt-1.5 px-1 text-[11px] text-slate-500">
-          <kbd className="font-sans text-slate-400">Enter</kbd> ส่ง ·{' '}
-          <kbd className="font-sans text-slate-400">Shift + Enter</kbd> ขึ้นบรรทัดใหม่
-        </p>
+        <div className="mt-1.5 px-1 flex items-center justify-between gap-2">
+          <button
+            type="button"
+            onClick={() => setShowDirection((v) => !v || Boolean(direction))}
+            className={`inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-[11px] transition ${
+              direction ? 'text-amber-300 bg-amber-500/10' : 'text-slate-400 hover:text-amber-200'
+            }`}
+          >
+            <Clapperboard className="w-3.5 h-3.5" />
+            <span>{direction ? 'มีคำกำกับเรื่อง' : 'กำกับเรื่อง'}</span>
+          </button>
+          <p className="hidden sm:block text-[11px] text-slate-500">
+            <kbd className="font-sans text-slate-400">Enter</kbd> ส่ง ·{' '}
+            <kbd className="font-sans text-slate-400">Shift + Enter</kbd> ขึ้นบรรทัดใหม่
+          </p>
+        </div>
       </div>
     </div>
   );

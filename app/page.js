@@ -7,6 +7,7 @@ import CharacterBrowser from '../components/CharacterBrowser';
 import SettingsModal from '../components/SettingsModal';
 import CreateCharacterModal from '../components/CreateCharacterModal';
 import UserRoleModal from '../components/UserRoleModal';
+import MemoryModal from '../components/MemoryModal';
 import AuthGate from '../components/AuthGate';
 import Toast from '../components/Toast';
 import { useConfirm } from '../components/ConfirmDialog';
@@ -14,7 +15,7 @@ import { normalizeUserRole, mergeUserProfile, USER_ROLE_FIELDS } from '../lib/us
 import { normalizeRealism } from '../constants/scenario';
 import { stripTrailingPartialTag, finalizeReply, latestScene } from '../lib/scene';
 import { DEFAULT_CHARACTERS } from '../constants/characters';
-import { memoryKey, readMemory, chatWindow, nextMemoryBatch, fingerprint } from '../lib/memory';
+import { memoryKey, pinsKey, readMemory, readPins, cleanPins, chatWindow, nextMemoryBatch, fingerprint } from '../lib/memory';
 import { AVAILABLE_MODELS, DEFAULT_MODEL } from '../constants/models';
 import {
   DEFAULT_RESPONSE_SETTINGS,
@@ -68,6 +69,11 @@ const REPLY_ERRORS = {
   auth: { kind: 'error', title: 'Gemini API Key ใช้ไม่ได้', text: 'ตรวจ key ในหน้าตั้งค่า หรือในไฟล์ .env.local', retry: false },
 };
 
+// A reply without its other swipe versions (once the story moves on, only the chosen one is kept)
+function withoutSwipes({ alts, altIndex, ...message }) {
+  return message;
+}
+
 // A character's saved conversation, or just their greeting when there is none yet
 function savedHistoryOrGreeting(store, char) {
   try {
@@ -101,6 +107,8 @@ function RoleplayApp({ store, account, getAccessToken }) {
   const [showUserRole, setShowUserRole] = useState(false);
   const [chatActivity, setChatActivity] = useState({});
   const [showHistory, setShowHistory] = useState(false);
+  const [direction, setDirection] = useState(''); // story direction for the next reply only
+  const [memoryView, setMemoryView] = useState(null); // { summary, pins } while the memory panel is open
   const abortRef = useRef(null);
   const activeCharIdRef = useRef(null); // which character's chat is currently on screen
 
@@ -300,6 +308,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
     setShowHistory(false);
     activeCharIdRef.current = char.id;
     setSelectedChar(char);
+    setDirection('');
     if (!userRoles[char.id] && markRolePrompted(char.id)) setShowUserRole(true);
     setMessages(savedHistoryOrGreeting(store, char));
   };
@@ -307,6 +316,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
   const handleBack = () => {
     stopStreaming();
     setShowHistory(false);
+    setDirection('');
     activeCharIdRef.current = null;
     setSelectedChar(null);
   };
@@ -358,14 +368,17 @@ function RoleplayApp({ store, account, getAccessToken }) {
   };
 
   // Stream a reply for `baseMessages`, which must end with the user message being answered.
-  const streamReply = async (baseMessages) => {
+  // `previous`: the reply being regenerated; the new one is added to its swipes, and it comes back if
+  // generating fails. `direction`: out-of-story instruction for this reply only.
+  const streamReply = async (baseMessages, { previous = null, direction: storyDirection = '' } = {}) => {
     if (loading || !selectedChar) return;
 
     const persona = selectedChar;
     const charId = selectedChar.id;
     const userMessage = baseMessages[baseMessages.length - 1].text;
     setMessages(baseMessages);
-    saveHistory(charId, baseMessages);
+    // While regenerating, the saved chat keeps the old reply until a new one arrives
+    if (!previous) saveHistory(charId, baseMessages);
     setLoading(true);
     setNotice(null);
 
@@ -406,6 +419,8 @@ function RoleplayApp({ store, account, getAccessToken }) {
           userProfile: mergeUserProfile(userProfile, userRoles[charId]),
           scene: latestScene(baseMessages) || undefined,
           memory: memory?.summary,
+          pinned: readPins(store, charId),
+          direction: storyDirection.trim() || undefined,
         }),
       });
 
@@ -448,10 +463,12 @@ function RoleplayApp({ store, account, getAccessToken }) {
     } catch (err) {
       const failed = !controller.signal.aborted;
       if ((failed || controller.userStopped || controller.stalled) && !accumulatedText && activeCharIdRef.current === charId) {
-        // Drop the empty placeholder bubble; keep any partial reply already received
+        // Drop the empty placeholder bubble (or bring back the reply that was being regenerated);
+        // keep any partial reply already received
         setMessages((prev) => {
           const last = prev[prev.length - 1];
-          return last?.role === 'model' && !last.text ? prev.slice(0, -1) : prev;
+          const rest = last?.role === 'model' && !last.text ? prev.slice(0, -1) : prev;
+          return previous ? [...rest, previous] : rest;
         });
       }
       if (activeCharIdRef.current === charId) {
@@ -470,20 +487,28 @@ function RoleplayApp({ store, account, getAccessToken }) {
       clearTimeout(stallTimer);
       if (accumulatedText && !controller.discard) {
         const { cleanText, scene } = finalizeReply(accumulatedText);
-        const finalMessages = [...baseMessages, { role: 'model', text: cleanText, scene }];
+        let reply = { role: 'model', text: cleanText, scene };
+        if (previous) {
+          const alts = previous.alts || [{ text: previous.text, scene: previous.scene }];
+          reply = { ...reply, alts: [...alts, { text: cleanText, scene }], altIndex: alts.length };
+        }
+        const finalMessages = [...baseMessages, reply];
         saveHistory(charId, finalMessages);
         updateMemory(persona, finalMessages);
+        if (activeCharIdRef.current === charId) setDirection('');
         // Only touch the currently displayed chat if it's still this one (the user may have switched away)
         if (activeCharIdRef.current === charId) {
           setMessages((prev) => {
             const nextState = [...prev];
             const lastIndex = nextState.length - 1;
             if (lastIndex >= 0 && nextState[lastIndex].role === 'model') {
-              nextState[lastIndex] = { ...nextState[lastIndex], text: cleanText, scene };
+              nextState[lastIndex] = reply;
             }
             return nextState;
           });
         }
+      } else if (previous && !controller.discard) {
+        saveHistory(charId, [...baseMessages, previous]);
       }
       if (abortRef.current === controller) {
         abortRef.current = null;
@@ -498,7 +523,8 @@ function RoleplayApp({ store, account, getAccessToken }) {
 
     const userMessage = input.trim();
     setInput('');
-    streamReply([...messages, { role: 'user', text: userMessage }]);
+    const settled = messages.map((m, i) => (i === messages.length - 1 && m.alts ? withoutSwipes(m) : m));
+    streamReply([...settled, { role: 'user', text: userMessage }], { direction });
   };
 
   // Stop the reply the user is waiting for; whatever text has arrived is kept
@@ -510,15 +536,25 @@ function RoleplayApp({ store, account, getAccessToken }) {
   // Resend the last user message when it never got a reply
   const handleRetry = () => {
     if (loading) return;
-    if (messages[messages.length - 1]?.role === 'user') streamReply(messages);
+    if (messages[messages.length - 1]?.role === 'user') streamReply(messages, { direction });
   };
 
-  // Replace the last model reply with a freshly generated one
+  // Generate another version of the last reply; earlier versions stay as swipes
   const handleRegenerate = () => {
     if (loading) return;
     const last = messages[messages.length - 1];
     if (last?.role !== 'model' || !messages.slice(0, -1).some((m) => m.role === 'user')) return;
-    streamReply(messages.slice(0, -1));
+    streamReply(messages.slice(0, -1), { previous: last, direction });
+  };
+
+  // Show the previous (-1) or next (+1) version of the last reply
+  const handleSwipe = (delta) => {
+    const last = messages[messages.length - 1];
+    if (loading || !last?.alts) return;
+    const altIndex = last.altIndex + delta;
+    const alt = last.alts[altIndex];
+    if (!alt) return;
+    persistMessages([...messages.slice(0, -1), { ...last, text: alt.text, scene: alt.scene, altIndex }]);
   };
 
   const persistMessages = (next) => {
@@ -533,7 +569,13 @@ function RoleplayApp({ store, account, getAccessToken }) {
     if (messages[index].role === 'user') {
       streamReply([...messages.slice(0, index), { role: 'user', text: trimmed }]);
     } else {
-      persistMessages(messages.map((m, i) => (i === index ? { ...m, text: trimmed } : m)));
+      persistMessages(
+        messages.map((m, i) => {
+          if (i !== index) return m;
+          if (!m.alts) return { ...m, text: trimmed };
+          return { ...m, text: trimmed, alts: m.alts.map((a, j) => (j === m.altIndex ? { ...a, text: trimmed } : a)) };
+        })
+      );
     }
   };
 
@@ -588,11 +630,14 @@ function RoleplayApp({ store, account, getAccessToken }) {
     const customChars = JSON.parse(store.getItem('user_custom_chars') || '[]');
     const chatHistories = {};
     const chatMemories = {};
+    const chatPins = {};
     for (const char of [...customChars, ...DEFAULT_CHARACTERS]) {
       const saved = store.getItem(`chat_history_${char.id}`);
       if (saved) chatHistories[char.id] = JSON.parse(saved);
       const memory = store.getItem(memoryKey(char.id));
       if (saved && memory) chatMemories[char.id] = JSON.parse(memory);
+      const pins = readPins(store, char.id);
+      if (pins.length > 0) chatPins[char.id] = pins;
     }
 
     const backup = {
@@ -602,6 +647,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
       customCharacters: customChars,
       chatHistories,
       chatMemories,
+      chatPins,
       userProfile,
       userRoles,
       chatActivity,
@@ -613,7 +659,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `khui-ai-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    link.download = `botbaat-backup-${new Date().toISOString().slice(0, 10)}.json`;
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -650,6 +696,10 @@ function RoleplayApp({ store, account, getAccessToken }) {
           if (memory) store.setItem(memoryKey(id), JSON.stringify(memory));
           else store.removeItem(memoryKey(id));
         }
+      }
+      for (const [id, pins] of Object.entries(backup.chatPins || {})) {
+        const cleaned = Array.isArray(pins) ? cleanPins(pins) : [];
+        if (knownIds.has(id) && cleaned.length > 0) store.setItem(pinsKey(id), JSON.stringify(cleaned));
       }
 
       const activity = readChatActivity(store);
@@ -694,6 +744,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
 
     setCharacters([...DEFAULT_CHARACTERS, ...filtered]);
     dropChat(charId);
+    store.removeItem(pinsKey(charId));
     handleSaveUserRole(charId, normalizeUserRole(null));
 
     if (selectedChar?.id === charId) {
@@ -703,13 +754,37 @@ function RoleplayApp({ store, account, getAccessToken }) {
     }
   };
 
+  const openMemory = () => {
+    if (!selectedChar) return;
+    const memory = readMemory(store, selectedChar.id, messages);
+    setMemoryView({ summary: memory ? memory.summary : null, pins: readPins(store, selectedChar.id) });
+  };
+
+  const handleSaveMemory = ({ pins, summary }) => {
+    if (!selectedChar) return;
+    const charId = selectedChar.id;
+    const cleaned = cleanPins(pins);
+    if (cleaned.length > 0) store.setItem(pinsKey(charId), JSON.stringify(cleaned));
+    else store.removeItem(pinsKey(charId));
+    const memory = readMemory(store, charId, messages);
+    if (memory && summary !== null && summary !== memory.summary) {
+      if (summary) store.setItem(memoryKey(charId), JSON.stringify({ ...memory, summary }));
+      else store.removeItem(memoryKey(charId));
+    }
+  };
+
+  // Drop the summary; the next replies rebuild it from the chat
+  const handleForgetSummary = () => {
+    if (selectedChar) store.removeItem(memoryKey(selectedChar.id));
+  };
+
   // Clear chat history for the currently active character
   const handleClearHistory = async () => {
     if (!selectedChar) return;
     const char = selectedChar;
     const ok = await askConfirm({
       title: 'เริ่มคุยใหม่ตั้งแต่ต้น?',
-      text: `ข้อความทั้งหมดกับ ${char.name} จะถูกล้าง แล้วเริ่มจากคำทักทายแรกอีกครั้ง`,
+      text: `ข้อความทั้งหมดกับ ${char.name} จะถูกล้าง แล้วเริ่มจากคำทักทายแรกอีกครั้ง (หมุดในความจำยังอยู่)`,
       confirmLabel: 'ล้างแชท',
       danger: true,
       avatar: char.avatar,
@@ -772,6 +847,10 @@ function RoleplayApp({ store, account, getAccessToken }) {
           onClearHistory={handleClearHistory}
           onStopReply={handleStopReply}
           onRegenerate={handleRegenerate}
+          onSwipe={handleSwipe}
+          onOpenMemory={openMemory}
+          direction={direction}
+          setDirection={setDirection}
           onRetry={handleRetry}
           notice={notice}
           onDismissNotice={() => setNotice(null)}
@@ -807,6 +886,17 @@ function RoleplayApp({ store, account, getAccessToken }) {
 
       <Toast toast={toast} onClose={closeToast} />
       {confirmDialog}
+
+      {/* What the open character remembers */}
+      <MemoryModal
+        isOpen={Boolean(memoryView)}
+        onClose={() => setMemoryView(null)}
+        character={selectedChar}
+        summary={memoryView?.summary ?? null}
+        pins={memoryView?.pins}
+        onSave={handleSaveMemory}
+        onForgetSummary={handleForgetSummary}
+      />
 
       {/* Per-character user role modal */}
       <UserRoleModal

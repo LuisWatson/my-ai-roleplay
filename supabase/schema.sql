@@ -8,7 +8,8 @@ create table if not exists public.allowed_emails (
 
 -- Everything the app used to keep in localStorage, one row per key, per user.
 -- Keys: user_custom_chars, user_character_roles, user_roleplay_profile, user_response_settings,
--- user_chat_activity, user_role_prompted, user_gemini_model, chat_history_<characterId>, chat_memory_<characterId>.
+-- user_chat_activity, user_role_prompted, user_gemini_model, chat_history_<characterId>, chat_memory_<characterId>,
+-- chat_pins_<characterId>.
 create table if not exists public.user_kv (
   user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
   key text not null,
