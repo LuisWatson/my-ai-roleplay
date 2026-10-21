@@ -3,6 +3,12 @@ import './globals.css';
 export const metadata = {
   title: 'Botbaat',
   description: 'Personal AI Roleplay App',
+  // Added to the iPhone home screen, it opens full screen with the app's own title
+  appleWebApp: { capable: true, title: 'Botbaat', statusBarStyle: 'black' },
+};
+
+export const viewport = {
+  themeColor: '#0f172a',
 };
 
 export default function RootLayout({ children }) {
