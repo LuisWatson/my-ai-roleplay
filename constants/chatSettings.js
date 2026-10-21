@@ -25,3 +25,8 @@ export function normalizeResponseSettings(raw) {
     : DEFAULT_RESPONSE_SETTINGS.temperature;
   return { length, temperature };
 }
+
+// Client-side watchdogs. The server already waits up to 20s per model, so the first-response limit
+// must exceed the worst case across all fallback models.
+export const FIRST_RESPONSE_CLIENT_TIMEOUT_MS = 90000;
+export const STALL_TIMEOUT_MS = 30000;

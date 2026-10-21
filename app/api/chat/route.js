@@ -2,8 +2,12 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { AVAILABLE_MODELS } from '../../../constants/models';
 import { normalizeResponseSettings } from '../../../constants/chatSettings';
 import { buildSystemInstruction } from '../../../lib/prompt';
+import { withTimeout } from '../../../lib/withTimeout';
 
 const CANDIDATE_MODELS = AVAILABLE_MODELS.map((m) => m.id);
+
+// How long to wait for a model to start replying before falling back to the next one.
+const FIRST_RESPONSE_TIMEOUT_MS = 20000;
 
 /**
  * Handles incoming chat messages and streams responses back from Google Gemini.
@@ -12,7 +16,7 @@ export async function POST(req) {
   try {
     const { message, history, persona, apiKey, model: requestedModel, userProfile, responseSettings } = await req.json();
 
-    const activeKey = process.env.GEMINI_API_KEY || apiKey;
+    const activeKey = apiKey?.trim() || process.env.GEMINI_API_KEY;
 
     if (!activeKey) {
       return new Response(
@@ -62,6 +66,8 @@ ${message}`;
 
     let resultStream = null;
     let lastError = null;
+    let usedModel = null;
+    const failedModels = [];
 
     for (const mName of modelsToTry) {
       try {
@@ -77,16 +83,24 @@ ${message}`;
           },
         });
 
-        resultStream = await chat.sendMessageStream(outgoingMessage);
+        resultStream = await withTimeout(
+          chat.sendMessageStream(outgoingMessage),
+          FIRST_RESPONSE_TIMEOUT_MS,
+          `โมเดล ${mName} ไม่ตอบสนองภายใน ${FIRST_RESPONSE_TIMEOUT_MS / 1000} วินาที`
+        );
+        usedModel = mName;
         break; // Successfully initiated stream
       } catch (err) {
         lastError = err;
+        failedModels.push(mName);
         console.warn(`Model ${mName} failed, trying fallback:`, err.message);
       }
     }
 
     if (!resultStream) {
-      throw lastError || new Error('ไม่สามารถเชื่อมต่อโมเดล AI ได้ในขณะนี้');
+      // Every model failed: report all of them, not just the last one tried
+      const detail = failedModels.length > 0 ? ` (ลองแล้ว: ${failedModels.join(', ')})` : '';
+      throw new Error(`ไม่สามารถเชื่อมต่อโมเดล AI ได้ในขณะนี้${detail} ลองใหม่อีกครั้งในอีกสักครู่ — ${lastError?.message ?? ''}`);
     }
 
     // Stream text chunks directly using ReadableStream
@@ -113,6 +127,8 @@ ${message}`;
         'Content-Type': 'text/plain; charset=utf-8',
         'Cache-Control': 'no-cache, no-transform',
         'Transfer-Encoding': 'chunked',
+        'X-Model-Used': usedModel,
+        'X-Models-Failed': failedModels.join(','),
       },
     });
   } catch (error) {

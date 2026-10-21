@@ -1,9 +1,37 @@
 'use client';
 
-import React, { useRef, useEffect } from 'react';
-import { ArrowLeft, Trash2, Sparkles, UserCog } from 'lucide-react';
+import React, { useRef, useEffect, useState } from 'react';
+import { ArrowLeft, Trash2, Sparkles, UserCog, X } from 'lucide-react';
 import ChatMessage from './ChatMessage';
 import ChatInput from './ChatInput';
+
+const SLOW_AFTER_SECONDS = 8;
+
+/**
+ * "Typing" bubble that counts the seconds spent waiting and hints that the reply can be stopped when it is slow.
+ */
+function WaitingIndicator({ avatar, name }) {
+  const [seconds, setSeconds] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => setSeconds((s) => s + 1), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const slow = seconds >= SLOW_AFTER_SECONDS;
+
+  return (
+    <div className="flex items-start gap-2.5 animate-fadeIn">
+      <img src={avatar} alt={name} className="w-8 h-8 rounded-full object-cover mt-1 border border-purple-400/20" />
+      <div className="bg-slate-800/90 border border-slate-700/80 px-4 py-3 rounded-2xl rounded-tl-none text-slate-300 text-sm flex items-center gap-2 shadow-md">
+        <span className="w-2 h-2 rounded-full bg-purple-400 animate-ping" />
+        <span className="text-xs text-slate-400">
+          {slow ? `โมเดลตอบช้า รอมา ${seconds} วินาที (กดปุ่มหยุดเพื่อยกเลิกได้)` : 'กำลังพิมพ์...'}
+        </span>
+      </div>
+    </div>
+  );
+}
 
 /**
  * Main chat container component handling message flow, active persona info, and input controls.
@@ -19,6 +47,13 @@ export default function ChatWindow({
   onClearHistory,
   hasUserRole,
   onOpenUserRole,
+  onStopReply,
+  onRegenerate,
+  onRetry,
+  notice,
+  onDismissNotice,
+  onEditMessage,
+  onDeleteMessage,
 }) {
   const chatEndRef = useRef(null);
 
@@ -104,30 +139,45 @@ export default function ChatWindow({
             message={msg}
             avatar={selectedChar.avatar}
             characterName={selectedChar.name}
+            disabled={loading}
+            canRegenerate={
+              idx === messages.length - 1 && msg.role === 'model' && messages.some((m) => m.role === 'user')
+            }
+            onRegenerate={onRegenerate}
+            canRetry={idx === messages.length - 1 && msg.role === 'user' && !loading}
+            onRetry={onRetry}
+            onEdit={(text) => onEditMessage(idx, text)}
+            onDelete={() => onDeleteMessage(idx)}
           />
         ))}
 
         {loading && messages[messages.length - 1]?.role === 'user' && (
-          <div className="flex items-start gap-2.5 animate-fadeIn">
-            <img
-              src={selectedChar.avatar}
-              alt={selectedChar.name}
-              className="w-8 h-8 rounded-full object-cover mt-1 border border-purple-400/20"
-            />
-            <div className="bg-slate-800/90 border border-slate-700/80 px-4 py-3 rounded-2xl rounded-tl-none text-slate-300 text-sm flex items-center gap-2 shadow-md">
-              <span className="w-2 h-2 rounded-full bg-purple-400 animate-ping" />
-              <span className="text-xs text-slate-400">กำลังพิมพ์...</span>
-            </div>
-          </div>
+          <WaitingIndicator avatar={selectedChar.avatar} name={selectedChar.name} />
         )}
         <div ref={chatEndRef} />
       </div>
+
+      {notice && (
+        <div
+          className={`mx-3 md:mx-4 mb-2 px-3 py-2 rounded-xl text-xs flex items-start gap-2 border ${
+            notice.kind === 'warn'
+              ? 'bg-amber-950/40 border-amber-500/40 text-amber-200'
+              : 'bg-slate-800/80 border-slate-600/60 text-slate-300'
+          }`}
+        >
+          <span className="flex-1">{notice.text}</span>
+          <button onClick={onDismissNotice} title="ปิด" className="opacity-70 hover:opacity-100">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* Message Input Controls */}
       <ChatInput
         input={input}
         setInput={setInput}
         onSendMessage={onSendMessage}
+        onStop={onStopReply}
         loading={loading}
         characterName={selectedChar.name}
       />

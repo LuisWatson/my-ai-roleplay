@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useRef } from 'react';
-import { Sparkles, Settings, Plus, Download, Upload } from 'lucide-react';
+import React, { useRef, useState, useMemo } from 'react';
+import { Sparkles, Settings, Plus, Download, Upload, Search } from 'lucide-react';
 import CharacterCard from './CharacterCard';
 
 /**
@@ -19,6 +19,19 @@ export default function Sidebar({
   onOpenCreateModal,
 }) {
   const importInputRef = useRef(null);
+  const [query, setQuery] = useState('');
+  const [category, setCategory] = useState('');
+
+  const categories = useMemo(() => [...new Set(characters.map((c) => c.category).filter(Boolean))], [characters]);
+
+  const visibleCharacters = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return characters.filter((c) => {
+      if (category && c.category !== category) return false;
+      if (!q) return true;
+      return [c.name, c.tagline, c.category, c.description].some((f) => f?.toLowerCase().includes(q));
+    });
+  }, [characters, query, category]);
 
   const handleImportFile = (e) => {
     const file = e.target.files?.[0];
@@ -51,10 +64,38 @@ export default function Sidebar({
 
       {/* Character List */}
       <div className="flex-1 overflow-y-auto p-3 space-y-2">
-        <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider px-2 py-1">
-          ตัวละคร ({characters.length})
+        <div className="relative">
+          <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="ค้นหาตัวละคร..."
+            className="w-full bg-slate-900/70 border border-slate-700 rounded-xl pl-9 pr-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-purple-500 transition"
+          />
         </div>
-        {characters.map((char) => (
+        <div className="flex gap-1.5 overflow-x-auto pb-1">
+          {['', ...categories].map((cat) => (
+            <button
+              key={cat || 'all'}
+              onClick={() => setCategory(cat)}
+              className={`flex-shrink-0 text-[11px] px-2.5 py-1 rounded-full border transition ${
+                category === cat
+                  ? 'bg-purple-900/50 border-purple-500/60 text-purple-200'
+                  : 'bg-slate-800/60 border-slate-700 text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              {cat || 'ทั้งหมด'}
+            </button>
+          ))}
+        </div>
+        <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider px-2 py-1">
+          ตัวละคร ({visibleCharacters.length === characters.length ? characters.length : `${visibleCharacters.length}/${characters.length}`})
+        </div>
+        {visibleCharacters.length === 0 && (
+          <p className="text-xs text-slate-500 text-center py-6">ไม่พบตัวละครที่ตรงกับการค้นหา</p>
+        )}
+        {visibleCharacters.map((char) => (
           <CharacterCard
             key={char.id}
             character={char}

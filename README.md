@@ -6,18 +6,24 @@
 
 ## ฟังก์ชันการทำงานหลัก (Key Features)
 
-- **ระบบสวมบทบาทตัวละคร (Character Persona)**: ตัวละครตอบสนองตามบทบาท นิสัย และความสัมพันธ์ที่กำหนด พร้อมบรรยายอารมณ์และการกระทำ `*(action)*`
-- **ระบบจัดเก็บข้อมูลในตัว (Local Persistence)**: บันทึกประวัติการสนทนาและตัวละครที่สร้างขึ้นใหม่ผ่าน Web Storage (`localStorage`)
-- **การจัดการ API Key แบบยืดหยุ่น**: รองรับการกำหนด API Key ผ่านตัวแปรสภาพแวดล้อม (`.env.local`) หรือผ่านหน้าต่างการตั้งค่า (Settings) บนหน้าเว็บ
-- **ดีไซน์ที่ทันสมัย (Modern Minimal Dark Theme)**: ออกแบบด้วย Tailwind CSS รองรับการใช้งานทั้งบนหน้าจอ Desktop และ Mobile
-- **สถาปัตยกรรมแบบแยกส่วน (Component-Based Architecture)**: โค้ดได้รับการจัดโครงสร้างให้เป็นระเบียบ ง่ายต่อการดูแลรักษาและพัฒนาต่อยอด
+- **ตัวละครพรีเซ็ต 12 ตัว**: เพื่อนสนิท รุ่นพี่ เพื่อนร่วมงาน อาจารย์ แฟน เจ้านาย น้องข้างบ้าน เชฟ แม่มด กัปตันยานอวกาศ บาร์เทนเดอร์ และโค้ชฟิตเนส แต่ละตัวมีบทบาท น้ำเสียง และตัวอย่างบทพูดของตัวเอง พร้อมช่องค้นหาและกรองตามหมวดหมู่
+- **สร้างและแก้ไขตัวละครเอง**: กำหนดชื่อ หมวดหมู่ บุคลิก ประโยคทักทาย รูป และตัวอย่างบทพูด (ไม่บังคับ) แก้ไขหรือลบได้ภายหลัง
+- **บทบาทของฉันแยกรายตัวละคร**: กด "บทบาทของฉัน" ในหน้าแชทเพื่อกำหนดชื่อ คำเรียก ความสัมพันธ์ นิสัย สิ่งที่ชอบ/ไม่ชอบ ให้ต่างกันในแต่ละตัวละคร (เช่น เป็นเพื่อนร่วมงานของมิว แต่เป็นแฟนของไอริน) ช่องที่เว้นว่างจะใช้ค่าจาก "โปรไฟล์ทั่วไป" ใน Settings
+- **ตอบกลับแบบ Streaming**: แสดงคำตอบทีละคำ มีปุ่มหยุดตอบ และสลับตัวละครระหว่างตอบได้โดยไม่ปนกัน
+- **จัดการข้อความ**: สร้างคำตอบใหม่ (regenerate), แก้ไขข้อความ (แก้ข้อความผู้ใช้จะตอบใหม่จากจุดนั้น), และลบข้อความ
+- **ปรับสไตล์คำตอบ**: เลือกความยาว (สั้น/กลาง/ยาว) และ temperature ในแท็บ "การตอบกลับ"
+- **ความจำในบทสนทนา**: ส่งประวัติแชทล่าสุดให้โมเดลตามงบตัวอักษร (ดูค่า `HISTORY_CHAR_BUDGET` ใน `constants/chatSettings.js`) ช่วงต้นของแชทที่ยาวมากจะถูกตัดออก
+- **เลือกโมเดล Gemini**: เลือกได้ในหน้า Settings มีระบบสลับไปโมเดลสำรองอัตโนมัติเมื่อโมเดลที่เลือกใช้ไม่ได้ (รอโมเดลละไม่เกิน 20 วินาทีก่อนสลับ)
+- **สำรอง/นำเข้าข้อมูล**: Export/Import ไฟล์ JSON ของตัวละครที่สร้างเอง ประวัติแชท โปรไฟล์ บทบาทรายตัวละคร โมเดล และการตั้งค่าคำตอบ (ไม่รวม API Key)
+- **เก็บข้อมูลในเบราว์เซอร์**: ทุกอย่างบันทึกใน `localStorage` ไม่มีฐานข้อมูลฝั่งเซิร์ฟเวอร์
+- **ดีไซน์ Dark Theme**: Tailwind CSS รองรับทั้ง Desktop และ Mobile (ปุ่มจัดการบนจอสัมผัสแสดงตลอด)
 
 ---
 
 ## เทคโนโลยีที่ใช้งาน (Tech Stack)
 
-- **Framework**: [Next.js](https://nextjs.org/) (App Router)
-- **UI Library**: [React](https://react.dev/)
+- **Framework**: [Next.js](https://nextjs.org/) 15 (App Router)
+- **UI Library**: [React](https://react.dev/) 18
 - **Styling**: [Tailwind CSS](https://tailwindcss.com/)
 - **Icons**: [Lucide React](https://lucide.dev/)
 - **AI SDK**: [@google/generative-ai](https://www.npmjs.com/package/@google/generative-ai)
@@ -28,7 +34,7 @@
 
 ### 1. โคลนคลังข้อมูล (Clone Repository)
 ```bash
-git clone <URL_ของ_GITHUB_REPOSITORY>
+git clone https://github.com/LuisWatson/my-ai-roleplay.git
 cd my-ai-roleplay
 ```
 
@@ -46,7 +52,7 @@ cp .env.example .env.local
 ```env
 GEMINI_API_KEY=YOUR_GEMINI_API_KEY_HERE
 ```
-*(หรือสามารถกรอกผ่านหน้าต่าง Settings บนหน้าเว็บแอปพลิเคชันได้เช่นกัน)*
+หากกรอก API Key ในหน้า Settings ด้วย ระบบจะใช้ key จากหน้า Settings ก่อน และใช้ `GEMINI_API_KEY` เมื่อหน้า Settings เว้นว่าง
 
 ### 4. รันแอปพลิเคชันในโหมดพัฒนา (Development Server)
 ```bash
@@ -54,27 +60,50 @@ npm run dev
 ```
 เข้าใช้งานผ่านเบราว์เซอร์ที่ [http://localhost:3000](http://localhost:3000)
 
+> **หมายเหตุด้านความปลอดภัย**: `/api/chat` ไม่มีระบบยืนยันตัวตนหรือจำกัดอัตราการเรียก เหมาะกับการรันบนเครื่องตัวเอง หากนำไป deploy สาธารณะโดยตั้ง `GEMINI_API_KEY` ไว้บนเซิร์ฟเวอร์ ผู้ที่รู้ URL จะใช้ key นั้นได้ ควรเพิ่มการยืนยันตัวตนก่อน
+
 ---
 
 ## โครงสร้างโปรเจกต์ (Project Structure)
 
 ```text
 ├── app/
-│   ├── api/chat/route.js     # API Route สำหรับสื่อสารกับ Gemini SDK
-│   ├── globals.css           # สไตล์โกลบอลและ Tailwind Directive
-│   ├── layout.js             # Root Layout ของระบบ
-│   └── page.js               # หน้าหลัก (Main Orchestrator Component)
+│   ├── api/chat/route.js        # API Route สตรีมคำตอบจาก Gemini พร้อมสลับโมเดลสำรอง
+│   ├── globals.css              # สไตล์โกลบอลและ Tailwind Directive
+│   ├── layout.js                # Root Layout ของระบบ
+│   └── page.js                  # หน้าหลัก คุม state, localStorage, streaming, Backup
 ├── components/
-│   ├── CharacterCard.jsx     # คอมโพเนนต์การ์ดแสดงตัวละคร
-│   ├── ChatInput.jsx         # กล่องรับข้อความและปุ่มส่ง
-│   ├── ChatMessage.jsx       # บับเบิลข้อความพร้อมจัดฟอร์แมต *(action)*
-│   ├── ChatWindow.jsx        # หน้าต่างแชทและข้อความต้อนรับ
-│   ├── CreateCharacterModal.jsx # หน้าต่างสร้างตัวละครใหม่
-│   ├── SettingsModal.jsx     # หน้าต่างจัดการ API Key
-│   └── Sidebar.jsx           # แถบด้านข้างสำหรับจัดการตัวละคร
+│   ├── CharacterCard.jsx        # การ์ดตัวละคร (แก้ไข/ลบสำหรับตัวละครที่สร้างเอง)
+│   ├── ChatInput.jsx            # กล่องพิมพ์ข้อความ ปุ่มส่ง/หยุดตอบ
+│   ├── ChatMessage.jsx          # บับเบิลข้อความ จัดฟอร์แมต *(action)* และปุ่มแก้ไข/ลบ/สร้างใหม่
+│   ├── ChatWindow.jsx           # หน้าต่างแชท Header และ Auto-scroll
+│   ├── CreateCharacterModal.jsx # สร้าง/แก้ไขตัวละคร
+│   ├── SettingsModal.jsx        # ตั้งค่า: โปรไฟล์ทั่วไป การตอบกลับ API Key และโมเดล
+│   ├── Sidebar.jsx              # รายการตัวละคร ค้นหา/กรอง สร้างตัวละคร Backup
+│   └── UserRoleModal.jsx        # กำหนดบทบาทของผู้ใช้ต่อตัวละครหนึ่งตัว
 ├── constants/
-│   └── characters.js         # ข้อมูลตัวละครพรีเซ็ตเริ่มต้น
-├── .env.example              # ตัวอย่างไฟล์การตั้งค่า Environment Variables
-├── .gitignore                # รายการไฟล์และโฟลเดอร์ที่ไม่นำขึ้นระบบ Git
-└── package.json              # รายการแพ็กเกจและสคริปต์ของโปรเจกต์
+│   ├── characters.js            # ตัวละครพรีเซ็ต
+│   ├── chatSettings.js          # ค่าความยาวคำตอบ temperature และงบประวัติแชท
+│   └── models.js                # รายการโมเดล Gemini
+├── lib/
+│   ├── prompt.js                # สร้าง system instruction สำหรับรักษาบทบาท
+│   ├── userRole.js              # ตรวจและรวมบทบาทผู้ใช้กับโปรไฟล์ทั่วไป
+│   └── withTimeout.js           # จำกัดเวลารอโมเดลตอบสนอง
+├── .env.example                 # ตัวอย่างไฟล์ Environment Variables
+├── .gitignore                   # รายการไฟล์ที่ไม่นำขึ้น Git
+└── package.json                 # แพ็กเกจและสคริปต์ของโปรเจกต์
 ```
+
+---
+
+## ข้อมูลที่เก็บใน localStorage
+
+| Key | เนื้อหา |
+|---|---|
+| `user_gemini_api_key` | API Key จากหน้า Settings |
+| `user_gemini_model` | โมเดลที่เลือก |
+| `user_response_settings` | ความยาวคำตอบและ temperature |
+| `user_roleplay_profile` | โปรไฟล์ทั่วไปของผู้ใช้ |
+| `user_character_roles` | บทบาทของผู้ใช้แยกรายตัวละคร |
+| `user_custom_chars` | ตัวละครที่สร้างเอง |
+| `chat_history_<id ตัวละคร>` | ประวัติแชทของแต่ละตัวละคร |

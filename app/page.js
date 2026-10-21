@@ -12,6 +12,8 @@ import { AVAILABLE_MODELS, DEFAULT_MODEL } from '../constants/models';
 import {
   DEFAULT_RESPONSE_SETTINGS,
   HISTORY_CHAR_BUDGET,
+  FIRST_RESPONSE_CLIENT_TIMEOUT_MS,
+  STALL_TIMEOUT_MS,
   normalizeResponseSettings,
 } from '../constants/chatSettings';
 
@@ -41,6 +43,7 @@ export default function Home() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingChar, setEditingChar] = useState(null);
   const [userRoles, setUserRoles] = useState({});
+  const [notice, setNotice] = useState(null);
   const [showUserRole, setShowUserRole] = useState(false);
   const abortRef = useRef(null);
 
@@ -131,6 +134,7 @@ export default function Home() {
 
   // Cancel the in-flight reply. `discard` skips saving the partial reply (history cleared or character deleted).
   const stopStreaming = ({ discard = false } = {}) => {
+    setNotice(null);
     if (!abortRef.current) return;
     abortRef.current.discard = discard;
     abortRef.current.abort();
@@ -145,8 +149,11 @@ export default function Home() {
     const savedHistory = localStorage.getItem(`chat_history_${char.id}`);
     if (savedHistory) {
       try {
-        setMessages(JSON.parse(savedHistory));
-        return;
+        const parsed = JSON.parse(savedHistory);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setMessages(parsed);
+          return;
+        }
       } catch (err) {
         console.error('Failed to parse chat history:', err);
       }
@@ -159,25 +166,34 @@ export default function Home() {
     setSelectedChar(null);
   };
 
-  // Send message and stream response from Gemini API
-  const handleSendMessage = async () => {
-    if (!input.trim() || loading || !selectedChar) return;
-
-    const userMessage = input.trim();
-    setInput('');
+  // Stream a reply for `baseMessages`, which must end with the user message being answered.
+  const streamReply = async (baseMessages) => {
+    if (loading || !selectedChar) return;
 
     const charId = selectedChar.id;
-    const updatedMessages = [...messages, { role: 'user', text: userMessage }];
-    setMessages(updatedMessages);
-    saveHistory(charId, updatedMessages);
+    const userMessage = baseMessages[baseMessages.length - 1].text;
+    setMessages(baseMessages);
+    saveHistory(charId, baseMessages);
     setLoading(true);
+    setNotice(null);
 
     const controller = new AbortController();
     abortRef.current = controller;
     let accumulatedText = '';
 
+    // Abort if the model goes quiet: `ms` without a response (first call) or without a new chunk (later calls)
+    let stallTimer;
+    const armStallTimer = (ms) => {
+      clearTimeout(stallTimer);
+      stallTimer = setTimeout(() => {
+        controller.stalled = true;
+        controller.abort();
+      }, ms);
+    };
+    armStallTimer(FIRST_RESPONSE_CLIENT_TIMEOUT_MS);
+
     try {
-      const historyPayload = takeRecentMessages(updatedMessages, HISTORY_CHAR_BUDGET);
+      const historyPayload = takeRecentMessages(baseMessages, HISTORY_CHAR_BUDGET);
 
       const res = await fetch('/api/chat', {
         method: 'POST',
@@ -199,6 +215,16 @@ export default function Home() {
         throw new Error(errorData.error || `HTTP error ${res.status}`);
       }
 
+      const usedModel = res.headers.get('X-Model-Used');
+      const failedModels = (res.headers.get('X-Models-Failed') || '').split(',').filter(Boolean);
+      if (failedModels.length > 0) {
+        setNotice({
+          kind: 'info',
+          text: `ใช้โมเดลสำรอง ${usedModel} เพราะ ${failedModels.join(', ')} ไม่ตอบสนอง`,
+        });
+      }
+      armStallTimer(STALL_TIMEOUT_MS);
+
       // Add empty placeholder for the incoming stream; `loading` stays true so the input stays locked
       setMessages((prev) => [...prev, { role: 'model', text: '' }]);
 
@@ -209,6 +235,7 @@ export default function Home() {
         const { done, value } = await reader.read();
         if (done) break;
 
+        armStallTimer(STALL_TIMEOUT_MS);
         const chunk = decoder.decode(value, { stream: true });
         accumulatedText += chunk;
 
@@ -222,25 +249,84 @@ export default function Home() {
         });
       }
     } catch (err) {
-      if (!controller.signal.aborted) {
+      const failed = !controller.signal.aborted;
+      if ((failed || controller.userStopped || controller.stalled) && !accumulatedText) {
         // Drop the empty placeholder bubble; keep any partial reply already received
-        if (!accumulatedText) {
-          setMessages((prev) => {
-            const last = prev[prev.length - 1];
-            return last?.role === 'model' && !last.text ? prev.slice(0, -1) : prev;
-          });
-        }
+        setMessages((prev) => {
+          const last = prev[prev.length - 1];
+          return last?.role === 'model' && !last.text ? prev.slice(0, -1) : prev;
+        });
+      }
+      if (controller.stalled) {
+        setNotice({
+          kind: 'warn',
+          text: accumulatedText
+            ? 'โมเดลหยุดตอบกลางทาง เก็บข้อความที่ได้ไว้แล้ว กด "สร้างคำตอบใหม่" เพื่อลองอีกครั้ง'
+            : 'โมเดลไม่ตอบสนอง กด "ลองใหม่" ใต้ข้อความของคุณเพื่อส่งอีกครั้ง',
+        });
+      } else if (failed) {
         alert(`Error: ${err.message}`);
       }
     } finally {
+      clearTimeout(stallTimer);
       if (accumulatedText && !controller.discard) {
-        saveHistory(charId, [...updatedMessages, { role: 'model', text: accumulatedText }]);
+        saveHistory(charId, [...baseMessages, { role: 'model', text: accumulatedText }]);
       }
       if (abortRef.current === controller) {
         abortRef.current = null;
         setLoading(false);
       }
     }
+  };
+
+  // Send message and stream response from Gemini API
+  const handleSendMessage = () => {
+    if (!input.trim() || loading || !selectedChar) return;
+
+    const userMessage = input.trim();
+    setInput('');
+    streamReply([...messages, { role: 'user', text: userMessage }]);
+  };
+
+  // Stop the reply the user is waiting for; whatever text has arrived is kept
+  const handleStopReply = () => {
+    if (abortRef.current) abortRef.current.userStopped = true;
+    stopStreaming();
+  };
+
+  // Resend the last user message when it never got a reply
+  const handleRetry = () => {
+    if (loading) return;
+    if (messages[messages.length - 1]?.role === 'user') streamReply(messages);
+  };
+
+  // Replace the last model reply with a freshly generated one
+  const handleRegenerate = () => {
+    if (loading) return;
+    const last = messages[messages.length - 1];
+    if (last?.role !== 'model' || !messages.slice(0, -1).some((m) => m.role === 'user')) return;
+    streamReply(messages.slice(0, -1));
+  };
+
+  const persistMessages = (next) => {
+    setMessages(next);
+    if (selectedChar) saveHistory(selectedChar.id, next);
+  };
+
+  // Edit a message in place. Editing a user message drops everything after it and asks for a new reply.
+  const handleEditMessage = (index, text) => {
+    const trimmed = text.trim();
+    if (loading || !trimmed || !messages[index]) return;
+    if (messages[index].role === 'user') {
+      streamReply([...messages.slice(0, index), { role: 'user', text: trimmed }]);
+    } else {
+      persistMessages(messages.map((m, i) => (i === index ? { ...m, text: trimmed } : m)));
+    }
+  };
+
+  const handleDeleteMessage = (index) => {
+    if (loading || messages.length <= 1) return;
+    persistMessages(messages.filter((_, i) => i !== index));
   };
 
   // Create and persist a new custom persona
@@ -409,6 +495,13 @@ export default function Home() {
         setInput={setInput}
         onSendMessage={handleSendMessage}
         onClearHistory={handleClearHistory}
+        onStopReply={handleStopReply}
+        onRegenerate={handleRegenerate}
+        onRetry={handleRetry}
+        notice={notice}
+        onDismissNotice={() => setNotice(null)}
+        onEditMessage={handleEditMessage}
+        onDeleteMessage={handleDeleteMessage}
         hasUserRole={Boolean(selectedChar && userRoles[selectedChar.id])}
         onOpenUserRole={() => setShowUserRole(true)}
       />
