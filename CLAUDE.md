@@ -95,6 +95,8 @@ The owner builds it for themselves and their partner. Reply to the owner in Thai
   on replies as `relation`; suggested replies as `choices` (must be in the user's voice — models drift into the
   character's); per-chat `chat_style_<id>` = 'dm' switches to short messaging-app chat (`style: 'dm'` on messages).
   Settings `suggestions` / `relationship` turn them off and stop asking the model.
+  A reply that comes without choices gets them from `/api/suggest` (Lite) automatically (`requestSuggestions` in
+  `app/page.js`, same call as the 💡 button); its prompt gets the user's name/callMe/role so it writes in their voice.
 - Installable app: `app/manifest.js`, `appleWebApp` in `app/layout.js`, icons in `public/icons/` + `app/*icon.png`.
 - `components/UserRoleModal.jsx` — "บทบาทของฉัน"; opens by itself the first time a character is opened (`user_role_prompted` in the store). Nothing is required; empty fields use `defaultUserRole`.
 - `.claude/skills/character-portrait/` — how to generate a character portrait on tensor.art and wire it in.
