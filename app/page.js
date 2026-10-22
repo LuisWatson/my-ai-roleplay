@@ -605,7 +605,8 @@ function RoleplayApp({ store, account, getAccessToken }) {
         saveHistory(charId, finalMessages);
         updateMemory(persona, finalMessages);
         // The chat model often leaves the choices out of its tag: ask the Lite models for them instead
-        if (responseSettings.suggestions && !choices && cleanText && !cut && !controller.stalled && !controller.userStopped) {
+        // (also for a reply Google cut short: it usually loses only the tag at the end)
+        if (responseSettings.suggestions && !choices && cleanText && !controller.stalled && !controller.userStopped) {
           requestSuggestions(persona, finalMessages, { auto: true });
         }
         if (activeCharIdRef.current === charId) setDirection('');
