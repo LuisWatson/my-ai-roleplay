@@ -3,6 +3,13 @@
 import React, { useEffect, useState } from 'react';
 import { X, Pencil, MessageCircle, UserCog, BookHeart } from 'lucide-react';
 import { formatRoleplayText } from './ChatMessage';
+import { levelOf, levelName } from '../lib/relation';
+
+// "ผูกพัน Lv.4 · ผูกพันลึกซึ้ง"
+function meterText(key, label, points) {
+  const { level } = levelOf(points);
+  return `${label} Lv.${level} · ${levelName(key, level)}`;
+}
 
 const PROFILE_ROWS = [
   ['age', 'อายุ'],
@@ -108,8 +115,8 @@ export default function CharacterProfile({ character, role, status, hasChat, onC
           {/* Where things stand, once there is a chat */}
           {(relation || status?.journalCount > 0) && (
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-300">
-              {Number.isFinite(relation?.bond) && <span>💗 ผูกพัน {relation.bond}</span>}
-              {Number.isFinite(relation?.trust) && <span>🤝 ไว้ใจ {relation.trust}</span>}
+              {Number.isFinite(relation?.bond) && <span>💗 {meterText('bond', 'ผูกพัน', relation.bond)}</span>}
+              {Number.isFinite(relation?.trust) && <span>🤝 {meterText('trust', 'ไว้ใจ', relation.trust)}</span>}
               {relation?.mood && <span className="text-slate-400">· {relation.mood}</span>}
               {status?.journalCount > 0 && (
                 <span className="flex items-center gap-1 text-amber-200/90">

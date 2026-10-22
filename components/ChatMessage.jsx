@@ -243,6 +243,11 @@ export default function ChatMessage({
                 <span key={key} className={relationChange[key] > 0 ? 'text-emerald-300' : 'text-rose-300'}>
                   {icon} {relationChange[key] > 0 ? '+' : ''}
                   {relationChange[key]}
+                  {relationChange.levelUp?.[key] && (
+                    <span className="ml-1 px-1.5 py-0.5 rounded-full bg-amber-400/15 text-amber-300 border border-amber-400/30">
+                      ขึ้น Lv.{relationChange.levelUp[key]}
+                    </span>
+                  )}
                 </span>
               )
           )}

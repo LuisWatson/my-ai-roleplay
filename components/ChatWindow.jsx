@@ -5,7 +5,7 @@ import { ArrowLeft, Trash2, UserCog, X, MapPin, Clock, AlertCircle, RotateCcw, B
 import ChatMessage from './ChatMessage';
 import ChatInput from './ChatInput';
 import { latestScene } from '../lib/scene';
-import { latestRelation } from '../lib/relation';
+import { latestRelation, levelOf, levelName } from '../lib/relation';
 import { sceneBackgroundSrc } from '../constants/sceneBackgrounds';
 
 // Story-style lines shown while the reply is on its way; never about the app or the AI
@@ -55,40 +55,55 @@ function WaitingIndicator({ avatar, name }) {
   );
 }
 
+const METERS = [
+  ['bond', '💗', 'ผูกพัน', 'bg-pink-400'],
+  ['trust', '🤝', 'ไว้ใจ', 'bg-sky-400'],
+];
+
 /**
  * The character's current feelings, shown in the header under their name instead of the tagline:
- * bond 💗 and trust 🤝 (0–100) and mood.
+ * bond 💗 and trust 🤝 as levels with progress to the next one (lib/relation.js), and mood.
  */
 function RelationLine({ relation }) {
   return (
-    <p title="ความผูกพัน · ความไว้ใจ · อารมณ์ตอนนี้" className="flex items-center gap-2 text-xs text-slate-300 min-w-0">
-      {Number.isFinite(relation.bond) && (
-        <span className="flex items-center gap-1 flex-shrink-0">
-          <span aria-hidden>💗</span>
-          <span className="tabular-nums">{relation.bond}</span>
-        </span>
-      )}
-      {Number.isFinite(relation.trust) && (
-        <span className="flex items-center gap-1 flex-shrink-0">
-          <span aria-hidden>🤝</span>
-          <span className="tabular-nums">{relation.trust}</span>
-        </span>
-      )}
+    <p className="flex items-center gap-2.5 text-xs text-slate-300 min-w-0">
+      {METERS.map(([key, icon, label, bar]) => {
+        if (!Number.isFinite(relation[key])) return null;
+        const { level, into, size } = levelOf(relation[key]);
+        return (
+          <span
+            key={key}
+            title={`${label} Lv.${level} · ${levelName(key, level)} (${into}/${size} ไปเลเวลถัดไป)`}
+            className="flex items-center gap-1 flex-shrink-0"
+          >
+            <span aria-hidden>{icon}</span>
+            <span className="tabular-nums">Lv.{level}</span>
+            <span className="w-7 h-1 rounded-full bg-slate-600/70 overflow-hidden" aria-hidden>
+              <span className={`block h-full ${bar}`} style={{ width: `${Math.round((into / size) * 100)}%` }} />
+            </span>
+          </span>
+        );
+      })}
       {relation.mood && <span className="truncate text-slate-400">· {relation.mood}</span>}
     </p>
   );
 }
 
-// For each message, how its reply moved the meters ({ bond, trust } differences; null when nothing changed)
+// For each message, how its reply moved the meters: { bond, trust } point differences plus `levelUp`
+// { bond: newLevel } when a meter reached a new level; null when nothing changed
 function relationChanges(messages) {
   let previous = null;
   return messages.map((m) => {
     if (!m.relation) return null;
     const change = {};
-    for (const key of ['bond', 'trust']) {
+    for (const [key] of METERS) {
       const now = m.relation[key];
       const before = previous?.[key];
-      if (Number.isFinite(now) && Number.isFinite(before) && now !== before) change[key] = now - before;
+      if (Number.isFinite(now) && Number.isFinite(before) && now !== before) {
+        change[key] = now - before;
+        const level = levelOf(now).level;
+        if (level > levelOf(before).level) change.levelUp = { ...change.levelUp, [key]: level };
+      }
     }
     previous = m.relation;
     return Object.keys(change).length > 0 ? change : null;
