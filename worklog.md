@@ -4,6 +4,16 @@
 
 ---
 
+## 2026-10-22 — รูปตัวละครเป็น WebP
+
+- 12 รูปใน `public/characters/` แปลงด้วย sharp (`webp`, quality 82, 768×1024 เท่าเดิม): รวม 10 MB → 434 KB (27–52 KB/รูป)
+  ลบ PNG ออกจาก repo; `constants/characters.js` avatar ชี้ `.webp`
+- `character-portrait` skill: บันทึกเป็น `.webp` ตั้งแต่แรก + วิธีโหลดหลายรูป (อนุญาตดาวน์โหลดหลายไฟล์, จับคู่ไฟล์ `.tmp` ด้วยขนาด)
+- `CLAUDE.md`: Conventions (รูปเป็น WebP), TODO 4 ปิดแล้ว
+- ตรวจแล้ว: ดูรูปเอวา WebP ไม่ต่างจาก PNG; สำเนาไม่ล็อกอิน การ์ด 12 ตัวโหลด `.webp` 768×1024 ครบ; `next build` ผ่าน
+
+---
+
 ## 2026-10-22 — รูปตัวละครครบ 12 ตัว
 
 - tensor.art (Z-Image-Turbo, 768×1024) ผ่าน Claude in Chrome — prompt ตาม `character-portrait` skill + รูปลักษณ์จาก `profile.appearance`

@@ -100,7 +100,8 @@ The owner builds it for themselves and their partner. Reply to the owner in Thai
   changed, files, how it was verified, what is left). Keep Status/TODO below in sync too.
 - UI text is Thai; code, comments and commit messages are English (older commits are Thai).
 - Commit style: conventional commits (`feat:`, `fix(ui):`, `chore:`), one topic per commit.
-- Images: portraits PNG 768×1024 in `public/characters/`, backgrounds WebP via `sharp` (already in node_modules).
+- Images: portraits and backgrounds are WebP via `sharp` (already in node_modules); portraits 768×1024 in
+  `public/characters/<id>.webp`, quality 82.
 - Mobile matters (owner tests on iPhone Safari): use `h-dvh`, not `h-screen`; inputs 16px on phones.
 
 ## Status (2026-10-22)
@@ -120,7 +121,7 @@ blocked-reply handling, relationship in header, speaker labels, character profil
    gives 3D-cartoon results, use "photorealistic, realistic photo"). Free tensor.art runs one task at a time.
 3. Create-character form: has profile + cast now, but still no fields for `background` (chat backdrop) or
    `defaultUserRole`. Profiles could later get a picture gallery (several images, swipe 1/3) once portraits exist.
-4. Portraits are ~830 KB PNGs each (~10 MB for the home grid); could be WebP (~100 KB each).
+4. Portraits as WebP — done 2026-10-22 (10 MB of PNG → 434 KB).
 5. Not yet checked with real Gemini replies: does the model always add `พื้นหลัง=`?
 6. **Feature rounds agreed with the owner** (one round at a time, used for a few days before the next):
    - Round 1 — done 2026-10-21, live; home-screen install + login on iPhone confirmed working.
