@@ -425,7 +425,11 @@ function RoleplayApp({ store, account, getAccessToken }) {
   // Stream a reply for `baseMessages`, which must end with the user message being answered.
   // `previous`: the reply being regenerated; the new one is added to its swipes, and it comes back if
   // generating fails. `direction`: out-of-story instruction for this reply only.
-  const streamReply = async (baseMessages, { previous = null, direction: storyDirection = '' } = {}) => {
+  // `continueStory`: no new user message; the last message is the character's own and the reply continues it
+  const streamReply = async (
+    baseMessages,
+    { previous = null, direction: storyDirection = '', continueStory = false } = {}
+  ) => {
     if (loading || !selectedChar) return;
 
     const persona = selectedChar;
@@ -465,8 +469,9 @@ function RoleplayApp({ store, account, getAccessToken }) {
         },
         signal: controller.signal,
         body: JSON.stringify({
-          message: userMessage,
-          history: historyPayload.slice(0, -1),
+          message: continueStory ? '' : userMessage,
+          history: continueStory ? historyPayload : historyPayload.slice(0, -1),
+          continueStory: continueStory || undefined,
           persona: withoutImages(selectedChar),
           apiKey: apiKey,
           model: model,
@@ -611,6 +616,13 @@ function RoleplayApp({ store, account, getAccessToken }) {
     setInput('');
     const settled = messages.map((m, i) => (i === messages.length - 1 && m.alts ? withoutSwipes(m) : m));
     streamReply([...settled, { role: 'user', text: userMessage, ...(chatStyle === 'dm' && { style: 'dm' }) }], { direction });
+  };
+
+  // "Continue" button (empty input): the character carries the scene on without a new user message
+  const handleContinue = () => {
+    if (loading || !selectedChar || messages[messages.length - 1]?.role !== 'model') return;
+    const settled = messages.map((m, i) => (i === messages.length - 1 && m.alts ? withoutSwipes(m) : m));
+    streamReply(settled, { direction, continueStory: true });
   };
 
   // Stop the reply the user is waiting for; whatever text has arrived is kept
@@ -1015,6 +1027,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
           input={input}
           setInput={setInput}
           onSendMessage={handleSendMessage}
+          onContinue={handleContinue}
           onClearHistory={handleClearHistory}
           onStopReply={handleStopReply}
           onRegenerate={handleRegenerate}

@@ -170,6 +170,7 @@ export default function ChatWindow({
   input,
   setInput,
   onSendMessage,
+  onContinue,
   onClearHistory,
   hasUserRole,
   onOpenUserRole,
@@ -345,6 +346,7 @@ export default function ChatWindow({
         input={input}
         setInput={setInput}
         onSendMessage={onSendMessage}
+        onContinue={onContinue}
         onStop={onStopReply}
         loading={loading}
         characterName={selectedChar.name}

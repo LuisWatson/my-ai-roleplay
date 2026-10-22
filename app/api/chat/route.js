@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { AVAILABLE_MODELS } from '../../../constants/models';
 import { normalizeResponseSettings } from '../../../constants/chatSettings';
-import { buildSystemInstruction } from '../../../lib/prompt';
+import { buildSystemInstruction, CONTINUE_MESSAGE } from '../../../lib/prompt';
 import { authorize, resolveApiKey, tryModels } from '../../../lib/geminiServer';
 
 const CANDIDATE_MODELS = AVAILABLE_MODELS.map((m) => m.id);
@@ -35,6 +35,7 @@ export async function POST(req) {
       relation,
       chatStyle,
       direction,
+      continueStory,
     } = await req.json();
 
     const { key: activeKey, error: keyError } = resolveApiKey(apiKey);
@@ -63,14 +64,17 @@ export async function POST(req) {
       suggestChoices: suggestions,
       chatStyle: chatStyle === 'dm' ? 'dm' : 'novel',
       direction,
+      continueStory: Boolean(continueStory),
     });
 
     // Ensure chat history conforms to Gemini SDK requirements:
     // 1. First message must be from 'user'
     // 2. Roles must strictly alternate between 'user' and 'model'
     let rawHistory = (history || []).filter((h) => h.text && h.text.trim().length > 0);
-    while (rawHistory.length > 0 && rawHistory[0].role !== 'user') {
-      rawHistory.shift();
+    // The greeting (and "continue" replies before the user's first message) come before any user turn;
+    // keep them behind a stand-in opening turn instead of dropping them, so the model sees its own words
+    if (rawHistory.length > 0 && rawHistory[0].role !== 'user') {
+      rawHistory = [{ role: 'user', text: CONTINUE_MESSAGE }, ...rawHistory];
     }
 
     const formattedHistory = [];
@@ -88,7 +92,7 @@ export async function POST(req) {
 
     // A failed or aborted send leaves history ending on a user turn; fold it into the outgoing message
     // so Gemini never sees two consecutive user turns.
-    let outgoingMessage = message;
+    let outgoingMessage = continueStory ? CONTINUE_MESSAGE : message;
     if (formattedHistory.length > 0 && formattedHistory[formattedHistory.length - 1].role === 'user') {
       outgoingMessage = `${formattedHistory.pop().parts[0].text}
 ${message}`;

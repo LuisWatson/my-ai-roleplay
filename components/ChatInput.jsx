@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Send, Square, Clapperboard, X } from 'lucide-react';
+import { Send, Square, Clapperboard, X, FastForward } from 'lucide-react';
 
 const MAX_HEIGHT_PX = 200;
 
@@ -19,6 +19,7 @@ export default function ChatInput({
   input,
   setInput,
   onSendMessage,
+  onContinue,
   onStop,
   loading,
   characterName,
@@ -139,6 +140,16 @@ export default function ChatInput({
               className="h-10 w-10 grid place-items-center rounded-xl bg-slate-700 hover:bg-red-600/80 text-white transition flex-shrink-0"
             >
               <Square className="w-4 h-4 fill-current" />
+            </button>
+          ) : !canSend && onContinue ? (
+            // Empty input: the send slot becomes "continue", like other roleplay apps
+            <button
+              onClick={onContinue}
+              title="ให้ตอบต่อทันที"
+              aria-label="ให้ตอบต่อทันที"
+              className="h-10 w-10 grid place-items-center rounded-xl transition flex-shrink-0 bg-gradient-to-br from-teal-500 to-cyan-600 hover:from-teal-400 hover:to-cyan-500 text-white shadow-md shadow-cyan-900/40"
+            >
+              <FastForward className="w-4 h-4 fill-current" />
             </button>
           ) : (
             <button
