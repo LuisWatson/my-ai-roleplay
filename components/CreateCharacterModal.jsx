@@ -7,6 +7,7 @@ import { DEFAULT_AVATAR } from '../constants/characters';
 import { REALISM_OPTIONS, DEFAULT_REALISM } from '../constants/scenario';
 
 const PRESET_AVATARS = [
+  DEFAULT_AVATAR,
   'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
   'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
   'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
@@ -187,7 +188,7 @@ export default function CreateCharacterModal({
                   <summary className="cursor-pointer select-none hover:text-slate-200">หรือวางลิงก์รูป</summary>
                   <input
                     type="url"
-                    value={formData.avatar.startsWith('data:') ? '' : formData.avatar}
+                    value={/^https?:/.test(formData.avatar) ? formData.avatar : ''}
                     onChange={(e) => setFormData({ ...formData, avatar: e.target.value })}
                     placeholder={formData.avatar.startsWith('data:') ? 'ใช้รูปที่เลือกจากเครื่องอยู่' : 'https://...'}
                     className="mt-1.5 w-full bg-slate-900 border border-slate-700 rounded-xl p-2 text-base md:text-xs text-slate-100 focus:outline-none focus:border-purple-500"

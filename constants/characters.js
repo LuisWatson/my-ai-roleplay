@@ -225,4 +225,4 @@ const BASE_CHARACTERS = [
 
 export const DEFAULT_CHARACTERS = BASE_CHARACTERS.map((c) => ({ ...c, ...PRESET_PROFILES[c.id] }));
 
-export const DEFAULT_AVATAR = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80';
+export const DEFAULT_AVATAR = '/characters/default-avatar.svg';
