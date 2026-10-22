@@ -79,6 +79,8 @@ The owner builds it for themselves and their partner. Reply to the owner in Thai
 - Swipes: a regenerated model message keeps `alts: [{ text, scene }]` + `altIndex` (only the last reply);
   dropped when the user sends the next message.
 - Story direction ("กำกับเรื่อง", `ChatInput`): one-shot out-of-story instruction sent as `direction`; never saved.
+- "+" menu (`ChatInput`): suggest replies on demand (`/api/suggest`, Lite models first; stored as `choices` +
+  `choicesAsked` on the last reply), story direction, novel/DM switch, memory, my role.
 - Continue (⏩ in the send slot when the input is empty): `continueStory` — no user message is added; the server sends
   `CONTINUE_MESSAGE` as the user turn. History that starts with model turns (greeting) gets that same stand-in turn
   in front instead of being dropped.
