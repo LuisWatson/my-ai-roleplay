@@ -2,7 +2,11 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { AVAILABLE_MODELS } from '../../../constants/models';
 import { normalizeResponseSettings } from '../../../constants/chatSettings';
 import { buildSystemInstruction, CONTINUE_MESSAGE } from '../../../lib/prompt';
-import { authorize, resolveApiKey, tryModels } from '../../../lib/geminiServer';
+import { authorize, resolveApiKey, tryModels, SAFETY_SETTINGS } from '../../../lib/geminiServer';
+import { CUT_MARKER } from '../../../lib/scene';
+
+// Finish reasons that mean the reply ended normally
+const NORMAL_FINISH = new Set(['STOP', 'FINISH_REASON_UNSPECIFIED']);
 
 const CANDIDATE_MODELS = AVAILABLE_MODELS.map((m) => m.id);
 
@@ -116,7 +120,7 @@ ${message}`;
       // and the page gets an error it can explain, instead of a stream that breaks after the 200
       run: async (mName) => {
         const { stream } = await genAI
-          .getGenerativeModel({ model: mName, systemInstruction })
+          .getGenerativeModel({ model: mName, systemInstruction, safetySettings: SAFETY_SETTINGS })
           .startChat({ history: formattedHistory, generationConfig: { temperature } })
           .sendMessageStream(outgoingMessage);
         const iterator = stream[Symbol.asyncIterator]();
@@ -132,20 +136,29 @@ ${message}`;
     });
     if (errorResponse) return errorResponse;
 
-    // Stream the rest of the reply. If Google blocks it midway, end quietly: the page keeps what arrived.
+    // Stream the rest of the reply. If Google stops it midway (blocked, length limit, ...), end with
+    // CUT_MARKER + the reason: the page keeps what arrived and says the reply was cut.
     const encoder = new TextEncoder();
     const customStream = new ReadableStream({
       async start(controller) {
         controller.enqueue(encoder.encode(resultStream.firstText));
+        let cut = null;
         try {
           while (true) {
             const { value, done } = await resultStream.iterator.next();
             if (done) break;
+            const finish = value.candidates?.[0]?.finishReason;
+            if (finish && !NORMAL_FINISH.has(finish)) cut = finish;
             const chunkText = value.text();
             if (chunkText) controller.enqueue(encoder.encode(chunkText));
           }
         } catch (streamError) {
+          cut = cut || streamError.message.match(/\b(SAFETY|RECITATION|PROHIBITED_CONTENT|BLOCKLIST|SPII|OTHER)\b/)?.[1] || 'ERROR';
           console.error(`Reply from ${usedModel} stopped midway:`, streamError.message);
+        }
+        if (cut) {
+          console.warn(`Reply from ${usedModel} was cut: ${cut}`);
+          controller.enqueue(encoder.encode(`${CUT_MARKER}${cut}`));
         }
         controller.close();
       },

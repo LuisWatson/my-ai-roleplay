@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { AVAILABLE_MODELS } from '../../../constants/models';
 import { buildSummaryPrompt } from '../../../lib/prompt';
-import { authorize, resolveApiKey, tryModels, jsonResponse } from '../../../lib/geminiServer';
+import { authorize, resolveApiKey, tryModels, jsonResponse, SAFETY_SETTINGS } from '../../../lib/geminiServer';
 
 // Summaries run in the background, so they use the Lite models first: their free quota is far larger
 // and the newer Flash models (20 requests a day) are kept for the chat itself.
@@ -55,7 +55,7 @@ export async function POST(req) {
       totalMs: TOTAL_MS,
       // Reading the text inside the attempt makes a blocked or empty summary count as a failed model
       run: async (model) => {
-        const { response } = await genAI.getGenerativeModel({ model }).generateContent({
+        const { response } = await genAI.getGenerativeModel({ model, safetySettings: SAFETY_SETTINGS }).generateContent({
           contents: [{ role: 'user', parts: [{ text: prompt }] }],
           generationConfig: { temperature: 0.3 },
         });

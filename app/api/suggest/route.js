@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { AVAILABLE_MODELS } from '../../../constants/models';
 import { buildSuggestPrompt } from '../../../lib/prompt';
-import { authorize, resolveApiKey, tryModels, jsonResponse } from '../../../lib/geminiServer';
+import { authorize, resolveApiKey, tryModels, jsonResponse, SAFETY_SETTINGS } from '../../../lib/geminiServer';
 
 // On-demand suggestions are small; Lite models first so the Flash quota (20 a day) stays for the chat
 const SUGGEST_MODELS = [
@@ -56,7 +56,7 @@ export async function POST(req) {
       perModelMs: PER_MODEL_MS,
       totalMs: TOTAL_MS,
       run: async (model) => {
-        const res = await genAI.getGenerativeModel({ model }).generateContent(prompt);
+        const res = await genAI.getGenerativeModel({ model, safetySettings: SAFETY_SETTINGS }).generateContent(prompt);
         return res.response.text();
       },
     });

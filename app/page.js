@@ -14,7 +14,7 @@ import Toast from '../components/Toast';
 import { useConfirm } from '../components/ConfirmDialog';
 import { normalizeUserRole, mergeUserProfile, USER_ROLE_FIELDS } from '../lib/userRole';
 import { normalizeRealism } from '../constants/scenario';
-import { stripTrailingPartialTag, finalizeReply, latestScene } from '../lib/scene';
+import { stripTrailingPartialTag, finalizeReply, latestScene, splitCut } from '../lib/scene';
 import { DEFAULT_CHARACTERS } from '../constants/characters';
 import { memoryKey, pinsKey, readMemory, readPins, cleanPins, chatWindow, nextMemoryBatch, fingerprint } from '../lib/memory';
 import {
@@ -525,7 +525,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
           const nextState = [...prev];
           const lastIndex = nextState.length - 1;
           if (lastIndex >= 0 && nextState[lastIndex].role === 'model') {
-            nextState[lastIndex] = { ...nextState[lastIndex], text: stripTrailingPartialTag(accumulatedText) };
+            nextState[lastIndex] = { ...nextState[lastIndex], text: stripTrailingPartialTag(splitCut(accumulatedText).text) };
           }
           return nextState;
         });
@@ -555,14 +555,25 @@ function RoleplayApp({ store, account, getAccessToken }) {
       }
     } finally {
       clearTimeout(stallTimer);
-      if (accumulatedText && !controller.discard) {
+      // Google stopped the reply partway (the server says why after a marker): keep it, but say so
+      const { text: replyText, cut } = splitCut(accumulatedText);
+      if (cut && replyText && !controller.discard && activeCharIdRef.current === charId) {
+        console.warn('Reply was cut:', cut);
+        setNotice({
+          kind: 'warn',
+          title: 'คำตอบถูกตัดกลางทาง',
+          text: 'เก็บส่วนที่ได้ไว้แล้ว กด "สร้างคำตอบใหม่" ถ้าอยากได้คำตอบเต็ม',
+          detail: cut,
+        });
+      }
+      if (replyText && !controller.discard) {
         const {
           cleanText,
           scene,
           moment: momentTitle,
           relation: reportedRelation,
           choices: reportedChoices,
-        } = finalizeReply(accumulatedText);
+        } = finalizeReply(replyText);
         const relation = responseSettings.relationship
           ? settleRelation(latestRelation(baseMessages), reportedRelation)
           : undefined;
@@ -594,7 +605,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
         saveHistory(charId, finalMessages);
         updateMemory(persona, finalMessages);
         // The chat model often leaves the choices out of its tag: ask the Lite models for them instead
-        if (responseSettings.suggestions && !choices && cleanText && !controller.stalled && !controller.userStopped) {
+        if (responseSettings.suggestions && !choices && cleanText && !cut && !controller.stalled && !controller.userStopped) {
           requestSuggestions(persona, finalMessages, { auto: true });
         }
         if (activeCharIdRef.current === charId) setDirection('');
