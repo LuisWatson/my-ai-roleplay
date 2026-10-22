@@ -167,6 +167,7 @@ export default function ChatWindow({
   onBack,
   messages,
   loading,
+  waiting,
   input,
   setInput,
   onSendMessage,
@@ -332,7 +333,7 @@ export default function ChatWindow({
           />
         ))}
 
-        {loading && messages[messages.length - 1]?.role === 'user' && (
+        {waiting && (
           <WaitingIndicator avatar={selectedChar.avatar} name={selectedChar.name} />
         )}
         {choices && <ChoiceChips choices={choices} onPick={onPickChoice} />}

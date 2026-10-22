@@ -120,6 +120,8 @@ function RoleplayApp({ store, account, getAccessToken }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  // True from sending until the first words arrive (shows the "thinking" bubble, also for continue)
+  const [waiting, setWaiting] = useState(false);
   const [apiKey, setApiKey] = useState('');
   const [userProfile, setUserProfile] = useState({ name: '', callMe: '', description: '' });
   const [model, setModel] = useState(DEFAULT_MODEL);
@@ -319,6 +321,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
     abortRef.current.abort();
     abortRef.current = null;
     setLoading(false);
+    setWaiting(false);
   };
 
   // The role form opens by itself only the first time a character is opened; returns true that one time.
@@ -439,6 +442,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
     // While regenerating, the saved chat keeps the old reply until a new one arrives
     if (!previous) saveHistory(charId, baseMessages);
     setLoading(true);
+    setWaiting(true);
     setNotice(null);
 
     const controller = new AbortController();
@@ -499,6 +503,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
       // Add empty placeholder for the incoming stream; `loading` stays true so the input stays locked.
       // Skipped (like every UI update below) when the user has already switched to another chat.
       if (activeCharIdRef.current === charId) {
+        setWaiting(false);
         setMessages((prev) => [...prev, { role: 'model', text: '', ...(chatStyle === 'dm' && { style: 'dm' }) }]);
       }
 
@@ -604,6 +609,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
       if (abortRef.current === controller) {
         abortRef.current = null;
         setLoading(false);
+        setWaiting(false);
       }
     }
   };
@@ -1024,6 +1030,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
           onBack={handleBack}
           messages={messages}
           loading={loading}
+          waiting={waiting}
           input={input}
           setInput={setInput}
           onSendMessage={handleSendMessage}
