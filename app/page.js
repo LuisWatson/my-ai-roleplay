@@ -574,6 +574,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
           scene,
           moment: momentTitle,
           relation: reportedRelation,
+          relationRaw,
           choices: reportedChoices,
         } = finalizeReply(replyText);
         const relation = responseSettings.relationship
@@ -596,6 +597,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
           scene,
           ...(moment && { moment }),
           ...(relation && { relation }),
+          ...(relation && relationRaw && { relationRaw }),
           ...(choices && { choices }),
           ...(chatStyle === 'dm' && { style: 'dm' }),
         };
