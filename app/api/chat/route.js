@@ -10,6 +10,16 @@ const NORMAL_FINISH = new Set(['STOP', 'FINISH_REASON_UNSPECIFIED']);
 
 const CANDIDATE_MODELS = AVAILABLE_MODELS.map((m) => m.id);
 
+// Models that finish a reply Google cut short (big free quota, so the Flash quota stays for real replies)
+const LITE_MODELS = CANDIDATE_MODELS.filter((m) => m.includes('lite'));
+// Each Lite try, and all of them (under the page's 30 s wait between chunks)
+const CONTINUE_CUT_MS = 12000;
+const CONTINUE_CUT_TOTAL_MS = 24000;
+const CONTINUE_CUT_MESSAGE =
+  '(ข้อความล่าสุดของคุณถูกตัดกลางคัน ให้เขียนต่อจากคำสุดท้ายที่ค้างไว้ทันที ห้ามทวนหรือเริ่มข้อความเดิมใหม่ ' +
+  'ห้ามพูดถึงการถูกตัด เขียนให้จบฉากสั้นๆ แล้วปิดท้ายด้วยแท็กฉากตามกฎ)';
+const SCENE_TAG_MARKER = '[ฉาก:';
+
 // How long to wait for a model to start replying before falling back to the next one.
 const FIRST_RESPONSE_TIMEOUT_MS = 20000;
 
@@ -106,6 +116,24 @@ ${message}`;
     const ordered = requestedModel
       ? [requestedModel, ...CANDIDATE_MODELS.filter((m) => m !== requestedModel)]
       : CANDIDATE_MODELS;
+    // Starts a streamed reply and waits for its first words, so a reply Google blocks (or an empty one)
+    // counts as this model failing instead of a stream that breaks after the 200
+    const openStream = (history, text) => async (mName) => {
+      const { stream } = await genAI
+        .getGenerativeModel({ model: mName, systemInstruction, safetySettings: SAFETY_SETTINGS })
+        .startChat({ history, generationConfig: { temperature } })
+        .sendMessageStream(text);
+      const iterator = stream[Symbol.asyncIterator]();
+      let firstText = '';
+      while (!firstText) {
+        const { value, done } = await iterator.next();
+        if (done) break;
+        firstText = value.text(); // throws when the reply was blocked
+      }
+      if (!firstText) throw new Error('Empty reply');
+      return { iterator, firstText };
+    };
+
     const {
       result: resultStream,
       usedModel,
@@ -116,50 +144,60 @@ ${message}`;
       models: ordered,
       perModelMs: FIRST_RESPONSE_TIMEOUT_MS,
       totalMs: TOTAL_BUDGET_MS,
-      // Waits for the first words, so a reply Google blocks (or an empty one) counts as this model failing
-      // and the page gets an error it can explain, instead of a stream that breaks after the 200
-      run: async (mName) => {
-        const { stream } = await genAI
-          .getGenerativeModel({ model: mName, systemInstruction, safetySettings: SAFETY_SETTINGS })
-          .startChat({ history: formattedHistory, generationConfig: { temperature } })
-          .sendMessageStream(outgoingMessage);
-        const iterator = stream[Symbol.asyncIterator]();
-        let firstText = '';
-        while (!firstText) {
-          const { value, done } = await iterator.next();
-          if (done) break;
-          firstText = value.text(); // throws when the reply was blocked
-        }
-        if (!firstText) throw new Error('Empty reply');
-        return { iterator, firstText };
-      },
+      run: openStream(formattedHistory, outgoingMessage),
     });
     if (errorResponse) return errorResponse;
 
-    // Stream the rest of the reply. If Google stops it midway (blocked, length limit, ...), end with
-    // CUT_MARKER + the reason: the page keeps what arrived and says the reply was cut.
+    // Sends the rest of a started reply; returns why Google stopped it partway, or null when it finished
+    const pipe = async (started, model, onText) => {
+      onText(started.firstText);
+      let finish;
+      try {
+        while (true) {
+          const { value, done } = await started.iterator.next();
+          if (done) return null;
+          finish = value.candidates?.[0]?.finishReason;
+          const chunkText = value.text(); // throws when blocked
+          if (chunkText) onText(chunkText);
+          if (finish && !NORMAL_FINISH.has(finish)) return finish;
+        }
+      } catch (streamError) {
+        console.error(`Reply from ${model} stopped midway:`, streamError.message);
+        if (finish && !NORMAL_FINISH.has(finish)) return finish;
+        return streamError.message.match(/\b(SAFETY|RECITATION|PROHIBITED_CONTENT|BLOCKLIST|SPII|OTHER|MAX_TOKENS)\b/)?.[1] || 'ERROR';
+      }
+    };
+
+    // Stream the reply. If Google stops it in the middle of the story (its fixed filters cut harmless
+    // romance often), a Lite model carries on from the last word inside the same message. If that fails too,
+    // or the cut came inside the scene tag, end with CUT_MARKER + the reason: the page keeps what arrived.
     const encoder = new TextEncoder();
     const customStream = new ReadableStream({
       async start(controller) {
-        controller.enqueue(encoder.encode(resultStream.firstText));
-        let cut = null;
-        try {
-          while (true) {
-            const { value, done } = await resultStream.iterator.next();
-            if (done) break;
-            const finish = value.candidates?.[0]?.finishReason;
-            if (finish && !NORMAL_FINISH.has(finish)) cut = finish;
-            const chunkText = value.text();
-            if (chunkText) controller.enqueue(encoder.encode(chunkText));
+        let sent = '';
+        const send = (text) => {
+          sent += text;
+          controller.enqueue(encoder.encode(text));
+        };
+        let cut = await pipe(resultStream, usedModel, send);
+        if (cut) console.warn(`Reply from ${usedModel} was cut: ${cut}`);
+        if (cut && !sent.includes(SCENE_TAG_MARKER)) {
+          const { result: rest, usedModel: restModel } = await tryModels({
+            apiKey: activeKey,
+            models: LITE_MODELS,
+            perModelMs: CONTINUE_CUT_MS,
+            totalMs: CONTINUE_CUT_TOTAL_MS,
+            run: openStream(
+              [...formattedHistory, { role: 'user', parts: [{ text: outgoingMessage }] }, { role: 'model', parts: [{ text: sent }] }],
+              CONTINUE_CUT_MESSAGE
+            ),
+          });
+          if (rest) {
+            cut = await pipe(rest, restModel, send);
+            console.warn(`Cut reply continued by ${restModel}${cut ? `, cut again: ${cut}` : ''}`);
           }
-        } catch (streamError) {
-          cut = cut || streamError.message.match(/\b(SAFETY|RECITATION|PROHIBITED_CONTENT|BLOCKLIST|SPII|OTHER)\b/)?.[1] || 'ERROR';
-          console.error(`Reply from ${usedModel} stopped midway:`, streamError.message);
         }
-        if (cut) {
-          console.warn(`Reply from ${usedModel} was cut: ${cut}`);
-          controller.enqueue(encoder.encode(`${CUT_MARKER}${cut}`));
-        }
+        if (cut) controller.enqueue(encoder.encode(`${CUT_MARKER}${cut}`));
         controller.close();
       },
     });

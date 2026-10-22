@@ -555,10 +555,12 @@ function RoleplayApp({ store, account, getAccessToken }) {
       }
     } finally {
       clearTimeout(stallTimer);
-      // Google stopped the reply partway (the server says why after a marker): keep it, but say so
+      // Google stopped the reply partway and the server could not finish it (it says why after a marker):
+      // keep what arrived. Only a cut in the story itself gets a notice; one inside the scene tag at the end
+      // loses just the tag, and suggestions are fetched separately.
       const { text: replyText, cut } = splitCut(accumulatedText);
-      if (cut && replyText && !controller.discard && activeCharIdRef.current === charId) {
-        console.warn('Reply was cut:', cut);
+      if (cut) console.warn('Reply was cut:', cut);
+      if (cut && replyText && !replyText.includes('[ฉาก:') && !controller.discard && activeCharIdRef.current === charId) {
         setNotice({
           kind: 'warn',
           title: 'คำตอบถูกตัดกลางทาง',
