@@ -43,7 +43,7 @@ function ConfirmDialog({ request, onAnswer }) {
 
   return (
     <div
-      className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-4 animate-fadeIn"
+      className="fixed inset-0 z-[70] bg-slate-950/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-4 animate-fadeIn"
       onClick={() => onAnswer(false)}
     >
       <div
@@ -86,7 +86,7 @@ function ConfirmDialog({ request, onAnswer }) {
             className={`flex-1 py-2.5 rounded-xl text-white text-sm font-medium transition focus:outline-none focus:ring-2 ${
               danger
                 ? 'bg-rose-600 hover:bg-rose-500 focus:ring-rose-400'
-                : 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 focus:ring-purple-400'
+                : 'bg-purple-600 hover:bg-purple-500 focus:ring-purple-400'
             }`}
           >
             {confirmLabel}

@@ -102,7 +102,7 @@ function CloudGate({ children }) {
     <div className="h-dvh flex items-center justify-center p-4 bg-slate-900">
       <div className="w-full max-w-sm bg-slate-800/80 border border-slate-700 rounded-2xl p-6 text-center space-y-5 shadow-xl">
         <div className="flex items-center justify-center gap-2">
-          <div className="p-1.5 rounded-lg bg-gradient-to-tr from-purple-600 to-indigo-600">
+          <div className="p-1.5 rounded-lg bg-purple-600">
             <Sparkles className="w-5 h-5 text-white" />
           </div>
           <h1 className="font-bold text-lg text-white">Botbaat</h1>
@@ -120,7 +120,7 @@ function CloudGate({ children }) {
             <p className="text-sm text-slate-300">เข้าสู่ระบบเพื่อให้แชทและบทบาทของคุณใช้ได้ทุกเครื่อง</p>
             <button
               onClick={signIn}
-              className="w-full py-3 px-4 bg-white hover:bg-slate-100 text-slate-900 rounded-xl font-medium text-sm transition"
+              className="w-full py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-900 rounded-xl font-medium text-sm transition"
             >
               เข้าสู่ระบบด้วย Google
             </button>
@@ -153,7 +153,7 @@ function CloudGate({ children }) {
             <div className="space-y-2">
               <button
                 onClick={importLocalData}
-                className="w-full py-2.5 px-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl font-medium text-sm transition"
+                className="w-full py-2.5 px-4 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-medium text-sm transition"
               >
                 ย้ายข้อมูลขึ้นบัญชี
               </button>

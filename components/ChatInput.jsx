@@ -259,7 +259,7 @@ export default function ChatInput({
               onClick={onContinue}
               title="ให้ตอบต่อทันที"
               aria-label="ให้ตอบต่อทันที"
-              className="h-10 w-10 grid place-items-center rounded-xl transition flex-shrink-0 bg-gradient-to-br from-teal-500 to-cyan-600 hover:from-teal-400 hover:to-cyan-500 text-white shadow-md shadow-cyan-900/40"
+              className="h-10 w-10 grid place-items-center rounded-xl transition flex-shrink-0 bg-teal-600 hover:bg-teal-500 text-white"
             >
               <FastForward className="w-4 h-4 fill-current" />
             </button>
@@ -270,7 +270,7 @@ export default function ChatInput({
               title="ส่งข้อความ"
               className={`h-10 w-10 grid place-items-center rounded-xl transition flex-shrink-0 ${
                 canSend
-                  ? 'bg-gradient-to-br from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-white shadow-md shadow-purple-900/40'
+                  ? 'bg-purple-500 hover:bg-purple-400 text-white'
                   : 'bg-slate-700/60 text-slate-500 cursor-not-allowed'
               }`}
             >

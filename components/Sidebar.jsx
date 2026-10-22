@@ -61,7 +61,7 @@ export default function Sidebar({
 
   return (
     <>
-      {isOpen && <div onClick={onClose} className="md:hidden fixed inset-0 bg-black/60 z-30" />}
+      {isOpen && <div onClick={onClose} className="md:hidden fixed inset-0 bg-slate-950/60 z-30" />}
       <aside
         className={`fixed md:static inset-y-0 left-0 z-40 w-80 bg-slate-800 md:bg-slate-800/80 backdrop-blur-md border-r border-slate-700/80 flex flex-col h-full transition-transform ${
           isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
@@ -70,7 +70,7 @@ export default function Sidebar({
         {/* Header */}
         <div className="p-4 border-b border-slate-700/80 flex justify-between items-center bg-slate-800/40">
           <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-gradient-to-tr from-purple-600 to-indigo-600 shadow-sm shadow-purple-900/40">
+            <div className="p-1.5 rounded-lg bg-purple-600">
               <Sparkles className="w-5 h-5 text-white" />
             </div>
             <h1 className="font-bold text-base text-white tracking-wide">Botbaat</h1>
@@ -106,7 +106,7 @@ export default function Sidebar({
           </button>
           <button
             onClick={onOpenCreateModal}
-            className="w-full py-2.5 px-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition shadow-lg shadow-purple-900/30"
+            className="w-full py-2.5 px-4 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition"
           >
             <Plus className="w-4 h-4" />
             <span>สร้างตัวละครใหม่</span>

@@ -39,7 +39,7 @@ export default function UserRoleModal({ isOpen, onClose, character, role, onSave
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
+    <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
       <div className="bg-slate-800 border border-slate-700/80 rounded-2xl p-6 w-full max-w-lg space-y-4 max-h-[90vh] overflow-y-auto shadow-2xl relative">
         <button
           onClick={onClose}
@@ -49,7 +49,7 @@ export default function UserRoleModal({ isOpen, onClose, character, role, onSave
         </button>
 
         <div className="flex items-center gap-2.5 text-white">
-          <div className="p-2 rounded-lg bg-gradient-to-tr from-purple-600 to-indigo-600 shadow-md shadow-purple-900/30">
+          <div className="p-2 rounded-lg bg-purple-600">
             <UserCog className="w-5 h-5 text-white" />
           </div>
           <div>
@@ -125,7 +125,7 @@ export default function UserRoleModal({ isOpen, onClose, character, role, onSave
             </button>
             <button
               onClick={handleSave}
-              className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-sm font-medium rounded-xl transition shadow-md shadow-purple-900/40"
+              className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium rounded-xl transition"
             >
               บันทึกบทบาท
             </button>

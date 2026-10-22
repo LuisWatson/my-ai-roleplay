@@ -68,7 +68,7 @@ export default function CharacterProfile({ character, role, status, hasChat, onC
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4 animate-fadeIn"
+      className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4 animate-fadeIn"
       onClick={onClose}
     >
       <div
@@ -81,11 +81,11 @@ export default function CharacterProfile({ character, role, status, hasChat, onC
         {/* Picture with name */}
         <div className="relative h-[38dvh] min-h-[220px] max-h-80 flex-shrink-0 bg-slate-800">
           <img src={character.avatar} alt={character.name} className="absolute inset-0 w-full h-full object-cover object-top" />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/30 to-black/20" />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/30 to-slate-950/20" />
           <button
             onClick={onClose}
             title="ปิด"
-            className="absolute top-3 right-3 p-2 rounded-full bg-black/40 hover:bg-black/60 text-white transition"
+            className="absolute top-3 right-3 p-2 rounded-full bg-slate-950/40 hover:bg-slate-950/60 text-white transition"
           >
             <X className="w-5 h-5" />
           </button>
@@ -93,7 +93,7 @@ export default function CharacterProfile({ character, role, status, hasChat, onC
             <button
               onClick={onEdit}
               title="แก้ไขตัวละคร"
-              className="absolute top-3 left-3 p-2 rounded-full bg-black/40 hover:bg-black/60 text-white transition"
+              className="absolute top-3 left-3 p-2 rounded-full bg-slate-950/40 hover:bg-slate-950/60 text-white transition"
             >
               <Pencil className="w-4 h-4" />
             </button>
@@ -202,7 +202,7 @@ export default function CharacterProfile({ character, role, status, hasChat, onC
         <div className="p-4 pt-3 border-t border-slate-800 bg-slate-900">
           <button
             onClick={onStartChat}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-medium transition shadow-lg shadow-purple-900/40"
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-purple-600 hover:bg-purple-500 text-white font-medium transition"
           >
             <MessageCircle className="w-5 h-5" />
             {hasChat ? 'คุยต่อ' : 'เริ่มแชท'}

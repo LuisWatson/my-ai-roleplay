@@ -53,7 +53,7 @@ export default function CharacterBrowser({
             </div>
             <button
               onClick={onOpenCreateModal}
-              className="md:hidden p-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white"
+              className="md:hidden p-2.5 rounded-xl bg-purple-600 text-white"
               title="สร้างตัวละครใหม่"
             >
               <Plus className="w-5 h-5" />

@@ -27,15 +27,15 @@ export default function CharacterCard({ character, isSelected, onSelect, onDelet
       onClick={() => onSelect(character)}
       className={`group relative aspect-[3/4] rounded-xl overflow-hidden cursor-pointer transition-all border ${
         isSelected
-          ? 'border-purple-500 ring-2 ring-purple-500/50 shadow-lg shadow-purple-950/40'
+          ? 'border-purple-500 ring-2 ring-purple-500/50'
           : 'border-slate-700/50 hover:border-slate-600'
       }`}
     >
       <img src={character.avatar} alt={character.name} className="absolute inset-0 w-full h-full object-cover" />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/10 to-transparent" />
 
       {character.category && (
-        <span className="absolute top-2 left-2 text-[10px] px-1.5 py-0.5 rounded bg-black/50 backdrop-blur-sm text-purple-200 border border-purple-400/30">
+        <span className="absolute top-2 left-2 text-[10px] px-1.5 py-0.5 rounded bg-slate-950/50 backdrop-blur-sm text-purple-200 border border-purple-400/30">
           {character.category}
         </span>
       )}
@@ -46,7 +46,7 @@ export default function CharacterCard({ character, isSelected, onSelect, onDelet
             <button
               onClick={handleEdit}
               title="แก้ไขตัวละครนี้"
-              className="p-1.5 bg-black/50 backdrop-blur-sm hover:bg-purple-500/40 text-slate-200 hover:text-purple-200 rounded-lg"
+              className="p-1.5 bg-slate-950/50 backdrop-blur-sm hover:bg-purple-500/40 text-slate-200 hover:text-purple-200 rounded-lg"
             >
               <Pencil className="w-3.5 h-3.5" />
             </button>
@@ -55,7 +55,7 @@ export default function CharacterCard({ character, isSelected, onSelect, onDelet
             <button
               onClick={handleDelete}
               title="ลบตัวละครนี้"
-              className="p-1.5 bg-black/50 backdrop-blur-sm hover:bg-red-500/40 text-slate-200 hover:text-red-300 rounded-lg"
+              className="p-1.5 bg-slate-950/50 backdrop-blur-sm hover:bg-red-500/40 text-slate-200 hover:text-red-300 rounded-lg"
             >
               <Trash2 className="w-3.5 h-3.5" />
             </button>

@@ -96,7 +96,7 @@ function formatChatText(text) {
 function MomentCard({ moment, disabled, onSave, onDismiss, onUndo }) {
   if (moment.state === 'pending') {
     return (
-      <div className="w-full rounded-2xl border border-amber-400/30 bg-gradient-to-br from-amber-500/10 to-purple-500/10 px-3.5 py-3 space-y-2 animate-fadeIn">
+      <div className="w-full rounded-2xl border border-amber-400/30 bg-amber-500/10 px-3.5 py-3 space-y-2 animate-fadeIn">
         <div className="flex items-start gap-2 text-sm text-amber-100">
           <Sparkles className="w-4 h-4 mt-0.5 flex-shrink-0 text-amber-300" />
           <span>

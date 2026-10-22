@@ -116,7 +116,7 @@ export default function CreateCharacterModal({
     setFormData({ ...formData, cast: formData.cast.map((p, i) => (i === index ? { ...p, [key]: value } : p)) });
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
+    <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
       <div className="bg-slate-800 border border-slate-700/80 rounded-2xl p-6 w-full max-w-lg space-y-4 max-h-[90vh] overflow-y-auto shadow-2xl relative">
         <button
           onClick={onClose}
@@ -148,11 +148,11 @@ export default function CreateCharacterModal({
                 className="group relative w-20 aspect-[3/4] rounded-xl overflow-hidden border-2 border-purple-500/60 shadow-md flex-shrink-0"
               >
                 <img src={formData.avatar} alt="รูปตัวละคร" className="absolute inset-0 w-full h-full object-cover" />
-                <span className="absolute inset-0 grid place-items-center bg-black/40 opacity-0 group-hover:opacity-100 transition">
+                <span className="absolute inset-0 grid place-items-center bg-slate-950/40 opacity-0 group-hover:opacity-100 transition">
                   <Camera className="w-6 h-6 text-white" />
                 </span>
                 {uploading && (
-                  <span className="absolute inset-0 grid place-items-center bg-black/50">
+                  <span className="absolute inset-0 grid place-items-center bg-slate-950/50">
                     <Loader2 className="w-6 h-6 text-white animate-spin" />
                   </span>
                 )}
@@ -412,7 +412,7 @@ export default function CreateCharacterModal({
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-sm font-medium rounded-xl transition shadow-md shadow-purple-900/40"
+              className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium rounded-xl transition"
             >
               {editingCharacter ? 'บันทึกการแก้ไข' : 'สร้างตัวละคร'}
             </button>
