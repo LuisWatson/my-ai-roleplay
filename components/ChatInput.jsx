@@ -195,37 +195,45 @@ export default function ChatInput({
           </div>
         )}
         <div className="flex items-end gap-2 rounded-2xl bg-slate-800/70 border border-slate-700/70 px-2 py-2 shadow-lg shadow-black/20 transition focus-within:border-purple-500/70 focus-within:ring-2 focus-within:ring-purple-500/20">
-          <div className="flex gap-1.5 flex-shrink-0">
+          {/* Round + and one ** | "" capsule: three separate boxes crowded the phone layout */}
+          <div className="flex items-center gap-2 flex-shrink-0 mb-0.5">
             <button
               type="button"
               onClick={() => setMenuOpen((v) => !v)}
               aria-label="เมนูเพิ่มเติม"
               aria-expanded={menuOpen}
-              className={`h-10 w-10 grid place-items-center rounded-xl border transition ${
+              className={`h-9 w-9 grid place-items-center rounded-full transition ${
                 menuOpen
-                  ? 'bg-purple-600/80 border-purple-400/60 text-white'
-                  : 'bg-slate-700/50 hover:bg-slate-700 border-slate-600/50 text-purple-300 hover:text-purple-200'
+                  ? 'bg-purple-600/80 text-white'
+                  : 'bg-slate-700/60 hover:bg-slate-700 text-purple-300 hover:text-purple-200'
               }`}
             >
               <Plus className={`w-5 h-5 transition-transform ${menuOpen ? 'rotate-45' : ''}`} />
             </button>
-            {INSERT_BUTTONS.map(({ label, open, close, tip }) => (
-              <div key={label} className="relative group">
-                <button
-                  type="button"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => insertPair(open, close)}
-                  disabled={loading}
-                  aria-label={tip}
-                  className="h-10 w-10 grid place-items-center rounded-xl bg-slate-700/50 hover:bg-slate-700 border border-slate-600/50 text-purple-300 hover:text-purple-200 font-mono text-base transition disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  {label}
-                </button>
-                <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap rounded-md bg-slate-950 border border-slate-700 px-2 py-1 text-xs text-slate-200 opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 transition shadow-lg">
-                  {tip}
-                </span>
-              </div>
-            ))}
+            <div className="flex items-center h-9 rounded-full bg-slate-700/60">
+              {INSERT_BUTTONS.map(({ label, open, close, tip }, i) => (
+                <React.Fragment key={label}>
+                  {i > 0 && <span className="w-px h-4 bg-slate-500/60" aria-hidden />}
+                  <div className="relative group h-full">
+                    <button
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => insertPair(open, close)}
+                      disabled={loading}
+                      aria-label={tip}
+                      className={`h-full px-2.5 grid place-items-center text-purple-300 hover:text-purple-100 hover:bg-slate-600/60 font-mono text-sm transition disabled:opacity-40 disabled:cursor-not-allowed ${
+                        i === 0 ? 'rounded-l-full pl-3' : 'rounded-r-full pr-3'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                    <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap rounded-md bg-slate-950 border border-slate-700 px-2 py-1 text-xs text-slate-200 opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 transition shadow-lg">
+                      {tip}
+                    </span>
+                  </div>
+                </React.Fragment>
+              ))}
+            </div>
           </div>
           <textarea
             ref={textareaRef}
