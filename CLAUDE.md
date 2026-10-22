@@ -91,8 +91,9 @@ The owner builds it for themselves and their partner. Reply to the owner in Thai
   messages carry `moment: { title, state, entryId }`; saved moments are sent with every message.
 - Character photos (`lib/imageResize.js`): uploads become 450×600 JPEG data URLs inside the character;
   `withoutImages()` keeps them out of `/api/chat` requests.
-- Round 2 (`lib/relation.js`, rules 14–15 in `lib/prompt.js`): relationship meters clamped ±10 per reply, stored
-  on replies as `relation`; suggested replies as `choices` (must be in the user's voice — models drift into the
+- Round 2 (`lib/relation.js`, rules 14–15 in `lib/prompt.js`): relationship meters stored on replies as `relation`
+  (points, no upper limit; the model reports changes like `ผูกพัน +2, ไว้ใจ 0`, capped per reply; shown and sent to
+  the model as levels via `levelOf`); suggested replies as `choices` (must be in the user's voice — models drift into the
   character's); per-chat `chat_style_<id>` = 'dm' switches to short messaging-app chat (`style: 'dm'` on messages).
   Settings `suggestions` / `relationship` turn them off and stop asking the model.
   A reply that comes without choices gets them from `/api/suggest` (Lite) automatically (`requestSuggestions` in
