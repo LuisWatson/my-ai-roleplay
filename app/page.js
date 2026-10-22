@@ -122,8 +122,8 @@ function RoleplayApp({ store, account, getAccessToken }) {
   const [loading, setLoading] = useState(false);
   // True from sending until the first words arrive (shows the "thinking" bubble, also for continue)
   const [waiting, setWaiting] = useState(false);
-  // True while "แนะนำคำตอบ" (+ menu) is fetching suggestions
-  const [suggesting, setSuggesting] = useState(false);
+  // Id of the character whose suggestions are being fetched (+ menu or automatic), else null
+  const [suggesting, setSuggesting] = useState(null);
   const [apiKey, setApiKey] = useState('');
   const [userProfile, setUserProfile] = useState({ name: '', callMe: '', description: '' });
   const [model, setModel] = useState(DEFAULT_MODEL);
@@ -593,6 +593,10 @@ function RoleplayApp({ store, account, getAccessToken }) {
         const finalMessages = [...baseMessages, reply];
         saveHistory(charId, finalMessages);
         updateMemory(persona, finalMessages);
+        // The chat model often leaves the choices out of its tag: ask the Lite models for them instead
+        if (responseSettings.suggestions && !choices && cleanText && !controller.stalled && !controller.userStopped) {
+          requestSuggestions(persona, finalMessages, { auto: true });
+        }
         if (activeCharIdRef.current === charId) setDirection('');
         // Only touch the currently displayed chat if it's still this one (the user may have switched away)
         if (activeCharIdRef.current === charId) {
@@ -633,14 +637,14 @@ function RoleplayApp({ store, account, getAccessToken }) {
     streamReply(settled, { direction, continueStory: true });
   };
 
-  // "แนะนำคำตอบ" (+ menu): ask for three suggested replies to the character's last message on demand.
-  // They are stored on that message like the ones that come with a reply, marked as asked for.
-  const handleSuggest = async () => {
-    const last = messages[messages.length - 1];
-    if (loading || suggesting || !selectedChar || last?.role !== 'model') return;
-    const charId = selectedChar.id;
-    const index = messages.length - 1;
-    setSuggesting(true);
+  // Ask /api/suggest (Lite models) for three suggested replies to the last message of `msgs`, a reply of
+  // `persona`. Used by "แนะนำคำตอบ" in the + menu, and automatically when a reply came without choices.
+  // The choices are stored on that reply (also in its current swipe) if it is still the last message.
+  const requestSuggestions = async (persona, msgs, { auto = false } = {}) => {
+    const charId = persona.id;
+    const index = msgs.length - 1;
+    const target = msgs[index];
+    setSuggesting(charId);
     try {
       const accessToken = await getAccessToken();
       const res = await fetch('/api/suggest', {
@@ -650,27 +654,59 @@ function RoleplayApp({ store, account, getAccessToken }) {
           ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
         },
         body: JSON.stringify({
-          characterName: selectedChar.name,
-          userName: mergeUserProfile(userProfile, userRoles[charId]).name,
-          messages: messages.slice(-8).map(({ role, text }) => ({ role, text })),
+          characterName: persona.name,
+          characterDescription: persona.description,
+          userProfile: (() => {
+            const role = mergeUserProfile(userProfile, userRoles[charId]);
+            return {
+              name: role.name,
+              callMe: role.callMe,
+              description: role.description || persona.defaultUserRole?.description || '',
+            };
+          })(),
+          messages: msgs.slice(-8).map(({ role, text }) => ({ role, text })),
           chatStyle,
           apiKey,
         }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.choices?.length) throw new Error(data.error || `HTTP ${res.status}`);
-      if (activeCharIdRef.current !== charId) return;
-      setMessages((prev) => {
-        if (prev.length - 1 !== index || prev[index]?.role !== 'model') return prev;
-        const next = prev.map((m, i) => (i === index ? { ...m, choices: data.choices, choicesAsked: true } : m));
-        saveHistory(charId, next);
-        return next;
-      });
+      const { choices } = data;
+      const attach = (list) => {
+        const m = list[index];
+        if (list.length - 1 !== index || m?.role !== 'model' || m.text !== target.text) return list;
+        const withChoices = {
+          ...m,
+          choices,
+          ...(!auto && { choicesAsked: true }),
+          ...(m.alts && { alts: m.alts.map((a, j) => (j === m.altIndex ? { ...a, choices } : a)) }),
+        };
+        return list.map((x, i) => (i === index ? withChoices : x));
+      };
+      if (activeCharIdRef.current === charId) {
+        setMessages((prev) => {
+          const next = attach(prev);
+          if (next !== prev) saveHistory(charId, next);
+          return next;
+        });
+      } else {
+        // The user switched to another chat meanwhile: update the saved one
+        const saved = JSON.parse(store.getItem(`chat_history_${charId}`) || '[]');
+        const next = attach(saved);
+        if (next !== saved) saveHistory(charId, next);
+      }
     } catch (err) {
-      setToast({ kind: 'error', title: 'ขอคำแนะนำไม่สำเร็จ', text: err.message });
+      if (!auto) setToast({ kind: 'error', title: 'ขอคำแนะนำไม่สำเร็จ', text: err.message });
+      else console.warn('Auto suggestions failed:', err);
     } finally {
-      setSuggesting(false);
+      setSuggesting((current) => (current === charId ? null : current));
     }
+  };
+
+  const handleSuggest = () => {
+    const last = messages[messages.length - 1];
+    if (loading || !selectedChar || suggesting === selectedChar.id || last?.role !== 'model') return;
+    requestSuggestions(selectedChar, messages);
   };
 
   // Stop the reply the user is waiting for; whatever text has arrived is kept
@@ -1078,7 +1114,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
           onSendMessage={handleSendMessage}
           onContinue={handleContinue}
           onSuggest={handleSuggest}
-          suggesting={suggesting}
+          suggesting={suggesting === selectedChar.id}
           onClearHistory={handleClearHistory}
           onStopReply={handleStopReply}
           onRegenerate={handleRegenerate}
