@@ -30,6 +30,23 @@ export default function ChatInput({
 }) {
   const textareaRef = useRef(null);
   const [showDirection, setShowDirection] = useState(false);
+  // Phones get a one-line placeholder: the long hint wrapped to two lines and threw the button row off balance
+  const [wide, setWide] = useState(true);
+  const shortName = (characterName || 'ตัวละคร').replace(/\s*\(.*\)\s*$/, '');
+  const placeholder =
+    chatStyle === 'dm'
+      ? `แชทกับ ${shortName}...`
+      : wide
+        ? `พิมพ์ *การกระทำ* "คำพูด" คุยกับ ${characterName || 'ตัวละคร'}...`
+        : `คุยกับ ${shortName}...`;
+
+  useEffect(() => {
+    const query = window.matchMedia('(min-width: 768px)');
+    const update = () => setWide(query.matches);
+    update();
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  }, []);
   const directionOpen = showDirection || Boolean(direction);
 
   // Once a reply has used the direction (it is cleared then), fold the box away again
@@ -45,7 +62,7 @@ export default function ChatInput({
     el.style.height = `${next}px`;
     // Only show a scrollbar once the text is taller than the cap.
     el.style.overflowY = el.scrollHeight > MAX_HEIGHT_PX ? 'auto' : 'hidden';
-  }, [input]);
+  }, [input, placeholder]); // an empty box is as tall as its placeholder
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
@@ -126,11 +143,7 @@ export default function ChatInput({
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={loading}
-            placeholder={
-              chatStyle === 'dm'
-                ? `แชทกับ ${characterName || 'ตัวละคร'}...`
-                : `พิมพ์ *การกระทำ* "คำพูด" คุยกับ ${characterName || 'ตัวละคร'}...`
-            }
+            placeholder={placeholder}
             className="chat-input-scroll flex-1 resize-none overflow-hidden bg-transparent border-0 py-2 text-base md:text-sm leading-relaxed text-slate-100 placeholder-slate-500 px-1 focus:outline-none disabled:opacity-50"
           />
           {loading ? (
