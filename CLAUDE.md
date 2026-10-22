@@ -79,6 +79,9 @@ The owner builds it for themselves and their partner. Reply to the owner in Thai
 - Swipes: a regenerated model message keeps `alts: [{ text, scene }]` + `altIndex` (only the last reply);
   dropped when the user sends the next message.
 - Story direction ("กำกับเรื่อง", `ChatInput`): one-shot out-of-story instruction sent as `direction`; never saved.
+- Continue (⏩ in the send slot when the input is empty): `continueStory` — no user message is added; the server sends
+  `CONTINUE_MESSAGE` as the user turn. History that starts with model turns (greeting) gets that same stand-in turn
+  in front instead of being dropped.
 - `components/MemoryModal.jsx` — tabs: memory journal (`components/JournalList.jsx`) and pins (`chat_pins_<id>`,
   always sent, survive clearing the chat) + the editable auto summary.
 - Memory journal (`lib/journal.js`, `chat_journal_<id>`): the model flags key moments with an extra
