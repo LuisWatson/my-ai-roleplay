@@ -122,6 +122,8 @@ function RoleplayApp({ store, account, getAccessToken }) {
   const [loading, setLoading] = useState(false);
   // True from sending until the first words arrive (shows the "thinking" bubble, also for continue)
   const [waiting, setWaiting] = useState(false);
+  // True while "แนะนำคำตอบ" (+ menu) is fetching suggestions
+  const [suggesting, setSuggesting] = useState(false);
   const [apiKey, setApiKey] = useState('');
   const [userProfile, setUserProfile] = useState({ name: '', callMe: '', description: '' });
   const [model, setModel] = useState(DEFAULT_MODEL);
@@ -631,6 +633,46 @@ function RoleplayApp({ store, account, getAccessToken }) {
     streamReply(settled, { direction, continueStory: true });
   };
 
+  // "แนะนำคำตอบ" (+ menu): ask for three suggested replies to the character's last message on demand.
+  // They are stored on that message like the ones that come with a reply, marked as asked for.
+  const handleSuggest = async () => {
+    const last = messages[messages.length - 1];
+    if (loading || suggesting || !selectedChar || last?.role !== 'model') return;
+    const charId = selectedChar.id;
+    const index = messages.length - 1;
+    setSuggesting(true);
+    try {
+      const accessToken = await getAccessToken();
+      const res = await fetch('/api/suggest', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
+        },
+        body: JSON.stringify({
+          characterName: selectedChar.name,
+          userName: mergeUserProfile(userProfile, userRoles[charId]).name,
+          messages: messages.slice(-8).map(({ role, text }) => ({ role, text })),
+          chatStyle,
+          apiKey,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.choices?.length) throw new Error(data.error || `HTTP ${res.status}`);
+      if (activeCharIdRef.current !== charId) return;
+      setMessages((prev) => {
+        if (prev.length - 1 !== index || prev[index]?.role !== 'model') return prev;
+        const next = prev.map((m, i) => (i === index ? { ...m, choices: data.choices, choicesAsked: true } : m));
+        saveHistory(charId, next);
+        return next;
+      });
+    } catch (err) {
+      setToast({ kind: 'error', title: 'ขอคำแนะนำไม่สำเร็จ', text: err.message });
+    } finally {
+      setSuggesting(false);
+    }
+  };
+
   // Stop the reply the user is waiting for; whatever text has arrived is kept
   const handleStopReply = () => {
     if (abortRef.current) abortRef.current.userStopped = true;
@@ -1035,6 +1077,8 @@ function RoleplayApp({ store, account, getAccessToken }) {
           setInput={setInput}
           onSendMessage={handleSendMessage}
           onContinue={handleContinue}
+          onSuggest={handleSuggest}
+          suggesting={suggesting}
           onClearHistory={handleClearHistory}
           onStopReply={handleStopReply}
           onRegenerate={handleRegenerate}

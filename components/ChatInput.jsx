@@ -1,7 +1,19 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Send, Square, Clapperboard, X, FastForward } from 'lucide-react';
+import {
+  Send,
+  Square,
+  Clapperboard,
+  X,
+  FastForward,
+  Plus,
+  Lightbulb,
+  Brain,
+  UserCog,
+  BookOpen,
+  MessageCircle,
+} from 'lucide-react';
 
 const MAX_HEIGHT_PX = 200;
 
@@ -27,7 +39,27 @@ export default function ChatInput({
   setDirection,
   chatStyle,
   onToggleChatStyle,
+  onSuggest,
+  onOpenMemory,
+  onOpenUserRole,
 }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+
+  // The + menu closes on Escape or a tap outside it
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onDown = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false);
+    };
+    const onKey = (e) => e.key === 'Escape' && setMenuOpen(false);
+    document.addEventListener('pointerdown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('pointerdown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [menuOpen]);
   const textareaRef = useRef(null);
   const [showDirection, setShowDirection] = useState(false);
   // Phones get a one-line placeholder: the long hint wrapped to two lines and threw the button row off balance
@@ -88,9 +120,55 @@ export default function ChatInput({
 
   const canSend = input.trim().length > 0;
 
+  const menuItems = [
+    {
+      key: 'suggest',
+      icon: Lightbulb,
+      label: 'แนะนำคำตอบ',
+      onClick: onSuggest,
+      disabled: !onSuggest || loading,
+    },
+    {
+      key: 'direction',
+      icon: Clapperboard,
+      label: direction ? 'มีคำกำกับเรื่อง' : 'กำกับเรื่อง',
+      onClick: () => setShowDirection(true),
+      active: Boolean(direction),
+    },
+    {
+      key: 'style',
+      icon: chatStyle === 'dm' ? MessageCircle : BookOpen,
+      label: chatStyle === 'dm' ? 'โหมด: แชทสั้น' : 'โหมด: นิยาย',
+      onClick: onToggleChatStyle,
+    },
+    { key: 'memory', icon: Brain, label: 'ความทรงจำ', onClick: onOpenMemory },
+    { key: 'role', icon: UserCog, label: 'บทบาทของฉัน', onClick: onOpenUserRole },
+  ];
+
   return (
     <div className="px-3 pt-3 pb-2 md:px-4 md:pt-4 bg-slate-900/60 backdrop-blur-md border-t border-slate-800">
-      <div className="max-w-4xl mx-auto">
+      <div ref={menuRef} className="max-w-4xl mx-auto">
+        {menuOpen && (
+          <div className="mb-2 grid grid-cols-3 sm:grid-cols-5 gap-1.5 rounded-2xl bg-slate-800/95 border border-slate-700/70 p-2 shadow-xl shadow-black/30 animate-fadeIn">
+            {menuItems.map(({ key, icon: Icon, label, onClick, disabled, active }) => (
+              <button
+                key={key}
+                type="button"
+                disabled={disabled}
+                onClick={() => {
+                  setMenuOpen(false);
+                  onClick?.();
+                }}
+                className={`flex flex-col items-center justify-center gap-1.5 rounded-xl px-1 py-3 text-xs transition disabled:opacity-35 disabled:cursor-not-allowed ${
+                  active ? 'bg-amber-500/15 text-amber-200' : 'text-slate-200 hover:bg-slate-700/70'
+                }`}
+              >
+                <Icon className="w-5 h-5" />
+                <span className="leading-tight text-center">{label}</span>
+              </button>
+            ))}
+          </div>
+        )}
         {directionOpen && (
           <div className="mb-2 flex items-center gap-2 rounded-xl bg-amber-950/40 border border-amber-500/30 px-3 py-1.5 animate-fadeIn">
             <Clapperboard className="w-4 h-4 text-amber-300 flex-shrink-0" />
@@ -118,6 +196,19 @@ export default function ChatInput({
         )}
         <div className="flex items-end gap-2 rounded-2xl bg-slate-800/70 border border-slate-700/70 px-2 py-2 shadow-lg shadow-black/20 transition focus-within:border-purple-500/70 focus-within:ring-2 focus-within:ring-purple-500/20">
           <div className="flex gap-1.5 flex-shrink-0">
+            <button
+              type="button"
+              onClick={() => setMenuOpen((v) => !v)}
+              aria-label="เมนูเพิ่มเติม"
+              aria-expanded={menuOpen}
+              className={`h-10 w-10 grid place-items-center rounded-xl border transition ${
+                menuOpen
+                  ? 'bg-purple-600/80 border-purple-400/60 text-white'
+                  : 'bg-slate-700/50 hover:bg-slate-700 border-slate-600/50 text-purple-300 hover:text-purple-200'
+              }`}
+            >
+              <Plus className={`w-5 h-5 transition-transform ${menuOpen ? 'rotate-45' : ''}`} />
+            </button>
             {INSERT_BUTTONS.map(({ label, open, close, tip }) => (
               <div key={label} className="relative group">
                 <button
@@ -179,31 +270,8 @@ export default function ChatInput({
             </button>
           )}
         </div>
-        <div className="mt-1.5 px-1 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => setShowDirection((v) => !v || Boolean(direction))}
-              className={`inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-[11px] transition ${
-                direction ? 'text-amber-300 bg-amber-500/10' : 'text-slate-400 hover:text-amber-200'
-              }`}
-            >
-              <Clapperboard className="w-3.5 h-3.5" />
-              <span>{direction ? 'มีคำกำกับเรื่อง' : 'กำกับเรื่อง'}</span>
-            </button>
-            <button
-              type="button"
-              onClick={onToggleChatStyle}
-              title="สลับระหว่างแบบนิยายกับแชทสั้นแบบ LINE"
-              className={`inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-[11px] transition ${
-                chatStyle === 'dm' ? 'text-sky-300 bg-sky-500/10' : 'text-slate-400 hover:text-sky-200'
-              }`}
-            >
-              <span aria-hidden>{chatStyle === 'dm' ? '💬' : '📖'}</span>
-              <span>{chatStyle === 'dm' ? 'แชทสั้น' : 'นิยาย'}</span>
-            </button>
-          </div>
-          <p className="hidden sm:block text-[11px] text-slate-500">
+        <div className="mt-1.5 px-1 hidden sm:flex items-center justify-end">
+          <p className="text-[11px] text-slate-500">
             <kbd className="font-sans text-slate-400">Enter</kbd> ส่ง ·{' '}
             <kbd className="font-sans text-slate-400">Shift + Enter</kbd> ขึ้นบรรทัดใหม่
           </p>

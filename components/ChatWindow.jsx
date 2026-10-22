@@ -172,6 +172,8 @@ export default function ChatWindow({
   setInput,
   onSendMessage,
   onContinue,
+  onSuggest,
+  suggesting,
   onClearHistory,
   hasUserRole,
   onOpenUserRole,
@@ -202,7 +204,9 @@ export default function ChatWindow({
   const changes = showRelation ? relationChanges(messages) : [];
   const lastMessage = messages[messages.length - 1];
   const choices =
-    showChoices && !loading && lastMessage?.role === 'model' && lastMessage.choices?.length ? lastMessage.choices : null;
+    (showChoices || lastMessage?.choicesAsked) && !loading && lastMessage?.role === 'model' && lastMessage.choices?.length
+      ? lastMessage.choices
+      : null;
   const backgroundSrc =
     (!selectedChar.fixedBackground && sceneBackgroundSrc(scene?.background)) || selectedChar.background;
 
@@ -336,7 +340,11 @@ export default function ChatWindow({
         {waiting && (
           <WaitingIndicator avatar={selectedChar.avatar} name={selectedChar.name} />
         )}
-        {choices && <ChoiceChips choices={choices} onPick={onPickChoice} />}
+        {suggesting ? (
+          <p className="pl-10 text-xs text-purple-200/70 animate-pulse">💡 กำลังคิดคำตอบให้เลือก...</p>
+        ) : (
+          choices && <ChoiceChips choices={choices} onPick={onPickChoice} />
+        )}
         <div ref={chatEndRef} />
       </div>
 
@@ -348,6 +356,9 @@ export default function ChatWindow({
         setInput={setInput}
         onSendMessage={onSendMessage}
         onContinue={onContinue}
+        onSuggest={lastMessage?.role === 'model' && !suggesting ? onSuggest : undefined}
+        onOpenMemory={onOpenMemory}
+        onOpenUserRole={onOpenUserRole}
         onStop={onStopReply}
         loading={loading}
         characterName={selectedChar.name}
