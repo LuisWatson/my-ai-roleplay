@@ -116,10 +116,11 @@ blocked-reply handling, relationship in header, speaker labels, character profil
    Supabase project `xksnjxsbpacsxmuhcrue`; Google OAuth client is in Testing mode. Decided: one shared Gemini key.
    Deployed to Vercel 2026-10-21. Partner's email added to `allowed_emails` and Google Test users 2026-10-22
    (a new account needs both). Partner has logged in.
-2. Portraits for the other 11 characters (only Ava has one) — use the `character-portrait` skill.
+2. Portraits — done 2026-10-22: all 12 presets have photorealistic PNGs (Z-Image-Turbo; "anime" in the prompt
+   gives 3D-cartoon results, use "photorealistic, realistic photo"). Free tensor.art runs one task at a time.
 3. Create-character form: has profile + cast now, but still no fields for `background` (chat backdrop) or
    `defaultUserRole`. Profiles could later get a picture gallery (several images, swipe 1/3) once portraits exist.
-4. Ava portrait is a 924 KB PNG; could be WebP (~100 KB).
+4. Portraits are ~830 KB PNGs each (~10 MB for the home grid); could be WebP (~100 KB each).
 5. Not yet checked with real Gemini replies: does the model always add `พื้นหลัง=`?
 6. **Feature rounds agreed with the owner** (one round at a time, used for a few days before the next):
    - Round 1 — done 2026-10-21, live; home-screen install + login on iPhone confirmed working.
