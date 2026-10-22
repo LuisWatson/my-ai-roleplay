@@ -23,7 +23,8 @@ export async function POST(req) {
     const denied = await authorize(req);
     if (denied) return denied;
 
-    const { characterName, userName, messages, chatStyle, apiKey } = await req.json();
+    const { characterName, characterDescription, userProfile, userName, messages, chatStyle, apiKey } =
+      await req.json();
     if (!characterName || !Array.isArray(messages) || messages.length === 0) {
       return jsonResponse({ error: 'ข้อมูลไม่ครบ' }, 400);
     }
@@ -36,7 +37,18 @@ export async function POST(req) {
     const { key, error: keyError } = resolveApiKey(apiKey);
     if (keyError) return keyError;
 
-    const prompt = buildSuggestPrompt({ characterName, userName, messages: recent, dm: chatStyle === 'dm' });
+    const profile = userProfile && typeof userProfile === 'object' ? userProfile : { name: userName };
+    const prompt = buildSuggestPrompt({
+      characterName,
+      characterDescription: typeof characterDescription === 'string' ? characterDescription : '',
+      userProfile: {
+        name: String(profile.name || '').slice(0, 100),
+        callMe: String(profile.callMe || '').slice(0, 100),
+        description: String(profile.description || '').slice(0, 600),
+      },
+      messages: recent,
+      dm: chatStyle === 'dm',
+    });
     const genAI = new GoogleGenerativeAI(key);
     const { result, errorResponse } = await tryModels({
       apiKey: key,
