@@ -734,6 +734,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
     setChatStyle('novel');
     setSelectedChar(created);
     setMessages([{ role: 'model', text: created.greeting }]);
+    if (markRolePrompted(created.id)) setShowUserRole(true);
   };
 
   // Update an existing custom persona in place, keeping its id and chat history
