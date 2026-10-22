@@ -133,8 +133,8 @@ blocked-reply handling, relationship in header, speaker labels, character profil
    - Round 2 — memory journal, suggested replies, relationship meters, DM mode: done 2026-10-22.
      Left: prompt tuning from the owner's examples of bad replies; maybe cap temperature for Lite models
      (they make more Thai typos — owner declined for now).
-   - Round 3: several stories per character, share custom characters with the partner, read replies aloud
-     (browser Thai voice, free), special-day letters, lorebook.
+   - Round 3 — dropped by the owner 2026-10-22 ("not useful"): several stories per character, share custom
+     characters, read aloud, special-day letters, lorebook. Don't propose these again unless asked.
    - Not now: group chat, character messages first, images in chat (no free image quota), Next 16 upgrade.
 
 ## Security note
