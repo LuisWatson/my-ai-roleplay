@@ -122,7 +122,12 @@ blocked-reply handling, relationship in header, speaker labels, character profil
 3. Create-character form: has profile + cast now, but still no fields for `background` (chat backdrop) or
    `defaultUserRole`. Profiles could later get a picture gallery (several images, swipe 1/3) once portraits exist.
 4. Portraits as WebP — done 2026-10-22 (10 MB of PNG → 434 KB).
-5. Not yet checked with real Gemini replies: does the model always add `พื้นหลัง=`?
+5. **Parked 2026-10-22:** sexier "Khui AI style" 2nd image per character (profile gallery). Notes and the prompt in
+   `drafts/sexy-portrait-handoff.md` (git-ignored). Tried tensor.art Z-Image (too mild, strips "cleavage"), Perchance
+   (filter off by owner; face stays ordinary — the look needs a model like majicMIX realistic), tensor.art majicMIX
+   (owner unhappy with result). Claude Code auto mode blocked driving Chrome for this. Rules: adult-looking faces,
+   never Tonkla, no school uniforms, clothed.
+6. Not yet checked with real Gemini replies: does the model always add `พื้นหลัง=`?
 6. **Feature rounds agreed with the owner** (one round at a time, used for a few days before the next):
    - Round 1 — done 2026-10-21, live; home-screen install + login on iPhone confirmed working.
    - Round 2 — memory journal, suggested replies, relationship meters, DM mode: done 2026-10-22.

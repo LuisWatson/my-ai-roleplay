@@ -4,6 +4,16 @@
 
 ---
 
+## 2026-10-22 — ลองรูปแนวเซ็กซี่แบบ Khui AI (พับไว้)
+
+- เป้าหมาย: รูปที่ 2 ของตัวละคร แนวหน้าตุ๊กตาสวยเกินจริงแบบ Khui AI; ลองกับเอวาเท่านั้น ไม่มีอะไรเข้าแอป
+- tensor.art Z-Image: เบาไป (ตัดคำ cleavage); Perchance (Casual Photo): ใกล้ขึ้นแต่หน้ายังธรรมดา;
+  tensor.art majicMIX realistic: เจ้าของไม่พอใจผล; auto mode ของ Claude Code บล็อกการคุม Chrome งานนี้
+- เก็บไว้: `drafts/` (git-ignored) — รูปทดสอบ + `sexy-portrait-handoff.md` (prompt, กฎ, ขั้นตอน)
+- ต่อไปถ้าทำ: ลอง LoRA หน้าตุ๊กตาบน majicMIX / SeaArt / รันเองในเครื่อง; แกลเลอรีรูปที่ 2 ใน `CharacterProfile.jsx`
+
+---
+
 ## 2026-10-22 — รูปตัวละครเป็น WebP
 
 - 12 รูปใน `public/characters/` แปลงด้วย sharp (`webp`, quality 82, 768×1024 เท่าเดิม): รวม 10 MB → 434 KB (27–52 KB/รูป)
