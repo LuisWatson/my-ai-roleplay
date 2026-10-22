@@ -1,6 +1,7 @@
 {
   "version": "0.0.1",
   "configurations": [
-    { "name": "dev", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev"], "port": 3000 }
+    { "name": "dev", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev"], "port": 3000 },
+    { "name": "test-nologin", "runtimeExecutable": "npm", "runtimeArgs": ["--prefix", "C:/Users/User/AppData/Local/Temp/botbaat-test", "run", "dev", "--", "-p", "3002"], "port": 3002 }
   ]
 }
