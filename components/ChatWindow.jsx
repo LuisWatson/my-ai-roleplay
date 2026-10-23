@@ -259,7 +259,6 @@ export default function ChatWindow({
   onEditMessage,
   onDeleteMessage,
 }) {
-  const chatEndRef = useRef(null);
   const scene = latestScene(messages);
   // Relationship now, and before the latest reply that changed it (for the +/- shown next to it)
   const shownRelation = showRelation ? latestRelation(messages) : null;
@@ -273,10 +272,33 @@ export default function ChatWindow({
   const backgroundSrc =
     (!selectedChar.fixedBackground && sceneBackgroundSrc(scene?.background)) || selectedChar.background;
 
-  // Auto-scroll to latest message or indicator
+  // Follow new text only while the reader is at the bottom: scrolling up to reread stays put, even while a
+  // reply streams in. Sending a message or opening a chat always goes to the bottom.
+  const scrollRef = useRef(null);
+  const atBottomRef = useRef(true);
+  const lengthRef = useRef(0);
+  const jumpRef = useRef(true); // a chat just opened: go straight to the end instead of animating through it
+  const handleScroll = () => {
+    const el = scrollRef.current;
+    if (el) atBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+  };
+
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, loading]);
+    atBottomRef.current = true;
+    jumpRef.current = true;
+  }, [selectedChar.id]);
+
+  useEffect(() => {
+    if (messages.length > lengthRef.current && lastMessage?.role === 'user') atBottomRef.current = true;
+    lengthRef.current = messages.length;
+  }, [messages]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el || !atBottomRef.current) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: loading || jumpRef.current ? 'auto' : 'smooth' });
+    jumpRef.current = false;
+  }, [messages, loading, waiting, suggesting, notice]);
 
   return (
     <main className="flex-1 flex flex-col bg-slate-900/95 relative overflow-hidden isolate">
@@ -376,7 +398,7 @@ export default function ChatWindow({
       )}
 
       {/* Messages Scroll Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((msg, idx) => (
           <React.Fragment key={idx}>
           {dividers[idx] && <SceneDivider scene={dividers[idx]} />}
@@ -410,7 +432,6 @@ export default function ChatWindow({
         ) : (
           choices && <ChoiceChips choices={choices} onPick={onPickChoice} />
         )}
-        <div ref={chatEndRef} />
       </div>
 
       {notice && <NoticeCard notice={notice} onRetry={onRetry} onDismiss={onDismissNotice} />}

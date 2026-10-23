@@ -639,20 +639,32 @@ function RoleplayApp({ store, account, getAccessToken }) {
   };
 
   // Send message and stream response from Gemini API
+  // The story moves on from the last reply: keep only the version on screen. Moments the other versions
+  // saved to the journal (e.g. one per regenerate in 'auto' mode) leave the journal with them.
+  const settleSwipes = (msgs) => {
+    const last = msgs[msgs.length - 1];
+    if (!last?.alts) return msgs;
+    const keptEntry = last.moment?.entryId;
+    for (const alt of last.alts) {
+      const entryId = alt.moment?.state === 'saved' ? alt.moment.entryId : null;
+      if (entryId && entryId !== keptEntry) removeJournalEntry(store, selectedChar.id, entryId);
+    }
+    return [...msgs.slice(0, -1), withoutSwipes(last)];
+  };
+
   const handleSendMessage = () => {
     if (!input.trim() || loading || !selectedChar) return;
 
     const userMessage = input.trim();
     setInput('');
-    const settled = messages.map((m, i) => (i === messages.length - 1 && m.alts ? withoutSwipes(m) : m));
+    const settled = settleSwipes(messages);
     streamReply([...settled, { role: 'user', text: userMessage, ...(chatStyle === 'dm' && { style: 'dm' }) }], { direction });
   };
 
   // "Continue" button (empty input): the character carries the scene on without a new user message
   const handleContinue = () => {
     if (loading || !selectedChar || messages[messages.length - 1]?.role !== 'model') return;
-    const settled = messages.map((m, i) => (i === messages.length - 1 && m.alts ? withoutSwipes(m) : m));
-    streamReply(settled, { direction, continueStory: true });
+    streamReply(settleSwipes(messages), { direction, continueStory: true });
   };
 
   // Ask /api/suggest (Lite models) for three suggested replies to the last message of `msgs`, a reply of
@@ -813,7 +825,8 @@ function RoleplayApp({ store, account, getAccessToken }) {
     const trimmed = text.trim();
     if (loading || !trimmed || !messages[index]) return;
     if (messages[index].role === 'user') {
-      streamReply([...messages.slice(0, index), { role: 'user', text: trimmed }]);
+      const edited = { role: 'user', text: trimmed, ...(messages[index].style === 'dm' && { style: 'dm' }) };
+      streamReply([...messages.slice(0, index), edited]);
     } else {
       persistMessages(
         messages.map((m, i) => {
@@ -881,7 +894,9 @@ function RoleplayApp({ store, account, getAccessToken }) {
     const chatMemories = {};
     const chatPins = {};
     const chatJournals = {};
+    const chatStyles = {};
     for (const char of [...customChars, ...DEFAULT_CHARACTERS]) {
+      if (store.getItem(chatStyleKey(char.id)) === 'dm') chatStyles[char.id] = 'dm';
       const saved = store.getItem(`chat_history_${char.id}`);
       if (saved) chatHistories[char.id] = JSON.parse(saved);
       const memory = store.getItem(memoryKey(char.id));
@@ -901,6 +916,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
       chatMemories,
       chatPins,
       chatJournals,
+      chatStyles,
       userProfile,
       userRoles,
       chatActivity,
@@ -948,6 +964,11 @@ function RoleplayApp({ store, account, getAccessToken }) {
           const memory = backup.chatMemories?.[id];
           if (memory) store.setItem(memoryKey(id), JSON.stringify(memory));
           else store.removeItem(memoryKey(id));
+          // Novel or DM mode goes with the chat (backups from before chatStyles leave it as it is)
+          if (backup.chatStyles) {
+            if (backup.chatStyles[id] === 'dm') store.setItem(chatStyleKey(id), 'dm');
+            else store.removeItem(chatStyleKey(id));
+          }
         }
       }
       for (const [id, pins] of Object.entries(backup.chatPins || {})) {
