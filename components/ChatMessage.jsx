@@ -238,7 +238,7 @@ export default function ChatMessage({
 
       <div className={`flex flex-col gap-1 max-w-[85%] ${isUser ? 'md:max-w-[70%] items-end' : 'md:max-w-[80%] items-start'}`}>
       <div
-        className={`w-full text-sm leading-relaxed transition-all ${
+        className={`w-full text-base leading-relaxed transition-all ${
           storyLayout
             ? 'pt-1'
             : isUser
@@ -253,7 +253,7 @@ export default function ChatMessage({
               rows={4}
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
-              className="w-full bg-slate-900/80 border border-slate-600 rounded-lg p-2 text-sm text-slate-100 focus:outline-none focus:border-purple-500 resize-y"
+              className="w-full bg-slate-900/80 border border-slate-600 rounded-lg p-2 text-base text-slate-100 focus:outline-none focus:border-purple-500 resize-y"
             />
             <div className="flex justify-end gap-1.5">
               <button onClick={() => setIsEditing(false)} title="ยกเลิก" className={actionClass}>
