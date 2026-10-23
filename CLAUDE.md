@@ -64,11 +64,15 @@ The owner builds it for themselves and their partner. Reply to the owner in Thai
 - Never `confirm()` either: use `useConfirm()` from `components/ConfirmDialog.jsx`.
 - Errors: never `alert()`. Chat errors → notice card in `ChatWindow` (by `kind` from `/api/chat`); elsewhere → `Toast`.
   Waiting text stays in-story (character narration), never about the app/AI.
-- `constants/characters.js` — 12 preset characters. Optional fields:
+- `constants/characters.js` — 13 preset characters (12 + the `ellie` test character). Optional fields:
   `avatar`, `background`, `defaultUserRole { description, background }`, `fixedBackground`, `userRoleHint`,
   `profile { age, occupation, appearance, personality, likes, dislikes, story }` and
   `cast: [{ name, relation, personality }]` (presets get both from `constants/characterProfiles.js`; custom
   characters from the create form). Both go into the prompt (`profileText` / `castText`).
+- Story setup (`lib/story.js`): optional `situation` (premise + open questions), `userSecret` (the user's side; the
+  character must not know it), `opening { time, place, mood, background }` (card above the first message, `OpeningCard`)
+  and `storyHooks` (events the model may bring in, rule 11). Sent only for chats whose first message has `storyStart`
+  (`openingMessage`), so chats from before keep their own story. `ellie` is the owner-written test character for this.
 - `components/CharacterProfile.jsx` — tapping a card on the home grid opens the character's profile sheet
   (bio / your role / people around them / greeting, relation + journal count, "เริ่มแชท"/"คุยต่อ");
   the sidebar chat list still opens chats directly.
