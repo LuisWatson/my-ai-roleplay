@@ -243,7 +243,7 @@ export default function ChatInput({
             onKeyDown={handleKeyDown}
             disabled={loading}
             placeholder={placeholder}
-            className="chat-input-scroll flex-1 resize-none overflow-hidden bg-transparent border-0 py-2 text-base md:text-sm leading-relaxed text-slate-100 placeholder-slate-500 px-1 focus:outline-none disabled:opacity-50"
+            className="flex-1 resize-none overflow-hidden bg-transparent border-0 py-2 text-base md:text-sm leading-relaxed text-slate-100 placeholder-slate-500 px-1 focus:outline-none disabled:opacity-50"
           />
           {loading ? (
             <button

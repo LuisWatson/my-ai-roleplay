@@ -7,7 +7,7 @@ import { Trash2, Pencil } from 'lucide-react';
  * Character card item displayed in the browse grid: full-bleed cover image with
  * name/tagline overlaid at the bottom, like a show poster.
  */
-export default function CharacterCard({ character, isSelected, onSelect, onDelete, onEdit }) {
+export default function CharacterCard({ character, onSelect, onDelete, onEdit }) {
   const isCustom = character.id && character.id.startsWith('custom_');
 
   const handleDelete = (e) => {
@@ -25,11 +25,7 @@ export default function CharacterCard({ character, isSelected, onSelect, onDelet
   return (
     <div
       onClick={() => onSelect(character)}
-      className={`group relative aspect-[3/4] rounded-xl overflow-hidden cursor-pointer transition-all border ${
-        isSelected
-          ? 'border-purple-500 ring-2 ring-purple-500/50'
-          : 'border-slate-700/50 hover:border-slate-600'
-      }`}
+      className="group relative aspect-[3/4] rounded-xl overflow-hidden cursor-pointer transition-all border border-slate-700/50 hover:border-slate-600"
     >
       <img src={character.avatar} alt={character.name} className="absolute inset-0 w-full h-full object-cover" />
       <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/10 to-transparent" />

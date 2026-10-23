@@ -5,7 +5,7 @@ import { Search, Plus, MessageSquare } from 'lucide-react';
 import CharacterCard from './CharacterCard';
 
 /**
- * Home screen: searchable, filterable grid of every character. Picking a card opens its chat.
+ * Home screen: searchable, filterable grid of every character. Picking a card opens its profile sheet.
  */
 export default function CharacterBrowser({
   characters,
@@ -88,7 +88,6 @@ export default function CharacterBrowser({
                 <CharacterCard
                   key={char.id}
                   character={char}
-                  isSelected={false}
                   onSelect={onSelectChar}
                   onDelete={onDeleteChar}
                   onEdit={onEditChar}
