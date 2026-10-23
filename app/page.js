@@ -24,6 +24,8 @@ import {
   removeJournalEntry,
   renameJournalEntry,
   journalForPrompt,
+  offeredMomentTitles,
+  isRepeatedMoment,
 } from '../lib/journal';
 import { latestRelation, settleRelation } from '../lib/relation';
 import { AVAILABLE_MODELS, DEFAULT_MODEL } from '../constants/models';
@@ -487,6 +489,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
           memory: memory?.summary,
           pinned: readPins(store, charId),
           journal: journalForPrompt(readJournal(store, charId)),
+          offeredMoments: offeredMomentTitles(baseMessages),
           relation: latestRelation(baseMessages) || undefined,
           chatStyle,
           direction: storyDirection.trim() || undefined,
@@ -582,9 +585,16 @@ function RoleplayApp({ store, account, getAccessToken }) {
           ? settleRelation(latestRelation(baseMessages), reportedRelation)
           : undefined;
         const choices = responseSettings.suggestions ? reportedChoices : undefined;
-        // A moment the model flagged: saved right away ('auto') or offered under the reply ('ask')
+        // A moment the model flagged: saved right away ('auto') or offered under the reply ('ask').
+        // One already saved or offered in this chat is dropped: models bring old ones back under the new reply.
+        const knownMoments = [
+          ...readJournal(store, charId).map((e) => e.title),
+          ...baseMessages.map((m) => m.moment?.title).filter(Boolean),
+        ];
+        const repeated = momentTitle && isRepeatedMoment(momentTitle, knownMoments);
+        if (repeated) console.info('Dropped a repeated moment:', momentTitle);
         let moment;
-        if (momentTitle && responseSettings.journal !== 'off') {
+        if (momentTitle && !repeated && responseSettings.journal !== 'off') {
           if (responseSettings.journal === 'auto') {
             const entry = addJournalEntry(store, charId, { title: momentTitle, message: { text: cleanText }, scene });
             moment = { title: momentTitle, state: 'saved', entryId: entry.id };
