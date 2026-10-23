@@ -28,6 +28,7 @@ import {
   isRepeatedMoment,
 } from '../lib/journal';
 import { latestRelation, settleRelation } from '../lib/relation';
+import { openingMessage, personaForChat } from '../lib/story';
 import { AVAILABLE_MODELS, DEFAULT_MODEL } from '../constants/models';
 import {
   DEFAULT_RESPONSE_SETTINGS,
@@ -108,11 +109,13 @@ function withoutSwipes({ alts, altIndex, ...message }) {
 function savedHistoryOrGreeting(store, char) {
   try {
     const parsed = JSON.parse(store.getItem(`chat_history_${char.id}`) || '[]');
-    if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    // A chat that never got past the old greeting starts over with the story setup
+    const untouched = parsed.length === 1 && parsed[0]?.role === 'model' && !parsed[0].storyStart;
+    if (Array.isArray(parsed) && parsed.length > 0 && !untouched) return parsed;
   } catch (err) {
     console.error('Failed to parse chat history:', err);
   }
-  return [{ role: 'model', text: char.greeting }];
+  return [openingMessage(char)];
 }
 
 
@@ -480,7 +483,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
           message: continueStory ? '' : userMessage,
           history: continueStory ? historyPayload : historyPayload.slice(0, -1),
           continueStory: continueStory || undefined,
-          persona: withoutImages(selectedChar),
+          persona: personaForChat(withoutImages(selectedChar), baseMessages),
           apiKey: apiKey,
           model: model,
           responseSettings: responseSettings,
@@ -870,7 +873,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
     setDirection('');
     setChatStyle('novel');
     setSelectedChar(created);
-    setMessages([{ role: 'model', text: created.greeting }]);
+    setMessages([openingMessage(created)]);
     if (markRolePrompted(created.id)) setShowUserRole('auto');
   };
 
@@ -1117,7 +1120,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
     if (!ok || activeCharIdRef.current !== char.id) return;
     stopStreaming({ discard: true });
     dropChat(char.id);
-    setMessages([{ role: 'model', text: char.greeting }]);
+    setMessages([openingMessage(char)]);
   };
 
   // Remove a chat from the sidebar's chat list (and its history)
@@ -1133,7 +1136,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
     if (!ok) return;
     if (selectedChar?.id === charId) {
       stopStreaming({ discard: true });
-      setMessages([{ role: 'model', text: char?.greeting || '' }]);
+      setMessages([openingMessage(char)]);
     }
     dropChat(charId);
   };

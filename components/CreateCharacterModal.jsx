@@ -27,7 +27,18 @@ const EMPTY_FORM = {
   avatar: DEFAULT_AVATAR,
   profile: {},
   cast: [],
+  storyHooks: [],
+  situation: '',
+  userSecret: '',
+  opening: { time: '', place: '', mood: '' },
 };
+const MAX_HOOKS = 12;
+// The opening card's fields (lib/story.js)
+const OPENING_FIELDS = [
+  ['time', 'เวลา', 'เช่น 17:42 น. วันพฤหัสบดี ต้นฤดูฝน', 60],
+  ['place', 'สถานที่', 'เช่น หอสมุดเก่าของมหาวิทยาลัย ชั้น 3', 80],
+  ['mood', 'บรรยากาศ', 'เช่น ฝนตกหนัก แสงเย็นสีส้มกระทบชั้นหนังสือ', 300],
+];
 
 // Optional profile fields (same keys as constants/characterProfiles.js), shown on the character's profile
 const PROFILE_FIELDS = [
@@ -101,7 +112,22 @@ export default function CreateCharacterModal({
     const cast = (formData.cast || [])
       .map((p) => ({ name: p.name.trim(), relation: p.relation.trim(), personality: p.personality.trim() }))
       .filter((p) => p.name);
-    const data = { ...formData, profile, cast };
+    const storyHooks = (formData.storyHooks || [])
+      .map((h) => h.trim().slice(0, 200))
+      .filter(Boolean)
+      .slice(0, MAX_HOOKS);
+    const opening = Object.fromEntries(
+      OPENING_FIELDS.map(([key, , , max]) => [key, (formData.opening?.[key] || '').trim().slice(0, max)])
+    );
+    const data = {
+      ...formData,
+      profile,
+      cast,
+      storyHooks,
+      situation: (formData.situation || '').trim().slice(0, 2500),
+      userSecret: (formData.userSecret || '').trim().slice(0, 1000),
+      opening,
+    };
 
     if (editingCharacter) {
       onUpdateCharacter(data);
@@ -111,6 +137,10 @@ export default function CreateCharacterModal({
     onClose();
   };
 
+  const setOpeningField = (key, value) => setFormData({ ...formData, opening: { ...formData.opening, [key]: value } });
+  const hasStory = Boolean(
+    editingCharacter?.situation || editingCharacter?.userSecret || Object.values(editingCharacter?.opening || {}).some(Boolean)
+  );
   const setProfileField = (key, value) => setFormData({ ...formData, profile: { ...formData.profile, [key]: value } });
   const setCastField = (index, key, value) =>
     setFormData({ ...formData, cast: formData.cast.map((p, i) => (i === index ? { ...p, [key]: value } : p)) });
@@ -255,17 +285,64 @@ export default function CreateCharacterModal({
           {/* Greeting */}
           <div>
             <label className="block text-xs font-medium text-slate-300 mb-1">
-              ประโยคทักทายแรก (First Message) <span className="text-red-400">*</span>
+              ฉากเปิด / ประโยคทักทายแรก (First Message) <span className="text-red-400">*</span>
             </label>
             <textarea
-              rows={2}
+              rows={3}
               required
               value={formData.greeting}
               onChange={(e) => setFormData({ ...formData, greeting: e.target.value })}
-              placeholder={'เช่น *เงยหน้าขึ้นมาสบตาพร้อมยิ้ม* "ไง! รอตั้งนานแล้วนะ"'}
-              className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-slate-100 focus:outline-none focus:border-purple-500 transition resize-none"
+              placeholder={'เช่น *เงยหน้าขึ้นมาสบตาพร้อมยิ้ม* "ไง! รอตั้งนานแล้วนะ"\nหรือเล่าเป็นฉากแบบนิยาย แล้วจบตรงจุดที่ค้างไว้ให้คุณตอบ'}
+              className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-slate-100 focus:outline-none focus:border-purple-500 transition resize-y"
             />
           </div>
+
+          {/* Story setup: situation, the user's secret, opening card (lib/story.js) */}
+          <details className="rounded-xl border border-violet-500/30 bg-violet-950/20 px-3 py-2" open={hasStory}>
+            <summary className="cursor-pointer select-none text-xs font-medium text-violet-200 py-1">
+              สถานการณ์และการ์ดฉากเปิด (ไม่บังคับ) — ทำให้เรื่องมีทิศทางตั้งแต่ข้อความแรก
+            </summary>
+            <div className="pt-2.5 space-y-3">
+              <div>
+                <label className="block text-[11px] text-slate-400 mb-1">สถานการณ์: ตอนนี้เกิดอะไรขึ้น และอะไรที่ยังค้างคาอยู่</label>
+                <textarea
+                  rows={5}
+                  value={formData.situation || ''}
+                  onChange={(e) => setFormData({ ...formData, situation: e.target.value })}
+                  maxLength={2500}
+                  placeholder="เช่น เธอหายไปจากชีวิตคุณเมื่อหนึ่งปีก่อนโดยไม่บอกเหตุผล วันนี้อาจารย์จับคุณสองคนทำโปรเจกต์ด้วยกันทั้งเทอม ความจริงของคืนนั้นยังไม่มีใครรู้..."
+                  className={`${SMALL_FIELD} resize-y leading-relaxed`}
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] text-slate-400 mb-1">ความลับฝั่งคุณ (ตัวละครไม่รู้ จนกว่าคุณจะพูดเอง)</label>
+                <textarea
+                  rows={2}
+                  value={formData.userSecret || ''}
+                  onChange={(e) => setFormData({ ...formData, userSecret: e.target.value })}
+                  maxLength={1000}
+                  placeholder="เช่น คุณยังเก็บไฟล์เสียงที่เธอส่งมาคืนนั้นไว้ แต่ไม่เคยกล้าฟังจนจบ"
+                  className={`${SMALL_FIELD} resize-y leading-relaxed`}
+                />
+              </div>
+              <div className="space-y-2">
+                <div className="text-[11px] text-slate-400">การ์ดฉากเปิด (แสดงเหนือข้อความแรก)</div>
+                {OPENING_FIELDS.map(([key, label, placeholder, max]) => (
+                  <input
+                    key={key}
+                    type="text"
+                    aria-label={label}
+                    value={formData.opening?.[key] || ''}
+                    onChange={(e) => setOpeningField(key, e.target.value)}
+                    maxLength={max}
+                    placeholder={`${label}: ${placeholder}`}
+                    className={SMALL_FIELD}
+                  />
+                ))}
+              </div>
+              <p className="text-[11px] text-slate-500">ใช้กับแชทที่เริ่มใหม่เท่านั้น แชทที่คุยค้างไว้จะไม่เปลี่ยน</p>
+            </div>
+          </details>
 
           {/* Scenario / world setting */}
           <div>
@@ -393,6 +470,22 @@ export default function CreateCharacterModal({
                   + เพิ่มคนรอบตัว
                 </button>
               )}
+            </div>
+          </details>
+
+          <details className="rounded-xl border border-slate-700/70 bg-slate-900/40 px-3 py-2" open={Boolean(editingCharacter?.storyHooks?.length)}>
+            <summary className="cursor-pointer select-none text-xs font-medium text-slate-300 py-1">
+              เหตุการณ์ในเรื่อง (ไม่บังคับ) — สถานการณ์ที่ AI หยิบมาเล่าให้เรื่องเดินต่อ
+            </summary>
+            <div className="pt-2.5 space-y-1.5">
+              <textarea
+                rows={5}
+                value={(formData.storyHooks || []).join('\n')}
+                onChange={(e) => setFormData({ ...formData, storyHooks: e.target.value.split('\n').slice(0, MAX_HOOKS) })}
+                placeholder={'บรรทัดละหนึ่งเรื่อง เช่น\nคืนฝนตก ไฟดับทั้งซอย เธอมาเคาะประตูบ้านคุณ\nเพื่อนสนิทของเธอมาแซวว่าสองคนเหมาะกัน'}
+                className={`${SMALL_FIELD} resize-y leading-relaxed`}
+              />
+              <p className="text-[11px] text-slate-500">ไม่แสดงในหน้าโปรไฟล์ เพื่อให้เป็นเรื่องเซอร์ไพรส์ตอนคุย (สูงสุด {MAX_HOOKS} เรื่อง)</p>
             </div>
           </details>
 

@@ -7,6 +7,8 @@ import ChatInput from './ChatInput';
 import { latestScene } from '../lib/scene';
 import { latestRelation, levelOf, levelName } from '../lib/relation';
 import { sceneBackgroundSrc } from '../constants/sceneBackgrounds';
+import OpeningCard from './OpeningCard';
+import { openingOf } from '../lib/story';
 
 // Story-style lines shown while the reply is on its way; never about the app or the AI
 const WAITING_LINES = [
@@ -264,6 +266,8 @@ export default function ChatWindow({
   const shownRelation = showRelation ? latestRelation(messages) : null;
   const changes = showRelation ? relationChanges(messages) : [];
   const dividers = sceneDividers(messages);
+  // A chat that began with the story setup shows the opening card in place of its first divider
+  const opening = messages[0]?.storyStart ? openingOf(selectedChar) : null;
   const lastMessage = messages[messages.length - 1];
   const choices =
     (showChoices || lastMessage?.choicesAsked) && !loading && lastMessage?.role === 'model' && lastMessage.choices?.length
@@ -296,6 +300,12 @@ export default function ChatWindow({
   useEffect(() => {
     const el = scrollRef.current;
     if (!el || !atBottomRef.current) return;
+    // A chat that is only its opening scene starts at the top, so it reads from the opening card down
+    if (jumpRef.current && messages.length === 1) {
+      el.scrollTo({ top: 0 });
+      jumpRef.current = false;
+      return;
+    }
     el.scrollTo({ top: el.scrollHeight, behavior: loading || jumpRef.current ? 'auto' : 'smooth' });
     jumpRef.current = false;
   }, [messages, loading, waiting, suggesting, notice]);
@@ -401,7 +411,11 @@ export default function ChatWindow({
       <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((msg, idx) => (
           <React.Fragment key={idx}>
-          {dividers[idx] && <SceneDivider scene={dividers[idx]} />}
+          {idx === 0 && opening ? (
+            <OpeningCard opening={opening} className="max-w-md mx-auto" />
+          ) : (
+            dividers[idx] && <SceneDivider scene={dividers[idx]} />
+          )}
           <ChatMessage
             message={msg}
             avatar={selectedChar.avatar}

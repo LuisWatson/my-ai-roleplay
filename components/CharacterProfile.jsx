@@ -4,6 +4,8 @@ import React, { useEffect, useState } from 'react';
 import { X, Pencil, MessageCircle, UserCog, BookHeart } from 'lucide-react';
 import { formatRoleplayText } from './ChatMessage';
 import { levelOf, levelName } from '../lib/relation';
+import { openingOf } from '../lib/story';
+import OpeningCard from './OpeningCard';
 
 // "ผูกพัน Lv.4 · ผูกพันลึกซึ้ง"
 function meterText(key, label, points) {
@@ -21,12 +23,16 @@ const PROFILE_ROWS = [
   ['story', 'ความเป็นมา'],
 ];
 
-const TABS = [
-  ['bio', 'ประวัติ'],
-  ['role', 'บทบาทของคุณ'],
-  ['cast', 'คนรอบตัว'],
-  ['greeting', 'คำทักทาย'],
-];
+// The situation tab shows only for characters that have one; the greeting tab is the opening scene when there is a card
+function tabsFor(character, hasOpening) {
+  return [
+    ['bio', 'ประวัติ'],
+    ['role', 'บทบาทของคุณ'],
+    ...(character.situation?.trim() ? [['situation', 'สถานการณ์']] : []),
+    ['cast', 'คนรอบตัว'],
+    ['greeting', hasOpening ? 'ฉากเปิด' : 'คำทักทาย'],
+  ];
+}
 
 function Row({ label, value }) {
   if (!value?.trim()) return null;
@@ -65,6 +71,8 @@ export default function CharacterProfile({ character, role, status, hasChat, onC
   const cast = (character.cast || []).filter((p) => p?.name?.trim());
   const defaults = character.defaultUserRole || {};
   const relation = status?.relation;
+  const opening = openingOf(character);
+  const tabs = tabsFor(character, Boolean(opening));
 
   return (
     <div
@@ -128,7 +136,7 @@ export default function CharacterProfile({ character, role, status, hasChat, onC
           )}
 
           <div className="flex gap-1.5 overflow-x-auto -mx-1 px-1 pb-0.5">
-            {TABS.map(([id, label]) => (
+            {tabs.map(([id, label]) => (
               <button
                 key={id}
                 onClick={() => setTab(id)}
@@ -162,6 +170,7 @@ export default function CharacterProfile({ character, role, status, hasChat, onC
               <Row label="คุณเป็นอะไรกับเขา" value={role?.description || defaults.description} />
               <Row label="ประวัติของคุณ" value={role?.background || defaults.background} />
               <Row label="นิสัยของคุณ" value={role?.personality} />
+              <Row label={`ความลับของคุณ (${character.name} ไม่รู้)`} value={character.userSecret} />
               {!role?.description && !defaults.description && (
                 <p className="text-xs text-slate-400">ยังไม่ได้ตั้งบทบาทกับตัวละครนี้</p>
               )}
@@ -192,9 +201,16 @@ export default function CharacterProfile({ character, role, status, hasChat, onC
               </p>
             ))}
 
+          {tab === 'situation' && (
+            <div className="text-sm text-slate-200 leading-relaxed whitespace-pre-line">{character.situation}</div>
+          )}
+
           {tab === 'greeting' && (
-            <div className="rounded-2xl rounded-tl-none bg-slate-800/90 border border-slate-700/80 p-3.5 text-sm leading-relaxed">
-              {formatRoleplayText(character.greeting || '', 'model', character.name)}
+            <div className="space-y-3">
+              <OpeningCard opening={opening} />
+              <div className="rounded-2xl rounded-tl-none bg-slate-800/90 border border-slate-700/80 p-3.5 text-sm leading-relaxed">
+                {formatRoleplayText(character.greeting || '', 'model', character.name)}
+              </div>
             </div>
           )}
         </div>
