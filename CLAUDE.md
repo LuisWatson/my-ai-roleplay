@@ -100,16 +100,18 @@ The owner builds it for themselves and their partner. Reply to the owner in Thai
   messages carry `moment: { title, state, entryId }`; saved moments are sent with every message.
 - Character photos (`lib/imageResize.js`): uploads become 450×600 JPEG data URLs inside the character;
   `withoutImages()` keeps them out of `/api/chat` requests.
-- Round 2 (`lib/relation.js`, rules 14–15 in `lib/prompt.js`): relationship meters stored on replies as `relation`
+- Round 2 (`lib/relation.js`, rule 14 in `lib/prompt.js`): relationship meters stored on replies as `relation`
   (points, no upper limit; the model reports changes like `ผูกพัน +2, ไว้ใจ 0`, capped per reply; shown and sent to
-  the model as levels via `levelOf`); suggested replies as `choices` (must be in the user's voice — models drift into the
-  character's); per-chat `chat_style_<id>` = 'dm' switches to short messaging-app chat (`style: 'dm'` on messages).
-  Settings `suggestions` / `relationship` turn them off and stop asking the model.
-  Every set of choices (tag or Lite) goes through `cleanChoices` (`lib/choices.js`): it drops ones that contain the
-  user's own name, echo the character's last line (even reworded), start with a lead-in line or carry a foreign-script
-  letter; stored with `choicesSource: 'tag' | 'suggest'`. The automatic `/api/suggest` call is Lite-only (`auto: true`).
-  A reply that comes without choices gets them from `/api/suggest` (Lite) automatically (`requestSuggestions` in
-  `app/page.js`, same call as the 💡 button); its prompt gets the user's name/callMe/role so it writes in their voice.
+  the model as levels via `levelOf`); per-chat `chat_style_<id>` = 'dm' switches to short messaging-app chat
+  (`style: 'dm'` on messages). Settings `suggestions` / `relationship` turn them off.
+- Suggested replies (`choices` on the last reply): made by a separate Lite call, `/api/suggest`, after every reply
+  (`requestSuggestions` in `app/page.js`, `auto: true` → Lite models only; the 💡 button may fall back to Flash).
+  They are NOT written by the chat model any more: inside the reply (old rule 15) they kept turning into what the
+  character does next. The suggest prompt (`buildSuggestPrompt`) says the last message is the character's, lists her
+  last spoken lines as "do not repeat", asks for a "มุมของ <user>:" line first, then 5 candidates; `pickChoices`
+  (`lib/choices.js`) keeps the first 3 that pass `choiceProblem`: no user's own name, no echo of the character's
+  last words (even reworded), no lead-in line, no foreign-script letter. Old saved replies may still carry choices
+  written in the tag (`lib/scene.js` keeps parsing them).
 - Installable app: `app/manifest.js`, `appleWebApp` in `app/layout.js`, icons in `public/icons/` + `app/*icon.png`.
 - `components/UserRoleModal.jsx` — "บทบาทของฉัน"; opens by itself the first time a character is opened (`user_role_prompted` in the store). Nothing is required; empty fields use `defaultUserRole`.
 - `.claude/skills/character-portrait/` — how to generate a character portrait on tensor.art and wire it in.

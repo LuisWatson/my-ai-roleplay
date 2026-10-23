@@ -62,7 +62,6 @@ export async function POST(req) {
       length,
       temperature,
       journal: journalMode,
-      suggestions,
       relationship,
     } = normalizeResponseSettings(responseSettings);
     const systemInstruction = buildSystemInstruction({
@@ -77,7 +76,6 @@ export async function POST(req) {
       offeredMoments,
       relation,
       showRelation: relationship,
-      suggestChoices: suggestions,
       chatStyle: chatStyle === 'dm' ? 'dm' : 'novel',
       direction,
       continueStory: Boolean(continueStory),

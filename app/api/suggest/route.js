@@ -2,7 +2,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { AVAILABLE_MODELS } from '../../../constants/models';
 import { buildSuggestPrompt } from '../../../lib/prompt';
 import { authorize, resolveApiKey, tryModels, jsonResponse, SAFETY_SETTINGS } from '../../../lib/geminiServer';
-import { choiceProblem } from '../../../lib/choices';
+import { pickChoices } from '../../../lib/choices';
 
 // On-demand suggestions are small; Lite models first so the Flash quota (20 a day) stays for the chat
 const SUGGEST_MODELS = [
@@ -66,12 +66,10 @@ export async function POST(req) {
     });
     if (errorResponse) return errorResponse;
 
-    const choices = result
-      .split('\n')
-      .map((line) => line.replace(/^\s*(?:[-•]|\d+[.)])\s*/, '').trim())
-      .filter((line) => line && choiceProblem(line) !== 'lead-in')
-      .slice(0, 3);
-    if (choices.length === 0) return jsonResponse({ error: 'ไม่ได้ตัวเลือกกลับมา ลองอีกครั้ง' }, 502);
+    // Five candidates come back; the first three that read as the user's own words are kept
+    const reply = [...recent].reverse().find((m) => m.role === 'model')?.text || '';
+    const choices = pickChoices(result, { names: [String(profile.name || ''), String(profile.callMe || '')], reply }, 3);
+    if (choices.length === 0) return jsonResponse({ error: 'ไม่ได้ตัวเลือกที่ใช้ได้ ลองอีกครั้ง' }, 502);
     return jsonResponse({ choices }, 200);
   } catch (err) {
     console.error('Suggest error:', err);

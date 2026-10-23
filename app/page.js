@@ -97,8 +97,8 @@ function withoutImages({ avatar, background, ...persona }) {
 }
 
 // What one swipe version of a reply holds (missing parts stay undefined, so switching clears them)
-function swipeVersion({ text, scene, moment, relation, choices, choicesSource, thought, style }) {
-  return { text, scene, moment, relation, choices, choicesSource, thought, style };
+function swipeVersion({ text, scene, moment, relation, choices, thought, style }) {
+  return { text, scene, moment, relation, choices, thought, style };
 }
 
 // A reply without its other swipe versions (once the story moves on, only the chosen one is kept)
@@ -597,17 +597,10 @@ function RoleplayApp({ store, account, getAccessToken }) {
           moment: momentTitle,
           relation: reportedRelation,
           relationRaw,
-          choices: reportedChoices,
           thought,
         } = finalizeReply(replyText);
         const relation = responseSettings.relationship
           ? settleRelation(latestRelation(baseMessages), reportedRelation)
-          : undefined;
-        // Choices that read as the character, copy the reply, or carry a stray foreign letter are dropped;
-        // with none left the reply counts as having none and the Lite fallback below makes them
-        const choiceRole = mergeUserProfile(userProfile, userRoles[charId]);
-        const choices = responseSettings.suggestions
-          ? cleanChoices(reportedChoices, { names: [choiceRole.name, choiceRole.callMe], reply: cleanText })
           : undefined;
         // A moment the model flagged: saved right away ('auto') or offered under the reply ('ask').
         // One already saved or offered in this chat is dropped: models bring old ones back under the new reply.
@@ -633,7 +626,6 @@ function RoleplayApp({ store, account, getAccessToken }) {
           ...(moment && { moment }),
           ...(relation && { relation }),
           ...(relation && relationRaw && { relationRaw }),
-          ...(choices && { choices, choicesSource: 'tag' }),
           ...(thought && { thought }),
           ...(chatStyle === 'dm' && { style: 'dm' }),
         };
@@ -644,9 +636,9 @@ function RoleplayApp({ store, account, getAccessToken }) {
         const finalMessages = [...baseMessages, reply];
         saveHistory(charId, finalMessages);
         updateMemory(persona, finalMessages);
-        // The chat model often leaves the choices out of its tag: ask the Lite models for them instead
-        // (also for a reply Google cut short: it usually loses only the tag at the end)
-        if (responseSettings.suggestions && !choices && cleanText && !controller.stalled && !controller.userStopped) {
+        // The reply buttons come from a separate Lite call, not from the chat model: written inside the reply they kept
+        // turning into what the character does next. Also made for a reply Google cut short.
+        if (responseSettings.suggestions && cleanText && !controller.stalled && !controller.userStopped) {
           requestSuggestions(persona, finalMessages, { auto: true });
         }
         if (activeCharIdRef.current === charId) setDirection('');
@@ -745,9 +737,8 @@ function RoleplayApp({ store, account, getAccessToken }) {
         const withChoices = {
           ...m,
           choices,
-          choicesSource: 'suggest',
           ...(!auto && { choicesAsked: true }),
-          ...(m.alts && { alts: m.alts.map((a, j) => (j === m.altIndex ? { ...a, choices, choicesSource: 'suggest' } : a)) }),
+          ...(m.alts && { alts: m.alts.map((a, j) => (j === m.altIndex ? { ...a, choices } : a)) }),
         };
         return list.map((x, i) => (i === index ? withChoices : x));
       };
