@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useEffect, useState } from 'react';
-import { ArrowLeft, Trash2, UserCog, X, MapPin, Clock, AlertCircle, RotateCcw, Brain } from 'lucide-react';
+import { ArrowLeft, Trash2, UserCog, X, MapPin, Clock, AlertCircle, RotateCcw, Brain, PanelLeftOpen } from 'lucide-react';
 import ChatMessage from './ChatMessage';
 import ChatInput from './ChatInput';
 import { latestScene } from '../lib/scene';
@@ -260,6 +260,7 @@ export default function ChatWindow({
   onDismissNotice,
   onEditMessage,
   onDeleteMessage,
+  onExpandSidebar,
 }) {
   const scene = latestScene(messages);
   // Relationship now, and before the latest reply that changed it (for the +/- shown next to it)
@@ -328,6 +329,16 @@ export default function ChatWindow({
       {/* Chat Header */}
       <header className="p-3.5 md:p-4 bg-slate-800/70 backdrop-blur-md border-b border-slate-700/80 flex items-center justify-between gap-2 z-10">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          {onExpandSidebar && (
+            <button
+              onClick={onExpandSidebar}
+              title="แสดงแถบด้านซ้าย"
+              aria-label="แสดงแถบด้านซ้าย"
+              className="hidden md:inline-flex p-1.5 hover:bg-slate-700 rounded-lg text-slate-400 transition"
+            >
+              <PanelLeftOpen className="w-5 h-5" />
+            </button>
+          )}
           <button
             onClick={onBack}
             className="p-1.5 hover:bg-slate-700 rounded-lg text-slate-400 transition"

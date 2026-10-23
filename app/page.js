@@ -105,6 +105,8 @@ function withoutSwipes({ alts, altIndex, ...message }) {
   return message;
 }
 
+const SIDEBAR_COLLAPSED_KEY = 'botbaat_sidebar_collapsed';
+
 // A character's saved conversation, or just their greeting when there is none yet
 function savedHistoryOrGreeting(store, char) {
   try {
@@ -144,6 +146,19 @@ function RoleplayApp({ store, account, getAccessToken }) {
   const [showUserRole, setShowUserRole] = useState(false); // false | true (opened by the user) | 'auto' (first visit)
   const [chatActivity, setChatActivity] = useState({});
   const [showHistory, setShowHistory] = useState(false);
+  // Desktop only: the left panel can be hidden. Kept per device in localStorage, not in the synced store.
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  useEffect(() => {
+    try {
+      setSidebarCollapsed(localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === '1');
+    } catch {}
+  }, []);
+  const toggleSidebar = useCallback((collapsed) => {
+    setSidebarCollapsed(collapsed);
+    try {
+      localStorage.setItem(SIDEBAR_COLLAPSED_KEY, collapsed ? '1' : '0');
+    } catch {}
+  }, []);
   const [direction, setDirection] = useState(''); // story direction for the next reply only
   const [chatStyle, setChatStyle] = useState('novel'); // 'novel' | 'dm' for the open chat
   const [profileView, setProfileView] = useState(null); // { character, status, hasChat } while a profile is open
@@ -1160,6 +1175,8 @@ function RoleplayApp({ store, account, getAccessToken }) {
         }}
         isOpen={showHistory}
         onClose={() => setShowHistory(false)}
+        collapsed={sidebarCollapsed}
+        onCollapse={() => toggleSidebar(true)}
       />
 
       {/* Center: the open chat, or the character grid when no chat is open */}
@@ -1198,6 +1215,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
           onDeleteMessage={handleDeleteMessage}
           hasUserRole={Boolean(userRoles[selectedChar.id])}
           onOpenUserRole={() => setShowUserRole(true)}
+          onExpandSidebar={sidebarCollapsed ? () => toggleSidebar(false) : undefined}
         />
       ) : (
         <CharacterBrowser
@@ -1207,6 +1225,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
           onEditChar={handleEditCharacter}
           onOpenCreateModal={() => setShowCreateModal(true)}
           onOpenHistory={() => setShowHistory(true)}
+          onExpandSidebar={sidebarCollapsed ? () => toggleSidebar(false) : undefined}
         />
       )}
 

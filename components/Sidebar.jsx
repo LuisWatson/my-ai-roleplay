@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useState, useMemo } from 'react';
-import { Sparkles, Settings, Plus, Download, Upload, Search, Home, Trash2, X, LogOut } from 'lucide-react';
+import { Sparkles, Settings, Plus, Download, Upload, Search, Home, Trash2, X, LogOut, PanelLeftClose } from 'lucide-react';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -30,6 +30,8 @@ export default function Sidebar({
   account,
   isOpen,
   onClose,
+  collapsed = false,
+  onCollapse,
 }) {
   const importInputRef = useRef(null);
   const [query, setQuery] = useState('');
@@ -65,7 +67,7 @@ export default function Sidebar({
       <aside
         className={`fixed md:static inset-y-0 left-0 z-40 w-80 bg-slate-800 md:bg-slate-800/80 backdrop-blur-md border-r border-slate-700/80 flex flex-col h-full transition-transform ${
           isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
-        }`}
+        } ${collapsed ? 'md:hidden' : ''}`}
       >
         {/* Header */}
         <div className="p-4 border-b border-slate-700/80 flex justify-between items-center bg-slate-800/40">
@@ -83,6 +85,16 @@ export default function Sidebar({
             >
               <Settings className="w-5 h-5" />
             </button>
+            {onCollapse && (
+              <button
+                onClick={onCollapse}
+                title="ซ่อนแถบด้านซ้าย"
+                aria-label="ซ่อนแถบด้านซ้าย"
+                className="hidden md:inline-flex p-2 hover:bg-slate-700/80 rounded-full transition text-slate-400 hover:text-white"
+              >
+                <PanelLeftClose className="w-5 h-5" />
+              </button>
+            )}
             <button
               onClick={onClose}
               title="ปิดเมนู"

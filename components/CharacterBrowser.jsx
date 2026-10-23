@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Search, Plus, MessageSquare } from 'lucide-react';
+import { Search, Plus, MessageSquare, PanelLeftOpen } from 'lucide-react';
 import CharacterCard from './CharacterCard';
 
 /**
@@ -14,6 +14,7 @@ export default function CharacterBrowser({
   onEditChar,
   onOpenCreateModal,
   onOpenHistory,
+  onExpandSidebar,
 }) {
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('');
@@ -41,6 +42,16 @@ export default function CharacterBrowser({
             >
               <MessageSquare className="w-5 h-5" />
             </button>
+            {onExpandSidebar && (
+              <button
+                onClick={onExpandSidebar}
+                title="แสดงแถบด้านซ้าย"
+                aria-label="แสดงแถบด้านซ้าย"
+                className="hidden md:inline-flex p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 hover:text-white transition"
+              >
+                <PanelLeftOpen className="w-5 h-5" />
+              </button>
+            )}
             <div className="relative flex-1">
               <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
