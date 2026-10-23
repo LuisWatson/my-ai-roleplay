@@ -29,6 +29,7 @@ import {
 } from '../lib/journal';
 import { latestRelation, settleRelation } from '../lib/relation';
 import { openingMessage, personaForChat } from '../lib/story';
+import { cleanChoices } from '../lib/choices';
 import { AVAILABLE_MODELS, DEFAULT_MODEL } from '../constants/models';
 import {
   DEFAULT_RESPONSE_SETTINGS,
@@ -96,8 +97,8 @@ function withoutImages({ avatar, background, ...persona }) {
 }
 
 // What one swipe version of a reply holds (missing parts stay undefined, so switching clears them)
-function swipeVersion({ text, scene, moment, relation, choices, thought, style }) {
-  return { text, scene, moment, relation, choices, thought, style };
+function swipeVersion({ text, scene, moment, relation, choices, choicesSource, thought, style }) {
+  return { text, scene, moment, relation, choices, choicesSource, thought, style };
 }
 
 // A reply without its other swipe versions (once the story moves on, only the chosen one is kept)
@@ -602,7 +603,12 @@ function RoleplayApp({ store, account, getAccessToken }) {
         const relation = responseSettings.relationship
           ? settleRelation(latestRelation(baseMessages), reportedRelation)
           : undefined;
-        const choices = responseSettings.suggestions ? reportedChoices : undefined;
+        // Choices that read as the character, copy the reply, or carry a stray foreign letter are dropped;
+        // with none left the reply counts as having none and the Lite fallback below makes them
+        const choiceRole = mergeUserProfile(userProfile, userRoles[charId]);
+        const choices = responseSettings.suggestions
+          ? cleanChoices(reportedChoices, { names: [choiceRole.name, choiceRole.callMe], reply: cleanText })
+          : undefined;
         // A moment the model flagged: saved right away ('auto') or offered under the reply ('ask').
         // One already saved or offered in this chat is dropped: models bring old ones back under the new reply.
         const knownMoments = [
@@ -627,7 +633,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
           ...(moment && { moment }),
           ...(relation && { relation }),
           ...(relation && relationRaw && { relationRaw }),
-          ...(choices && { choices }),
+          ...(choices && { choices, choicesSource: 'tag' }),
           ...(thought && { thought }),
           ...(chatStyle === 'dm' && { style: 'dm' }),
         };
@@ -724,20 +730,24 @@ function RoleplayApp({ store, account, getAccessToken }) {
           })(),
           messages: msgs.slice(-8).map(({ role, text }) => ({ role, text })),
           chatStyle,
+          auto: auto || undefined,
           apiKey,
         }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.choices?.length) throw new Error(data.error || `HTTP ${res.status}`);
-      const { choices } = data;
+      const role = mergeUserProfile(userProfile, userRoles[charId]);
+      const choices = cleanChoices(data.choices, { names: [role.name, role.callMe], reply: target.text });
+      if (!choices) throw new Error('ตัวเลือกที่ได้มาใช้ไม่ได้ ลองอีกครั้ง');
       const attach = (list) => {
         const m = list[index];
         if (list.length - 1 !== index || m?.role !== 'model' || m.text !== target.text) return list;
         const withChoices = {
           ...m,
           choices,
+          choicesSource: 'suggest',
           ...(!auto && { choicesAsked: true }),
-          ...(m.alts && { alts: m.alts.map((a, j) => (j === m.altIndex ? { ...a, choices } : a)) }),
+          ...(m.alts && { alts: m.alts.map((a, j) => (j === m.altIndex ? { ...a, choices, choicesSource: 'suggest' } : a)) }),
         };
         return list.map((x, i) => (i === index ? withChoices : x));
       };

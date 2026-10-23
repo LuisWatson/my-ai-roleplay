@@ -105,6 +105,9 @@ The owner builds it for themselves and their partner. Reply to the owner in Thai
   the model as levels via `levelOf`); suggested replies as `choices` (must be in the user's voice — models drift into the
   character's); per-chat `chat_style_<id>` = 'dm' switches to short messaging-app chat (`style: 'dm'` on messages).
   Settings `suggestions` / `relationship` turn them off and stop asking the model.
+  Every set of choices (tag or Lite) goes through `cleanChoices` (`lib/choices.js`): it drops ones that contain the
+  user's own name, echo the character's last line (even reworded), start with a lead-in line or carry a foreign-script
+  letter; stored with `choicesSource: 'tag' | 'suggest'`. The automatic `/api/suggest` call is Lite-only (`auto: true`).
   A reply that comes without choices gets them from `/api/suggest` (Lite) automatically (`requestSuggestions` in
   `app/page.js`, same call as the 💡 button); its prompt gets the user's name/callMe/role so it writes in their voice.
 - Installable app: `app/manifest.js`, `appleWebApp` in `app/layout.js`, icons in `public/icons/` + `app/*icon.png`.

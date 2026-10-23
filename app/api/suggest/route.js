@@ -2,12 +2,16 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { AVAILABLE_MODELS } from '../../../constants/models';
 import { buildSuggestPrompt } from '../../../lib/prompt';
 import { authorize, resolveApiKey, tryModels, jsonResponse, SAFETY_SETTINGS } from '../../../lib/geminiServer';
+import { choiceProblem } from '../../../lib/choices';
 
 // On-demand suggestions are small; Lite models first so the Flash quota (20 a day) stays for the chat
 const SUGGEST_MODELS = [
   ...AVAILABLE_MODELS.filter((m) => m.id.includes('lite')),
   ...AVAILABLE_MODELS.filter((m) => !m.id.includes('lite')),
 ].map((m) => m.id);
+
+// The automatic request after every reply must never touch the Flash quota; only the 💡 button the user presses may
+const LITE_ONLY_MODELS = SUGGEST_MODELS.filter((m) => m.includes('lite'));
 
 const PER_MODEL_MS = 20000;
 const TOTAL_MS = 40000;
@@ -23,7 +27,7 @@ export async function POST(req) {
     const denied = await authorize(req);
     if (denied) return denied;
 
-    const { characterName, characterDescription, userProfile, userName, messages, chatStyle, apiKey } =
+    const { characterName, characterDescription, userProfile, userName, messages, chatStyle, auto, apiKey } =
       await req.json();
     if (!characterName || !Array.isArray(messages) || messages.length === 0) {
       return jsonResponse({ error: 'ข้อมูลไม่ครบ' }, 400);
@@ -52,7 +56,7 @@ export async function POST(req) {
     const genAI = new GoogleGenerativeAI(key);
     const { result, errorResponse } = await tryModels({
       apiKey: key,
-      models: SUGGEST_MODELS,
+      models: auto === true ? LITE_ONLY_MODELS : SUGGEST_MODELS,
       perModelMs: PER_MODEL_MS,
       totalMs: TOTAL_MS,
       run: async (model) => {
@@ -65,7 +69,7 @@ export async function POST(req) {
     const choices = result
       .split('\n')
       .map((line) => line.replace(/^\s*(?:[-•]|\d+[.)])\s*/, '').trim())
-      .filter(Boolean)
+      .filter((line) => line && choiceProblem(line) !== 'lead-in')
       .slice(0, 3);
     if (choices.length === 0) return jsonResponse({ error: 'ไม่ได้ตัวเลือกกลับมา ลองอีกครั้ง' }, 502);
     return jsonResponse({ choices }, 200);
