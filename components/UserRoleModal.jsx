@@ -16,7 +16,7 @@ function DefaultHint({ value }) {
  * Modal for defining who the user is to one specific character (name, relationship, personality, likes, dislikes).
  * Empty fields fall back to the general profile in Settings.
  */
-export default function UserRoleModal({ isOpen, onClose, character, role, onSave }) {
+export default function UserRoleModal({ isOpen, firstTime = false, onClose, character, role, onSave, askConfirm }) {
   const [form, setForm] = useState(normalizeUserRole(null));
 
   useEffect(() => {
@@ -33,14 +33,22 @@ export default function UserRoleModal({ isOpen, onClose, character, role, onSave
     onClose();
   };
 
-  const handleReset = () => {
+  const handleReset = async () => {
+    const ok = await askConfirm({
+      title: 'ล้างบทบาทของคุณกับตัวละครนี้?',
+      text: 'ทุกช่องจะว่าง แล้วกลับไปใช้ค่าเริ่มต้นของตัวละครและโปรไฟล์ทั่วไปในหน้าตั้งค่า',
+      confirmLabel: 'ล้างค่า',
+      danger: true,
+      avatar: character.avatar,
+    });
+    if (!ok) return;
     onSave(character.id, normalizeUserRole(null));
     onClose();
   };
 
   return (
     <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
-      <div className="bg-slate-800 border border-slate-700/80 rounded-2xl p-6 w-full max-w-lg space-y-4 max-h-[90vh] overflow-y-auto shadow-2xl relative">
+      <div className="bg-slate-800 border border-slate-700/80 rounded-2xl p-6 w-full max-w-lg space-y-4 max-h-[90dvh] overflow-y-auto shadow-2xl relative">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-700 transition"
@@ -121,7 +129,7 @@ export default function UserRoleModal({ isOpen, onClose, character, role, onSave
           </button>
           <div className="flex gap-2">
             <button onClick={onClose} className="px-4 py-2 bg-slate-700/70 hover:bg-slate-700 text-slate-300 text-sm rounded-xl transition">
-              ข้ามไปก่อน
+              {firstTime ? 'ข้ามไปก่อน' : 'ยกเลิก'}
             </button>
             <button
               onClick={handleSave}

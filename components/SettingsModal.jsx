@@ -269,7 +269,8 @@ export default function SettingsModal({
         {activeTab === 'api' && (
           <div className="space-y-3.5">
             <p className="text-xs text-slate-400 leading-relaxed bg-slate-900/60 p-3 rounded-xl border border-slate-700/50">
-              หากเว้นว่างไว้ ระบบจะเรียกใช้ค่า <code className="text-purple-300 font-mono">GEMINI_API_KEY</code> จากไฟล์ <code className="text-purple-300 font-mono">.env.local</code> โดยอัตโนมัติ
+              เว้นว่างไว้ได้เลย แอปจะใช้ key กลางที่ตั้งไว้ให้แล้ว ใส่ key ของตัวเองเฉพาะตอนที่โควต้าของ key กลางหมด
+              (key ที่ใส่ตรงนี้ใช้ได้เฉพาะเครื่องนี้)
             </p>
 
             <div className="space-y-1.5">

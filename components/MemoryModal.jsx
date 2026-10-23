@@ -24,6 +24,7 @@ export default function MemoryModal({
   onForgetSummary,
   onRenameJournalEntry,
   onDeleteJournalEntry,
+  askConfirm,
 }) {
   const [tab, setTab] = useState('journal');
   const [draftPins, setDraftPins] = useState([]);
@@ -50,6 +51,28 @@ export default function MemoryModal({
     setNewPin('');
   };
 
+  // Pins and the summary are saved only with the Save button; closing any other way asks before dropping edits
+  const hasUnsavedNotes =
+    newPin.trim() !== '' ||
+    JSON.stringify(draftPins) !== JSON.stringify(pins || []) ||
+    (summary !== null && draftSummary.trim() !== (summary || '').trim());
+
+  const requestClose = async () => {
+    if (hasUnsavedNotes) {
+      const discard = await askConfirm({
+        title: 'ทิ้งหมุดและสรุปที่แก้ไว้?',
+        text: 'ยังไม่ได้กดบันทึกในแท็บ "หมุดและสรุป" ถ้าปิดตอนนี้ สิ่งที่แก้จะหายไป',
+        confirmLabel: 'ทิ้งการแก้ไข',
+        danger: true,
+      });
+      if (!discard) {
+        setTab('notes');
+        return;
+      }
+    }
+    onClose();
+  };
+
   const handleSave = () => {
     const pending = newPin.trim() && draftPins.length < MAX_PINS ? [newPin.trim().slice(0, MAX_PIN_CHARS)] : [];
     onSave({
@@ -63,7 +86,7 @@ export default function MemoryModal({
     <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-4 z-50 animate-fadeIn">
       <div className="bg-slate-800 border border-slate-700/80 rounded-2xl p-5 sm:p-6 w-full max-w-lg space-y-5 max-h-[90dvh] overflow-y-auto shadow-2xl relative">
         <button
-          onClick={onClose}
+          onClick={requestClose}
           title="ปิด"
           className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-700 transition"
         >
@@ -184,9 +207,8 @@ export default function MemoryModal({
                 className={`${FIELD_CLASS} resize-y leading-relaxed`}
               />
               <button
-                onClick={() => {
-                  onForgetSummary();
-                  onClose();
+                onClick={async () => {
+                  if (await onForgetSummary()) onClose();
                 }}
                 className="text-xs text-slate-400 hover:text-red-400 transition"
               >
@@ -200,7 +222,7 @@ export default function MemoryModal({
         )}
 
         <div className="flex justify-end gap-2 pt-3 border-t border-slate-700/60">
-          <button onClick={onClose} className="px-4 py-2 bg-slate-700/70 hover:bg-slate-700 text-slate-300 text-sm rounded-xl transition">
+          <button onClick={requestClose} className="px-4 py-2 bg-slate-700/70 hover:bg-slate-700 text-slate-300 text-sm rounded-xl transition">
             {tab === 'journal' ? 'ปิด' : 'ยกเลิก'}
           </button>
           {tab === 'notes' && (

@@ -136,7 +136,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
   const [toast, setToast] = useState(null);
   const closeToast = useCallback(() => setToast(null), []);
   const [confirmDialog, askConfirm] = useConfirm();
-  const [showUserRole, setShowUserRole] = useState(false);
+  const [showUserRole, setShowUserRole] = useState(false); // false | true (opened by the user) | 'auto' (first visit)
   const [chatActivity, setChatActivity] = useState({});
   const [showHistory, setShowHistory] = useState(false);
   const [direction, setDirection] = useState(''); // story direction for the next reply only
@@ -346,7 +346,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
     setSelectedChar(char);
     setDirection('');
     setChatStyle(store.getItem(chatStyleKey(char.id)) === 'dm' ? 'dm' : 'novel');
-    if (!userRoles[char.id] && markRolePrompted(char.id)) setShowUserRole(true);
+    if (!userRoles[char.id] && markRolePrompted(char.id)) setShowUserRole('auto');
     setMessages(savedHistoryOrGreeting(store, char));
   };
 
@@ -861,7 +861,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
     setChatStyle('novel');
     setSelectedChar(created);
     setMessages([{ role: 'model', text: created.greeting }]);
-    if (markRolePrompted(created.id)) setShowUserRole(true);
+    if (markRolePrompted(created.id)) setShowUserRole('auto');
   };
 
   // Update an existing custom persona in place, keeping its id and chat history
@@ -1079,9 +1079,18 @@ function RoleplayApp({ store, account, getAccessToken }) {
     if (index >= 0) setMessageMoment(index, { title: messages[index].moment.title, state: 'dismissed' });
   };
 
-  // Drop the summary; the next replies rebuild it from the chat
-  const handleForgetSummary = () => {
-    if (selectedChar) store.removeItem(memoryKey(selectedChar.id));
+  // Drop the summary after asking; the next replies rebuild it from the chat. Resolves true when dropped.
+  const handleForgetSummary = async () => {
+    if (!selectedChar) return false;
+    const charId = selectedChar.id;
+    const ok = await askConfirm({
+      title: 'ล้างสรุปเรื่องที่ผ่านมา?',
+      text: 'สรุปนี้จะหายไป แอปจะค่อยๆ สรุปใหม่จากแชทเดิมหลังข้อความถัดๆ ไป หมุดและสมุดความทรงจำไม่หาย',
+      confirmLabel: 'ล้างสรุป',
+      danger: true,
+    });
+    if (ok) store.removeItem(memoryKey(charId));
+    return ok;
   };
 
   // Clear chat history for the currently active character
@@ -1236,11 +1245,14 @@ function RoleplayApp({ store, account, getAccessToken }) {
         onDeleteJournalEntry={handleDeleteJournalEntry}
         onSave={handleSaveMemory}
         onForgetSummary={handleForgetSummary}
+        askConfirm={askConfirm}
       />
 
       {/* Per-character user role modal */}
       <UserRoleModal
-        isOpen={showUserRole}
+        isOpen={Boolean(showUserRole)}
+        firstTime={showUserRole === 'auto'}
+        askConfirm={askConfirm}
         onClose={() => {
           setShowUserRole(false);
           setRoleFor(null);
