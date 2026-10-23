@@ -93,8 +93,8 @@ function withoutImages({ avatar, background, ...persona }) {
 }
 
 // What one swipe version of a reply holds (missing parts stay undefined, so switching clears them)
-function swipeVersion({ text, scene, moment, relation, choices, style }) {
-  return { text, scene, moment, relation, choices, style };
+function swipeVersion({ text, scene, moment, relation, choices, thought, style }) {
+  return { text, scene, moment, relation, choices, thought, style };
 }
 
 // A reply without its other swipe versions (once the story moves on, only the chosen one is kept)
@@ -576,6 +576,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
           relation: reportedRelation,
           relationRaw,
           choices: reportedChoices,
+          thought,
         } = finalizeReply(replyText);
         const relation = responseSettings.relationship
           ? settleRelation(latestRelation(baseMessages), reportedRelation)
@@ -599,6 +600,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
           ...(relation && { relation }),
           ...(relation && relationRaw && { relationRaw }),
           ...(choices && { choices }),
+          ...(thought && { thought }),
           ...(chatStyle === 'dm' && { style: 'dm' }),
         };
         if (previous) {

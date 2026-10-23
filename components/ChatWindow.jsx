@@ -110,6 +110,53 @@ function relationChanges(messages) {
   });
 }
 
+// Two locations count as the same place when one contains the other, ignoring spaces
+// ("ร้านกาแฟ" and "ร้านกาแฟ มุมหน้าต่าง"), so small rewordings by the model don't add a divider
+function samePlace(a, b) {
+  const x = (a || '').replace(/\s+/g, '');
+  const y = (b || '').replace(/\s+/g, '');
+  return Boolean(x && y) && (x.includes(y) || y.includes(x));
+}
+
+// For each message, the scene to announce above it: the first scene of the chat, and every reply that
+// reports a different place than the scene before it; null otherwise
+function sceneDividers(messages) {
+  let previous = null;
+  return messages.map((m) => {
+    if (!m.scene?.location) return null;
+    const changed = !previous || !samePlace(previous.location, m.scene.location);
+    previous = m.scene;
+    return changed ? m.scene : null;
+  });
+}
+
+/**
+ * A thin line between messages where the story moves to a new place, with the place and time.
+ */
+function SceneDivider({ scene }) {
+  return (
+    <div className="flex items-center gap-3 py-1 text-[11px] text-slate-400" aria-label="เปลี่ยนฉาก">
+      <span className="flex-1 h-px bg-white/10" />
+      <span className="flex items-center gap-2 min-w-0 px-3 py-1 rounded-full bg-slate-900/60 border border-white/10 backdrop-blur-md">
+        <span className="flex items-center gap-1 min-w-0">
+          <MapPin className="w-3 h-3 flex-shrink-0 text-violet-300/80" />
+          <span className="truncate">{scene.location}</span>
+        </span>
+        {scene.time && (
+          <>
+            <span className="w-px h-3 bg-white/15 flex-shrink-0" />
+            <span className="flex items-center gap-1 flex-shrink-0 max-w-[40%]">
+              <Clock className="w-3 h-3 flex-shrink-0 text-violet-300/80" />
+              <span className="truncate">{scene.time}</span>
+            </span>
+          </>
+        )}
+      </span>
+      <span className="flex-1 h-px bg-white/10" />
+    </div>
+  );
+}
+
 /**
  * Suggested next replies under the last reply; tapping one puts it in the input box to send or edit.
  */
@@ -217,6 +264,7 @@ export default function ChatWindow({
   // Relationship now, and before the latest reply that changed it (for the +/- shown next to it)
   const shownRelation = showRelation ? latestRelation(messages) : null;
   const changes = showRelation ? relationChanges(messages) : [];
+  const dividers = sceneDividers(messages);
   const lastMessage = messages[messages.length - 1];
   const choices =
     (showChoices || lastMessage?.choicesAsked) && !loading && lastMessage?.role === 'model' && lastMessage.choices?.length
@@ -330,8 +378,9 @@ export default function ChatWindow({
       {/* Messages Scroll Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((msg, idx) => (
+          <React.Fragment key={idx}>
+          {dividers[idx] && <SceneDivider scene={dividers[idx]} />}
           <ChatMessage
-            key={idx}
             message={msg}
             avatar={selectedChar.avatar}
             characterName={selectedChar.name}
@@ -350,6 +399,7 @@ export default function ChatWindow({
             onEdit={(text) => onEditMessage(idx, text)}
             onDelete={() => onDeleteMessage(idx)}
           />
+          </React.Fragment>
         ))}
 
         {waiting && (

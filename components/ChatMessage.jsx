@@ -65,6 +65,47 @@ export function formatRoleplayText(text, role = 'model', characterName) {
 }
 
 /**
+ * A character's novel-style reply laid out like a story: narration as plain text on the backdrop,
+ * each spoken line in its own bubble (other people's lines get their name and colour).
+ */
+export function formatStoryText(text, characterName) {
+  return (
+    <div className="space-y-2.5">
+      {parseRoleplayText(text).map((para, idx) => {
+        if (para.type === 'narration') {
+          return (
+            <p key={idx} className="px-1 text-slate-300 [text-shadow:0_1px_2px_rgb(0_0_0/0.6)]">
+              {para.text}
+            </p>
+          );
+        }
+        if (para.speaker && !isMainCharacter(para.speaker, characterName)) {
+          const style = speakerStyle(para.speaker);
+          return (
+            <div key={idx} className="w-fit max-w-full space-y-1">
+              <div className={`px-1 text-[11px] font-medium ${style.label}`}>{para.speaker}</div>
+              <p
+                className={`px-3.5 py-2.5 rounded-2xl rounded-tl-none bg-slate-800/90 border-l-2 ${style.bar} font-medium ${style.speech} shadow-md backdrop-blur-sm`}
+              >
+                {para.text}
+              </p>
+            </div>
+          );
+        }
+        return (
+          <p
+            key={idx}
+            className="w-fit max-w-full px-3.5 py-2.5 rounded-2xl rounded-tl-none bg-slate-800/90 border border-slate-700/80 font-medium text-white shadow-md backdrop-blur-sm"
+          >
+            {para.text}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
+/**
  * Render a short-chat ("DM" mode) message: plain chat lines, with *what they did* muted and italic.
  */
 function formatChatText(text) {
@@ -182,6 +223,8 @@ export default function ChatMessage({
   };
 
   const actionClass = 'p-1 rounded-md text-slate-500 hover:text-slate-200 hover:bg-slate-700/60 transition';
+  // A character's novel-style reply has no outer bubble: narration sits on the backdrop, speech gets bubbles
+  const storyLayout = !isUser && hasText && !isEditing && message.style !== 'dm';
 
   return (
     <div className={`group flex items-start gap-2.5 transition-all ${isUser ? 'justify-end' : 'justify-start'}`}>
@@ -195,10 +238,12 @@ export default function ChatMessage({
 
       <div className={`flex flex-col gap-1 max-w-[85%] ${isUser ? 'md:max-w-[70%] items-end' : 'md:max-w-[80%] items-start'}`}>
       <div
-        className={`w-full p-3.5 rounded-2xl text-sm leading-relaxed transition-all shadow-md ${
-          isUser
-            ? 'bg-violet-500/15 border border-violet-300/25 text-violet-50 rounded-tr-none backdrop-blur-sm'
-            : 'bg-slate-800/90 border border-slate-700/80 text-slate-100 rounded-tl-none backdrop-blur-sm'
+        className={`w-full text-sm leading-relaxed transition-all ${
+          storyLayout
+            ? 'pt-1'
+            : isUser
+            ? 'p-3.5 rounded-2xl shadow-md bg-violet-500/15 border border-violet-300/25 text-violet-50 rounded-tr-none backdrop-blur-sm'
+            : 'p-3.5 rounded-2xl shadow-md bg-slate-800/90 border border-slate-700/80 text-slate-100 rounded-tl-none backdrop-blur-sm'
         }`}
       >
         {isEditing ? (
@@ -222,7 +267,9 @@ export default function ChatMessage({
         ) : hasText ? (
           message.style === 'dm'
             ? formatChatText(message.text)
-            : formatRoleplayText(message.text, message.role, characterName)
+            : storyLayout
+              ? formatStoryText(message.text, characterName)
+              : formatRoleplayText(message.text, message.role, characterName)
         ) : (
           <span className="inline-flex items-center gap-1.5 py-1 px-1">
             <span className="w-2 h-2 rounded-full bg-purple-400 animate-bounce" />
@@ -231,6 +278,16 @@ export default function ChatMessage({
           </span>
         )}
       </div>
+
+      {message.thought && !isEditing && (
+        <div
+          className="max-w-full inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900/70 border border-white/10 backdrop-blur-md text-xs text-slate-300 animate-fadeIn"
+          aria-label="ความคิดของตัวละคร"
+        >
+          <span className="text-violet-300/90 flex-shrink-0">ความคิด</span>
+          <span className="text-slate-200">{message.thought}</span>
+        </div>
+      )}
 
       {relationChange && !isEditing && (
         <div className="flex items-center gap-2.5 px-1 text-[11px] font-medium animate-fadeIn" aria-label="ความสัมพันธ์ที่เปลี่ยนไป">
