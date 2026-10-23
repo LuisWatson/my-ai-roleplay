@@ -75,7 +75,12 @@ The owner builds it for themselves and their partner. Reply to the owner in Thai
 - Other people in a scene: rule 11 lets the model voice them; rule 4 makes it prefix their speech with `name:`;
   `lib/roleplayFormat.js` turns that into `speaker` and `ChatMessage` shows a name label in that person's colour.
 - `constants/sceneBackgrounds.js` — 8 scene background ids → `public/characters/backgrounds/scenes/<id>.webp`.
-- `components/ChatWindow.jsx` — blurred backdrop (scene background, else character background), floating scene pill.
+- `components/ChatWindow.jsx` — blurred backdrop (scene background, else character background), floating scene pill,
+  a divider (place · time) before the first scene and wherever the place changes (`sceneDividers`).
+- Story layout (`formatStoryText` in `ChatMessage`): novel-mode character replies have no outer bubble — narration
+  on the backdrop, each spoken line in its own bubble. User messages, DM mode and the profile greeting keep the old box.
+- Character thought (rule 16): `; ความคิด=<emoji> <thought>` in the scene tag → `thought` on the reply (and swipes),
+  shown as a "ความคิด" pill under it. Always asked for; not sent back to the model.
 - Swipes: a regenerated model message keeps `alts: [{ text, scene }]` + `altIndex` (only the last reply);
   dropped when the user sends the next message.
 - Story direction ("กำกับเรื่อง", `ChatInput`): one-shot out-of-story instruction sent as `direction`; never saved.
@@ -117,7 +122,8 @@ The owner builds it for themselves and their partner. Reply to the owner in Thai
 Done: chat input redesign, rename to Botbaat, Ava portrait, scene backgrounds, role form, iPhone layout fix,
 Google login + cloud data, Vercel deploy, model fallback, in-app dialogs, multi-device refresh, long-term memory,
 round 1 (swipes, story direction, memory panel, installable app), memory journal, photo upload, round 2,
-blocked-reply handling, relationship in header, speaker labels, character profiles + supporting cast.
+blocked-reply handling, relationship in header, speaker labels, character profiles + supporting cast,
+story layout + character thoughts + scene dividers (2026-10-23).
 
 ## TODO
 
