@@ -29,6 +29,7 @@ import {
 } from '../lib/journal';
 import { latestRelation, settleRelation } from '../lib/relation';
 import { openingMessage, personaForChat } from '../lib/story';
+import { characterAge } from '../lib/prompt';
 import { truthFor, acceptedReveal } from '../lib/truth';
 import { cleanChoices } from '../lib/choices';
 import { AVAILABLE_MODELS, DEFAULT_MODEL } from '../constants/models';
@@ -405,43 +406,73 @@ function RoleplayApp({ store, account, getAccessToken }) {
 
   // Characters whose memory is being updated right now (one summary request per chat at a time)
   const memoryJobsRef = useRef(new Set());
+  // Per chat: how many messages the next summary request may carry. Google's filter sometimes refuses a batch
+  // of perfectly innocent romance; the batch is then halved until it passes (see updateMemory).
+  const memoryCapRef = useRef({});
 
   // After a reply: once enough older chat has piled up beyond what is sent with each message, have it
   // summarized into the chat's long-term memory. Runs in the background; a failure is retried after the
-  // next reply.
+  // next reply. A batch Google refuses is halved on the next try; a single message it refuses is skipped
+  // (the memory journal still holds the key moments), so one bad message can't freeze the memory.
   const updateMemory = async (persona, chatMessages) => {
     const charId = persona.id;
     if (memoryJobsRef.current.has(charId)) return;
-    const memory = readMemory(store, charId, chatMessages);
-    const batch = nextMemoryBatch(chatMessages, memory);
-    if (!batch) return;
+    let memory = readMemory(store, charId, chatMessages);
 
     memoryJobsRef.current.add(charId);
     try {
-      const accessToken = await getAccessToken();
-      const res = await fetch('/api/memory', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
-        },
-        body: JSON.stringify({
-          characterName: persona.name,
-          userName: mergeUserProfile(userProfile, userRoles[charId]).name,
-          previousSummary: memory?.summary || '',
-          messages: batch.messages,
-          apiKey,
-        }),
-      });
-      if (!res.ok) return;
-      const { summary } = await res.json();
-      if (!summary) return;
+      for (let round = 0; round < 3; round++) {
+        const next = nextMemoryBatch(chatMessages, memory);
+        if (!next) return;
+        const start = next.to - next.messages.length;
+        const cap = memoryCapRef.current[charId]?.cap;
+        const messages = cap ? next.messages.slice(0, cap) : next.messages;
+        const to = start + messages.length;
 
-      // Keep it only if the summarized messages are still the ones saved (not edited or cleared meanwhile)
-      const hash = fingerprint(chatMessages, batch.to);
-      const saved = JSON.parse(store.getItem(`chat_history_${charId}`) || '[]');
-      if (fingerprint(saved, batch.to) !== hash) return;
-      store.setItem(memoryKey(charId), JSON.stringify({ summary, covered: batch.to, hash }));
+        const accessToken = await getAccessToken();
+        const res = await fetch('/api/memory', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
+          },
+          body: JSON.stringify({
+            characterName: persona.name,
+            userName: mergeUserProfile(userProfile, userRoles[charId]).name,
+            previousSummary: memory?.summary || '',
+            messages,
+            characterAge: characterAge(persona),
+            apiKey,
+          }),
+        });
+
+        let summary = '';
+        if (res.ok) {
+          summary = (await res.json()).summary || '';
+          if (!summary) return;
+          // after a refusal, grow the batch again only once a few in a row have passed
+          const state = memoryCapRef.current[charId];
+          if (state) {
+            const streak = (state.streak || 0) + 1;
+            memoryCapRef.current[charId] = streak >= 3 ? { cap: messages.length * 2, streak: 0 } : { cap: messages.length, streak };
+          }
+        } else {
+          const body = await res.json().catch(() => ({}));
+          if (body.kind !== 'blocked') return;
+          if (messages.length > 1) {
+            memoryCapRef.current[charId] = { cap: Math.ceil(messages.length / 2), streak: 0 };
+            return;
+          }
+          summary = memory?.summary || ''; // a single message Google won't read: skip it
+        }
+
+        // Keep it only if the summarized messages are still the ones saved (not edited or cleared meanwhile)
+        const hash = fingerprint(chatMessages, to);
+        const saved = JSON.parse(store.getItem(`chat_history_${charId}`) || '[]');
+        if (fingerprint(saved, to) !== hash) return;
+        memory = { summary, covered: to, hash };
+        store.setItem(memoryKey(charId), JSON.stringify(memory));
+      }
     } catch (err) {
       console.warn('Memory update failed:', err);
     } finally {

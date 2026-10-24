@@ -25,7 +25,7 @@ export async function POST(req) {
     const denied = await authorize(req);
     if (denied) return denied;
 
-    const { characterName, userName, previousSummary, messages, apiKey } = await req.json();
+    const { characterName, userName, previousSummary, messages, characterAge, apiKey } = await req.json();
     if (!characterName || !Array.isArray(messages) || messages.length === 0) {
       return jsonResponse({ error: 'ข้อมูลไม่ครบ' }, 400);
     }
@@ -46,6 +46,7 @@ export async function POST(req) {
       userName,
       previousSummary: typeof previousSummary === 'string' ? previousSummary : '',
       messages: cleanMessages,
+      characterAge: Number.isFinite(characterAge) ? characterAge : null,
     });
 
     const { result, usedModel, errorResponse } = await tryModels({
