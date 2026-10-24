@@ -5,6 +5,7 @@ import { Sparkles, X, Image as ImageIcon, Camera, Loader2 } from 'lucide-react';
 import { imageFileToAvatar } from '../lib/imageResize';
 import { DEFAULT_AVATAR } from '../constants/characters';
 import { REALISM_OPTIONS, DEFAULT_REALISM } from '../constants/scenario';
+import { SCENE_BACKGROUNDS, sceneBackgroundSrc } from '../constants/sceneBackgrounds';
 
 const PRESET_AVATARS = [
   DEFAULT_AVATAR,
@@ -25,6 +26,10 @@ const EMPTY_FORM = {
   scenario: '',
   realism: DEFAULT_REALISM,
   avatar: DEFAULT_AVATAR,
+  background: '',
+  fixedBackground: false,
+  userRoleHint: '',
+  defaultUserRole: { description: '', background: '' },
   profile: {},
   cast: [],
   storyHooks: [],
@@ -90,7 +95,18 @@ export default function CreateCharacterModal({
   // Load the character being edited (or a blank form) whenever the modal opens
   useEffect(() => {
     if (isOpen) {
-      setFormData(editingCharacter ? { ...EMPTY_FORM, ...editingCharacter } : EMPTY_FORM);
+      setFormData(
+        editingCharacter
+          ? {
+              ...EMPTY_FORM,
+              ...editingCharacter,
+              defaultUserRole: {
+                ...EMPTY_FORM.defaultUserRole,
+                ...(editingCharacter.defaultUserRole || {}),
+              },
+            }
+          : EMPTY_FORM
+      );
       setFormError('');
     }
   }, [isOpen, editingCharacter]);
@@ -119,8 +135,17 @@ export default function CreateCharacterModal({
     const opening = Object.fromEntries(
       OPENING_FIELDS.map(([key, , , max]) => [key, (formData.opening?.[key] || '').trim().slice(0, max)])
     );
+    const defaultUserRole = {
+      description: (formData.defaultUserRole?.description || '').trim().slice(0, 500),
+      background: (formData.defaultUserRole?.background || '').trim().slice(0, 500),
+    };
+    const hasDefaultRole = Boolean(defaultUserRole.description || defaultUserRole.background);
     const data = {
       ...formData,
+      background: (formData.background || '').trim(),
+      fixedBackground: Boolean(formData.fixedBackground),
+      userRoleHint: (formData.userRoleHint || '').trim().slice(0, 100) || undefined,
+      defaultUserRole: hasDefaultRole ? defaultUserRole : undefined,
       profile,
       cast,
       storyHooks,
@@ -358,6 +383,69 @@ export default function CreateCharacterModal({
             />
           </div>
 
+          {/* Chat Backdrop (Background) */}
+          <details
+            className="rounded-xl border border-slate-700/70 bg-slate-900/40 px-3 py-2"
+            open={Boolean(editingCharacter?.background || editingCharacter?.fixedBackground)}
+          >
+            <summary className="cursor-pointer select-none text-xs font-medium text-slate-300 py-1">
+              ฉากหลังแชท (ไม่บังคับ) — กำหนดภาพพื้นหลังแชทเริ่มต้นของตัวละคร
+            </summary>
+            <div className="pt-2.5 space-y-3">
+              <div>
+                <label className="block text-[11px] text-slate-400 mb-1.5">เลือกจากฉากสำเร็จรูป</label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                  {SCENE_BACKGROUNDS.map((bg) => {
+                    const src = sceneBackgroundSrc(bg.id);
+                    const selected = formData.background === src;
+                    return (
+                      <button
+                        key={bg.id}
+                        type="button"
+                        onClick={() => setFormData({ ...formData, background: selected ? '' : src })}
+                        className={`p-2 rounded-xl border text-left text-xs transition flex flex-col gap-0.5 ${
+                          selected
+                            ? 'bg-purple-900/40 border-purple-500/60 text-purple-200'
+                            : 'bg-slate-900 border-slate-700/70 text-slate-400 hover:text-slate-200'
+                        }`}
+                      >
+                        <span className="font-medium truncate">{bg.label.split(' ')[0]}</span>
+                        <span className="text-[10px] text-slate-500 truncate">{bg.id}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] text-slate-400 mb-1">หรือวางลิงก์รูปภาพฉากหลัง (URL)</label>
+                <input
+                  type="url"
+                  value={formData.background || ''}
+                  onChange={(e) => setFormData({ ...formData, background: e.target.value })}
+                  placeholder="https://... หรือ /characters/backgrounds/..."
+                  className={SMALL_FIELD}
+                />
+              </div>
+
+              <label className="flex items-start gap-2.5 cursor-pointer pt-1">
+                <input
+                  type="checkbox"
+                  checked={Boolean(formData.fixedBackground)}
+                  onChange={(e) => setFormData({ ...formData, fixedBackground: e.target.checked })}
+                  className="mt-0.5 rounded border-slate-700 bg-slate-900 text-purple-600 focus:ring-0 focus:ring-offset-0"
+                />
+                <span className="text-xs text-slate-300 select-none">
+                  <strong className="font-medium text-slate-200">ล็อกฉากหลังนี้ตลอดเวลา (Fixed Background)</strong>
+                  <br />
+                  <span className="text-[11px] text-slate-400">
+                    เหมาะกับตัวละครโลกแฟนตาซีหรือไซไฟ เพื่อไม่ให้เปลี่ยนฉากตามสถานที่ทั่วไป (เช่น ห้าง, ออฟฟิศ)
+                  </span>
+                </span>
+              </label>
+            </div>
+          </details>
+
           {/* Realism level */}
           <div>
             <label className="block text-xs font-medium text-slate-300 mb-1.5">ความสมจริงของเรื่อง</label>
@@ -470,6 +558,74 @@ export default function CreateCharacterModal({
                   + เพิ่มคนรอบตัว
                 </button>
               )}
+            </div>
+          </details>
+
+          {/* Default User Role */}
+          <details
+            className="rounded-xl border border-slate-700/70 bg-slate-900/40 px-3 py-2"
+            open={Boolean(
+              editingCharacter?.userRoleHint ||
+              editingCharacter?.defaultUserRole?.description ||
+              editingCharacter?.defaultUserRole?.background
+            )}
+          >
+            <summary className="cursor-pointer select-none text-xs font-medium text-slate-300 py-1">
+              บทบาทเริ่มต้นของคุณ (ไม่บังคับ) — กำหนดว่าคุณเป็นใครในสายตาของตัวละครนี้
+            </summary>
+            <div className="pt-2.5 space-y-3">
+              <div>
+                <label className="block text-[11px] text-slate-400 mb-1">
+                  คำใบ้บทบาท (Placeholder hint)
+                </label>
+                <input
+                  type="text"
+                  value={formData.userRoleHint || ''}
+                  onChange={(e) => setFormData({ ...formData, userRoleHint: e.target.value })}
+                  maxLength={100}
+                  placeholder="เช่น เพื่อนสนิทข้างบ้าน, รุ่นน้องที่ทำงาน, นักเดินทางแปลกหน้า"
+                  className={SMALL_FIELD}
+                />
+                <p className="mt-1 text-[10px] text-slate-500">แสดงเป็นตัวอย่างในหน้าต่าง "บทบาทของฉัน"</p>
+              </div>
+
+              <div>
+                <label className="block text-[11px] text-slate-400 mb-1">
+                  ความสัมพันธ์ / บทบาทเริ่มต้น (ถ้าคุณไม่ได้ระบุเอง)
+                </label>
+                <textarea
+                  rows={2}
+                  value={formData.defaultUserRole?.description || ''}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      defaultUserRole: { ...formData.defaultUserRole, description: e.target.value },
+                    })
+                  }
+                  maxLength={500}
+                  placeholder="เช่น เพื่อนสนิทที่รู้จักกันมาตั้งแต่เด็ก บ้านอยู่ติดกันและคุยกันได้ทุกเรื่อง"
+                  className={`${SMALL_FIELD} resize-none`}
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] text-slate-400 mb-1">
+                  ประวัติ / ภูมิหลังเริ่มต้นของคุณ (ถ้าคุณไม่ได้ระบุเอง)
+                </label>
+                <textarea
+                  rows={2}
+                  value={formData.defaultUserRole?.background || ''}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      defaultUserRole: { ...formData.defaultUserRole, background: e.target.value },
+                    })
+                  }
+                  maxLength={500}
+                  placeholder="เช่น นักศึกษาปีเดียวกับตัวละคร คณะศิลปศาสตร์"
+                  className={`${SMALL_FIELD} resize-none`}
+                />
+              </div>
             </div>
           </details>
 
