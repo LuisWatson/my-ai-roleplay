@@ -73,6 +73,11 @@ The owner builds it for themselves and their partner. Reply to the owner in Thai
   character must not know it), `opening { time, place, mood, background }` (card above the first message, `OpeningCard`)
   and `storyHooks` (events the model may bring in, rule 11). Sent only for chats whose first message has `storyStart`
   (`openingMessage`), so chats from before keep their own story. `ellie` is the owner-written test character for this.
+- Hidden story truth (`constants/storyArcs.js` → `character.truthStages`, `lib/truth.js`): staged and paced by the app.
+  **The owner chose to be surprised: never print, quote or summarize the stage texts (not in chat, worklog, commits);
+  don't show them in the UI.** The stage is derived from `reveal` on model messages (tag part `; เฉลย=<n>`); the next stage
+  is due after N player turns (24, or 16/10 at trust level 3/4). Only told + due stages are sent (`truthFor`); the persona
+  sent never carries `truthStages`. Only `ellie` has one.
 - `components/CharacterProfile.jsx` — tapping a card on the home grid opens the character's profile sheet
   (bio / your role / people around them / greeting, relation + journal count, "เริ่มแชท"/"คุยต่อ");
   the sidebar chat list still opens chats directly.

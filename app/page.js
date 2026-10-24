@@ -29,6 +29,7 @@ import {
 } from '../lib/journal';
 import { latestRelation, settleRelation } from '../lib/relation';
 import { openingMessage, personaForChat } from '../lib/story';
+import { truthFor, acceptedReveal } from '../lib/truth';
 import { cleanChoices } from '../lib/choices';
 import { AVAILABLE_MODELS, DEFAULT_MODEL } from '../constants/models';
 import {
@@ -97,8 +98,8 @@ function withoutImages({ avatar, background, expressions, ...persona }) {
 }
 
 // What one swipe version of a reply holds (missing parts stay undefined, so switching clears them)
-function swipeVersion({ text, scene, moment, relation, choices, thought, style }) {
-  return { text, scene, moment, relation, choices, thought, style };
+function swipeVersion({ text, scene, moment, relation, choices, thought, style, reveal }) {
+  return { text, scene, moment, relation, choices, thought, style, reveal };
 }
 
 // A reply without its other swipe versions (once the story moves on, only the chosen one is kept)
@@ -483,6 +484,10 @@ function RoleplayApp({ store, account, getAccessToken }) {
     };
     armStallTimer(FIRST_RESPONSE_CLIENT_TIMEOUT_MS);
 
+    // The character's hidden story: only the stages already told and the one now due go to the model.
+    // Read again after the stream ends, to check the stage the reply claims to have told.
+    const truth = truthFor(persona, baseMessages, latestRelation(baseMessages));
+
     try {
       const memory = readMemory(store, charId, baseMessages);
       const historyPayload = chatWindow(baseMessages, memory);
@@ -510,6 +515,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
           journal: journalForPrompt(readJournal(store, charId)),
           offeredMoments: offeredMomentTitles(baseMessages),
           relation: latestRelation(baseMessages) || undefined,
+          truth: truth || undefined,
           chatStyle,
           direction: storyDirection.trim() || undefined,
         }),
@@ -598,7 +604,10 @@ function RoleplayApp({ store, account, getAccessToken }) {
           relation: reportedRelation,
           relationRaw,
           thought,
+          reveal: reportedReveal,
         } = finalizeReply(replyText);
+        // The model says it told the hidden stage that was due; only that number counts (lib/truth.js)
+        const reveal = acceptedReveal(reportedReveal, truth);
         const relation = responseSettings.relationship
           ? settleRelation(latestRelation(baseMessages), reportedRelation)
           : undefined;
@@ -627,6 +636,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
           ...(relation && { relation }),
           ...(relation && relationRaw && { relationRaw }),
           ...(thought && { thought }),
+          ...(reveal && { reveal }),
           ...(chatStyle === 'dm' && { style: 'dm' }),
         };
         if (previous) {
