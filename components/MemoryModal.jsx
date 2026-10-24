@@ -18,6 +18,7 @@ export default function MemoryModal({
   onClose,
   character,
   summary,
+  coverage,
   truthCount,
   pins,
   journal,
@@ -199,14 +200,35 @@ export default function MemoryModal({
 
         {/* Automatic summary */}
         <section className="space-y-2">
-          <div className="text-sm font-medium text-slate-200">เรื่องที่ผ่านมา (สรุปอัตโนมัติ)</div>
+          <div className="flex items-center justify-between gap-2">
+            <div className="text-sm font-medium text-slate-200">เรื่องที่ผ่านมา (สรุปอัตโนมัติ)</div>
+            {coverage && coverage.total > 0 && summary !== null && (
+              <span
+                className={`text-[11px] px-2.5 py-0.5 rounded-full border font-medium ${
+                  !coverage.hasPending
+                    ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300'
+                    : 'bg-amber-950/40 border-amber-500/40 text-amber-300'
+                }`}
+              >
+                สรุปถึงข้อความที่ {coverage.covered} / {coverage.total}
+              </span>
+            )}
+          </div>
           {summary === null ? (
             <p className="text-xs text-slate-400 leading-relaxed rounded-xl bg-slate-900/50 border border-slate-700/60 px-3 py-2.5">
               แชทนี้ยังสั้นอยู่ ตัวละครยังเห็นทุกข้อความ เมื่อคุยยาวขึ้นแอปจะสรุปเรื่องเก่าเก็บไว้ที่นี่ให้เอง
             </p>
           ) : (
             <>
-              <p className="text-xs text-slate-400">แอปสรุปให้เองเมื่อแชทยาว แก้ได้ถ้ามีอะไรผิด</p>
+              {coverage && coverage.total > 0 && coverage.hasPending ? (
+                <p className="text-[11px] text-amber-300/90 bg-amber-950/20 border border-amber-500/20 rounded-xl px-3 py-2 leading-relaxed">
+                  💡 มีข้อความเก่าที่กำลังรอสรุปเพิ่มเติม แอปจะทยอยสรุปอัตโนมัติในการตอบครั้งถัดๆ ไป
+                </p>
+              ) : (
+                <p className="text-xs text-slate-400">
+                  แอปสรุปให้เองเมื่อแชทยาว (ข้อความล่าสุด ~12–18k ตัวอักษรจะถูกส่งเข้าโมเดลโดยตรง)
+                </p>
+              )}
               <textarea
                 rows={8}
                 value={draftSummary}

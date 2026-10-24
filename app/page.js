@@ -8,6 +8,7 @@ import SettingsModal from '../components/SettingsModal';
 import CreateCharacterModal from '../components/CreateCharacterModal';
 import UserRoleModal from '../components/UserRoleModal';
 import MemoryModal from '../components/MemoryModal';
+import ExportChatModal from '../components/ExportChatModal';
 import CharacterProfile from '../components/CharacterProfile';
 import AuthGate from '../components/AuthGate';
 import Toast from '../components/Toast';
@@ -35,94 +36,22 @@ import { cleanChoices } from '../lib/choices';
 import { AVAILABLE_MODELS, DEFAULT_MODEL } from '../constants/models';
 import {
   DEFAULT_RESPONSE_SETTINGS,
-  FIRST_RESPONSE_CLIENT_TIMEOUT_MS,
-  STALL_TIMEOUT_MS,
   normalizeResponseSettings,
   chatStyleKey,
 } from '../constants/chatSettings';
-
-// Last-activity time per character chat, for the sidebar's chat list. Histories saved before this
-// existed have no entry, so they are picked up from storage with time 0 (listed as older chats).
-function readChatActivity(store) {
-  let activity = {};
-  try {
-    activity = JSON.parse(store.getItem('user_chat_activity')) || {};
-  } catch (err) {
-    console.error('Failed to parse chat activity from storage:', err);
-  }
-  for (const key of store.keys()) {
-    if (key.startsWith('chat_history_')) {
-      const id = key.slice('chat_history_'.length);
-      if (!(id in activity)) activity[id] = 0;
-    }
-  }
-  return activity;
-}
-
-// One-line preview of a chat's last message, with *(action)* narration removed
-function lastMessagePreview(store, charId) {
-  try {
-    const history = JSON.parse(store.getItem(`chat_history_${charId}`) || '[]');
-    const last = history[history.length - 1];
-    if (!last?.text) return '';
-    const text = last.text.replace(/\*\([^)]*\)\*/g, '').replace(/\*/g, '').replace(/\s+/g, ' ').trim();
-    return last.role === 'user' ? `คุณ: ${text}` : text;
-  } catch {
-    return '';
-  }
-}
-
-// What the chat shows when a reply can't be had, by the `kind` /api/chat returns (plus 'network' for a failed fetch)
-const REPLY_ERRORS = {
-  busy: { kind: 'error', title: 'ส่งข้อความไม่สำเร็จ', text: 'ตอนนี้ระบบ AI ของ Google คนใช้เยอะ ลองส่งอีกครั้งในอีกสักครู่' },
-  quota: {
-    kind: 'error',
-    title: 'วันนี้คุยกันจนโควต้าฟรีหมดแล้ว',
-    text: 'โควต้าจะกลับมาประมาณบ่าย 2–3 โมง (เวลาไทย) หรือใส่ Gemini API Key อื่นในตั้งค่า',
-    retry: false,
-  },
-  network: { kind: 'error', title: 'เชื่อมต่อไม่ได้', text: 'ตรวจอินเทอร์เน็ตแล้วลองส่งอีกครั้ง' },
-  signin: { kind: 'error', title: 'ต้องเข้าสู่ระบบใหม่', text: 'ออกจากระบบแล้วเข้าสู่ระบบอีกครั้ง', retry: false },
-  auth: { kind: 'error', title: 'Gemini API Key ใช้ไม่ได้', text: 'ตรวจ key ในหน้าตั้งค่า หรือในไฟล์ .env.local', retry: false },
-  blocked: {
-    kind: 'warn',
-    title: 'Google ไม่ยอมตอบเนื้อหาช่วงนี้',
-    text: 'ระบบความปลอดภัยของ Google บล็อกคำตอบนี้ ลองแก้ข้อความล่าสุด (✏️) หรือกำกับให้เรื่องไปทางอื่น แล้วส่งใหม่ — กดส่งซ้ำแบบเดิมจะโดนบล็อกอีก',
-    retry: false,
-  },
-};
-
-// The character as sent to the server: the model never sees the pictures, and an uploaded photo is a
-// large data URL, so leave them out of every request
-function withoutImages({ avatar, background, expressions, ...persona }) {
-  return persona;
-}
-
-// What one swipe version of a reply holds (missing parts stay undefined, so switching clears them)
-function swipeVersion({ text, scene, moment, relation, choices, thought, style, reveal }) {
-  return { text, scene, moment, relation, choices, thought, style, reveal };
-}
-
-// A reply without its other swipe versions (once the story moves on, only the chosen one is kept)
-function withoutSwipes({ alts, altIndex, ...message }) {
-  return message;
-}
-
-const SIDEBAR_COLLAPSED_KEY = 'botbaat_sidebar_collapsed';
-
-// A character's saved conversation, or just their greeting when there is none yet
-function savedHistoryOrGreeting(store, char) {
-  try {
-    const parsed = JSON.parse(store.getItem(`chat_history_${char.id}`) || '[]');
-    // A chat that never got past the old greeting starts over with the story setup
-    const untouched = parsed.length === 1 && parsed[0]?.role === 'model' && !parsed[0].storyStart;
-    if (Array.isArray(parsed) && parsed.length > 0 && !untouched) return parsed;
-  } catch (err) {
-    console.error('Failed to parse chat history:', err);
-  }
-  return [openingMessage(char)];
-}
-
+import { exportChatAsText, exportChatAsJson } from '../lib/chatExport';
+import {
+  STALL_TIMEOUT_MS,
+  FIRST_RESPONSE_CLIENT_TIMEOUT_MS,
+  SIDEBAR_COLLAPSED_KEY,
+  readChatActivity,
+  lastMessagePreview,
+  REPLY_ERRORS,
+  withoutImages,
+  swipeVersion,
+  withoutSwipes,
+  savedHistoryOrGreeting,
+} from '../lib/chatHelpers';
 
 function RoleplayApp({ store, account, getAccessToken }) {
   const [characters, setCharacters] = useState(DEFAULT_CHARACTERS);
@@ -167,8 +96,34 @@ function RoleplayApp({ store, account, getAccessToken }) {
   const [profileView, setProfileView] = useState(null); // { character, status, hasChat } while a profile is open
   const [roleFor, setRoleFor] = useState(null); // character the role form edits when opened from a profile
   const [memoryView, setMemoryView] = useState(null); // { summary, pins } while the memory panel is open
+  const [showExportModal, setShowExportModal] = useState(false);
   const abortRef = useRef(null);
   const activeCharIdRef = useRef(null); // which character's chat is currently on screen
+  const fallbackNotifiedRef = useRef(null); // Tracks the last model fallback we alerted the user about
+
+  const handleExportChatText = () => {
+    if (!selectedChar) return;
+    exportChatAsText({
+      character: selectedChar,
+      userProfile,
+      messages,
+    });
+    setToast({ kind: 'success', title: 'ดาวน์โหลดไฟล์ข้อความแล้ว (.txt)' });
+  };
+
+  const handleExportChatJson = () => {
+    if (!selectedChar) return;
+    exportChatAsJson({
+      character: selectedChar,
+      userProfile,
+      userRole: userRoles[selectedChar.id],
+      messages,
+      pins: readPins(store, selectedChar.id),
+      journal: readJournal(store, selectedChar.id),
+      memory: readMemory(store, selectedChar.id, messages),
+    });
+    setToast({ kind: 'success', title: 'ดาวน์โหลดไฟล์สำรองข้อมูลแล้ว (.json)' });
+  };
 
   // Put everything saved in the store into state; returns the full character list it loaded.
   // Runs on mount and again whenever another device has changed the data (see the refresh effect below).
@@ -281,6 +236,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
   const handleSaveModel = (newModel) => {
     setModel(newModel);
     store.setItem('user_gemini_model', newModel);
+    fallbackNotifiedRef.current = null;
   };
 
   const handleSaveResponseSettings = (settings) => {
@@ -562,6 +518,19 @@ function RoleplayApp({ store, account, getAccessToken }) {
       }
 
       armStallTimer(STALL_TIMEOUT_MS);
+
+      // Notify the user if the server had to fall back to another model (e.g., daily quota reached)
+      const usedModel = res.headers.get('x-model-used');
+      if (usedModel && usedModel !== model && fallbackNotifiedRef.current !== usedModel) {
+        fallbackNotifiedRef.current = usedModel;
+        const targetModel = AVAILABLE_MODELS.find((m) => m.id === usedModel);
+        const label = targetModel ? targetModel.label : usedModel;
+        setToast({
+          kind: 'info',
+          title: `สลับไปใช้ ${label} ชั่วคราว`,
+          text: 'เนื่องจากโมเดลหลักติดโควตารายวันหรือตอบสนองช้า ระบบจะยังคงตอบกลับอย่างต่อเนื่อง',
+        });
+      }
 
       // Add empty placeholder for the incoming stream; `loading` stays true so the input stays locked.
       // Skipped (like every UI update below) when the user has already switched to another chat.
@@ -1042,6 +1011,73 @@ function RoleplayApp({ store, account, getAccessToken }) {
   const handleImportData = async (file) => {
     try {
       const backup = JSON.parse(await file.text());
+
+      // ── single-chat restore ─────────────────────────────────────────────────
+      if (backup?.app === 'my-ai-roleplay-single-chat') {
+        const charId = backup.character?.id;
+        if (!charId) throw new Error('ไฟล์ไม่มี character.id');
+
+        const ok = await askConfirm({
+          title: 'นำเข้าแชทนี้?',
+          text: `นำเข้าประวัติการสนทนากับ ${backup.character?.name || charId} (${(backup.messages || []).length} ข้อความ) แชทปัจจุบันของตัวละครนี้จะถูกแทนที่`,
+          confirmLabel: 'นำเข้า',
+        });
+        if (!ok) return;
+        stopStreaming({ discard: true });
+
+        // Merge custom character into store if it isn't there yet
+        if (charId.startsWith('custom_') && backup.character) {
+          const existing = JSON.parse(store.getItem('user_custom_chars') || '[]');
+          if (!existing.some((c) => c.id === charId)) {
+            const newChar = {
+              id: charId,
+              name: backup.character.name || charId,
+              tagline: backup.character.tagline || '',
+              category: backup.character.category || 'custom',
+              description: '',
+              greeting: '',
+              avatar: backup.character.avatar || '',
+            };
+            existing.push(newChar);
+            store.setItem('user_custom_chars', JSON.stringify(existing));
+            setCharacters([...DEFAULT_CHARACTERS, ...existing]);
+          }
+        }
+
+        // Write chat data
+        if (Array.isArray(backup.messages)) {
+          store.setItem(`chat_history_${charId}`, JSON.stringify(backup.messages));
+        }
+        if (backup.memory) store.setItem(memoryKey(charId), JSON.stringify(backup.memory));
+        else store.removeItem(memoryKey(charId));
+
+        const cleanedPins = Array.isArray(backup.pins) ? cleanPins(backup.pins) : [];
+        if (cleanedPins.length > 0) store.setItem(pinsKey(charId), JSON.stringify(cleanedPins));
+        else store.removeItem(pinsKey(charId));
+
+        const validJournal = Array.isArray(backup.journal)
+          ? backup.journal.filter((e) => e && e.id && typeof e.title === 'string')
+          : [];
+        if (validJournal.length > 0) store.setItem(journalKey(charId), JSON.stringify(validJournal));
+        else store.removeItem(journalKey(charId));
+
+        if (backup.userRole) handleSaveUserRole(charId, normalizeUserRole(backup.userRole));
+
+        const activity = readChatActivity(store);
+        activity[charId] = Date.now();
+        store.setItem('user_chat_activity', JSON.stringify(activity));
+        setChatActivity({ ...activity });
+
+        // If this character is currently open, refresh messages on screen
+        if (selectedChar?.id === charId) {
+          setMessages(Array.isArray(backup.messages) ? backup.messages : []);
+        }
+
+        setToast({ kind: 'success', title: `นำเข้าแชทของ ${backup.character?.name || charId} สำเร็จ` });
+        return;
+      }
+
+      // ── full backup restore ─────────────────────────────────────────────────
       if (backup?.app !== 'my-ai-roleplay' || !Array.isArray(backup.customCharacters)) {
         throw new Error('ไม่ใช่ไฟล์ Backup ของแอปนี้');
       }
@@ -1142,8 +1178,14 @@ function RoleplayApp({ store, account, getAccessToken }) {
   const openMemory = () => {
     if (!selectedChar) return;
     const memory = readMemory(store, selectedChar.id, messages);
+    const hasPending = Boolean(nextMemoryBatch(messages, memory));
     setMemoryView({
       summary: memory ? memory.summary : null,
+      coverage: {
+        covered: memory?.covered || 0,
+        total: messages.length,
+        hasPending,
+      },
       pins: readPins(store, selectedChar.id),
       journal: readJournal(store, selectedChar.id),
     });
@@ -1283,6 +1325,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
           showChoices={responseSettings.suggestions}
           onPickChoice={setInput}
           onOpenMemory={openMemory}
+          onOpenExport={() => setShowExportModal(true)}
           direction={direction}
           setDirection={setDirection}
           onRetry={handleRetry}
@@ -1348,6 +1391,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
         onClose={() => setMemoryView(null)}
         character={selectedChar}
         summary={memoryView?.summary ?? null}
+        coverage={memoryView?.coverage}
         truthCount={selectedChar ? truthCount(selectedChar, messages) : null}
         pins={memoryView?.pins}
         journal={memoryView?.journal}
@@ -1356,6 +1400,17 @@ function RoleplayApp({ store, account, getAccessToken }) {
         onSave={handleSaveMemory}
         onForgetSummary={handleForgetSummary}
         askConfirm={askConfirm}
+      />
+
+      {/* Export chat modal */}
+      <ExportChatModal
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        character={selectedChar}
+        messageCount={messages.length}
+        onExportText={handleExportChatText}
+        onExportJson={handleExportChatJson}
+        onImportJson={handleImportData}
       />
 
       {/* Per-character user role modal */}

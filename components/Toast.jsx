@@ -18,17 +18,22 @@ export default function Toast({ toast, onClose }) {
 
   if (!toast) return null;
   const isError = toast.kind === 'error';
-  const Icon = isError ? AlertCircle : CheckCircle2;
+  const isInfo = toast.kind === 'info';
+  const Icon = isError ? AlertCircle : (isInfo ? AlertCircle : CheckCircle2);
+  const colorClass = isError
+    ? 'bg-rose-950/90 border-rose-500/40 text-rose-100'
+    : isInfo
+    ? 'bg-slate-800/95 border-purple-500/50 text-purple-100'
+    : 'bg-slate-800/95 border-emerald-500/40 text-slate-100';
+  const iconColor = isError ? 'text-rose-300' : isInfo ? 'text-purple-400' : 'text-emerald-400';
 
   return (
     <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[60] w-[calc(100%-2rem)] max-w-sm animate-fadeIn">
       <div
         role="status"
-        className={`flex items-start gap-3 px-4 py-3 rounded-2xl border shadow-xl backdrop-blur-md ${
-          isError ? 'bg-rose-950/90 border-rose-500/40 text-rose-100' : 'bg-slate-800/95 border-emerald-500/40 text-slate-100'
-        }`}
+        className={`flex items-start gap-3 px-4 py-3 rounded-2xl border shadow-xl backdrop-blur-md ${colorClass}`}
       >
-        <Icon className={`w-5 h-5 flex-shrink-0 mt-0.5 ${isError ? 'text-rose-300' : 'text-emerald-400'}`} />
+        <Icon className={`w-5 h-5 flex-shrink-0 mt-0.5 ${iconColor}`} />
         <div className="flex-1 min-w-0">
           <div className="text-sm font-medium">{toast.title}</div>
           {toast.text && <div className="text-xs opacity-80 mt-0.5 break-words">{toast.text}</div>}
