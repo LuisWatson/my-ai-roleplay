@@ -18,6 +18,7 @@ export default function MemoryModal({
   onClose,
   character,
   summary,
+  truthCount,
   pins,
   journal,
   onSave,
@@ -100,6 +101,12 @@ export default function MemoryModal({
           <div>
             <h2 className="text-base font-bold">ความทรงจำของ {character.name}</h2>
             <p className="text-xs text-slate-400">สิ่งที่ตัวละครจำได้จากเรื่องที่คุยกัน</p>
+            {/* Only the count of the hidden story's stages told so far, never what they say */}
+            {truthCount && (
+              <p className="mt-1 inline-block text-[11px] px-2 py-0.5 rounded-full bg-fuchsia-500/15 text-fuchsia-200 border border-fuchsia-500/30">
+                ความลับที่เล่าแล้ว {truthCount.told}/{truthCount.total}
+              </p>
+            )}
           </div>
         </div>
 

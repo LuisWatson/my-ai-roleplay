@@ -30,7 +30,7 @@ import {
 import { latestRelation, settleRelation } from '../lib/relation';
 import { openingMessage, personaForChat } from '../lib/story';
 import { characterAge } from '../lib/prompt';
-import { truthFor, acceptedReveal } from '../lib/truth';
+import { truthFor, acceptedReveal, truthCount, truthProgress } from '../lib/truth';
 import { cleanChoices } from '../lib/choices';
 import { AVAILABLE_MODELS, DEFAULT_MODEL } from '../constants/models';
 import {
@@ -741,6 +741,10 @@ function RoleplayApp({ store, account, getAccessToken }) {
     const charId = persona.id;
     const index = msgs.length - 1;
     const target = msgs[index];
+    // A hidden stage was due but the reply carries no `เฉลย=` tag: the same call also asks whether it was told
+    // anyway (models forget the tag), so the app's count does not fall behind the story.
+    const before = msgs.slice(0, -1);
+    const dueTruth = target?.role === 'model' && !target.reveal ? truthFor(persona, before, latestRelation(before))?.due : null;
     setSuggesting(charId);
     try {
       const accessToken = await getAccessToken();
@@ -764,10 +768,12 @@ function RoleplayApp({ store, account, getAccessToken }) {
           messages: msgs.slice(-8).map(({ role, text }) => ({ role, text })),
           chatStyle,
           auto: auto || undefined,
+          revealCheck: dueTruth ? { number: dueTruth.number, text: dueTruth.text } : undefined,
           apiKey,
         }),
       });
       const data = await res.json().catch(() => ({}));
+      if (dueTruth && data.revealed === true) markRevealed(charId, index, target, dueTruth.number);
       if (!res.ok || !data.choices?.length) throw new Error(data.error || `HTTP ${res.status}`);
       const role = mergeUserProfile(userProfile, userRoles[charId]);
       const choices = cleanChoices(data.choices, { names: [role.name, role.callMe], reply: target.text });
@@ -800,6 +806,33 @@ function RoleplayApp({ store, account, getAccessToken }) {
       else console.warn('Auto suggestions failed:', err);
     } finally {
       setSuggesting((current) => (current === charId ? null : current));
+    }
+  };
+
+  // Record on a reply that it told hidden stage `number` (found by /api/suggest's check), if that reply is still
+  // the last one and the stage is still the next to tell
+  const markRevealed = (charId, index, target, number) => {
+    const mark = (list) => {
+      const m = list[index];
+      if (list.length - 1 !== index || m?.role !== 'model' || m.text !== target.text || m.reveal) return list;
+      if (truthProgress(list.slice(0, index)).stage !== number - 1) return list;
+      const marked = {
+        ...m,
+        reveal: number,
+        ...(m.alts && { alts: m.alts.map((a, j) => (j === m.altIndex ? { ...a, reveal: number } : a)) }),
+      };
+      return list.map((x, i) => (i === index ? marked : x));
+    };
+    if (activeCharIdRef.current === charId) {
+      setMessages((prev) => {
+        const next = mark(prev);
+        if (next !== prev) saveHistory(charId, next);
+        return next;
+      });
+    } else {
+      const saved = JSON.parse(store.getItem(`chat_history_${charId}`) || '[]');
+      const next = mark(saved);
+      if (next !== saved) saveHistory(charId, next);
     }
   };
 
@@ -1313,6 +1346,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
         onClose={() => setMemoryView(null)}
         character={selectedChar}
         summary={memoryView?.summary ?? null}
+        truthCount={selectedChar ? truthCount(selectedChar, messages) : null}
         pins={memoryView?.pins}
         journal={memoryView?.journal}
         onRenameJournalEntry={handleRenameJournalEntry}

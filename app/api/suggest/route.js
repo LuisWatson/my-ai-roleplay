@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { AVAILABLE_MODELS } from '../../../constants/models';
-import { buildSuggestPrompt } from '../../../lib/prompt';
+import { buildSuggestPrompt, buildRevealCheckPrompt } from '../../../lib/prompt';
 import { authorize, resolveApiKey, tryModels, jsonResponse, SAFETY_SETTINGS } from '../../../lib/geminiServer';
 import { pickChoices } from '../../../lib/choices';
 
@@ -27,7 +27,7 @@ export async function POST(req) {
     const denied = await authorize(req);
     if (denied) return denied;
 
-    const { characterName, characterDescription, userProfile, userName, messages, chatStyle, auto, apiKey } =
+    const { characterName, characterDescription, userProfile, userName, messages, chatStyle, auto, revealCheck, apiKey } =
       await req.json();
     if (!characterName || !Array.isArray(messages) || messages.length === 0) {
       return jsonResponse({ error: 'ข้อมูลไม่ครบ' }, 400);
@@ -54,23 +54,40 @@ export async function POST(req) {
       dm: chatStyle === 'dm',
     });
     const genAI = new GoogleGenerativeAI(key);
-    const { result, errorResponse } = await tryModels({
-      apiKey: key,
-      models: auto === true ? LITE_ONLY_MODELS : SUGGEST_MODELS,
-      perModelMs: PER_MODEL_MS,
-      totalMs: TOTAL_MS,
-      run: async (model) => {
-        const res = await genAI.getGenerativeModel({ model, safetySettings: SAFETY_SETTINGS }).generateContent(prompt);
-        return res.response.text();
-      },
-    });
-    if (errorResponse) return errorResponse;
+    const generate = (models, text) =>
+      tryModels({
+        apiKey: key,
+        models,
+        perModelMs: PER_MODEL_MS,
+        totalMs: TOTAL_MS,
+        run: async (model) => {
+          const res = await genAI.getGenerativeModel({ model, safetySettings: SAFETY_SETTINGS }).generateContent(text);
+          return res.response.text();
+        },
+      });
+    // Hidden stage due but not tagged by the chat model: a separate Lite question, run alongside (lib/truth.js)
+    const stageText = typeof revealCheck?.text === 'string' ? revealCheck.text.trim() : '';
+    const revealPromise = stageText
+      ? generate(LITE_ONLY_MODELS, buildRevealCheckPrompt({ characterName, stageText, messages: recent }))
+          .then(({ result }) => (typeof result === 'string' ? /^\s*["'*]*ใช่/.test(result) : undefined))
+          .catch(() => undefined)
+      : Promise.resolve(undefined);
+    const [{ result, errorResponse }, revealed] = await Promise.all([
+      generate(auto === true ? LITE_ONLY_MODELS : SUGGEST_MODELS, prompt),
+      revealPromise,
+    ]);
+    if (errorResponse) {
+      if (revealed === undefined) return errorResponse;
+      // Still pass the reveal check on, so the app's count is right even when the suggestions failed
+      const body = await errorResponse.json().catch(() => ({}));
+      return jsonResponse({ ...body, revealed }, errorResponse.status);
+    }
 
     // Five candidates come back; the first three that read as the user's own words are kept
     const reply = [...recent].reverse().find((m) => m.role === 'model')?.text || '';
     const choices = pickChoices(result, { names: [String(profile.name || ''), String(profile.callMe || '')], reply }, 3);
-    if (choices.length === 0) return jsonResponse({ error: 'ไม่ได้ตัวเลือกที่ใช้ได้ ลองอีกครั้ง' }, 502);
-    return jsonResponse({ choices }, 200);
+    if (choices.length === 0) return jsonResponse({ error: 'ไม่ได้ตัวเลือกที่ใช้ได้ ลองอีกครั้ง', revealed }, 502);
+    return jsonResponse({ choices, revealed }, 200);
   } catch (err) {
     console.error('Suggest error:', err);
     return jsonResponse({ error: err.message || 'เกิดข้อผิดพลาด' }, 500);

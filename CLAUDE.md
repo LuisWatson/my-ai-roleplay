@@ -76,7 +76,10 @@ The owner builds it for themselves and their partner. Reply to the owner in Thai
 - Hidden story truth (`constants/storyArcs.js` → `character.truthStages`, `lib/truth.js`): staged and paced by the app.
   **The owner chose to be surprised: never print, quote or summarize the stage texts (not in chat, worklog, commits);
   don't show them in the UI.** The stage is derived from `reveal` on model messages (tag part `; เฉลย=<n>`); the next stage
-  is due after N player turns (24, or 16/10 at trust level 3/4). Only told + due stages are sent (`truthFor`); the persona
+  is due after N player turns (24, or 16/10 at trust level 3/4). Only told + due stages are sent (`truthFor`); told stages override the situation/hooks (no re-hiding); once all are
+  told (`complete`), rule 11 stops "keep secrets alive". If a due stage's reply has no tag, `/api/suggest` asks a separate
+  Lite yes/no (`revealCheck` → `revealed`, never mixed into the suggestion prompt) and `markRevealed` sets `reveal`.
+  The memory panel shows only the count told/total (`truthCount`); the persona
   sent never carries `truthStages`. Only `ellie` has one.
 - `components/CharacterProfile.jsx` — tapping a card on the home grid opens the character's profile sheet
   (bio / your role / people around them / greeting, relation + journal count, "เริ่มแชท"/"คุยต่อ");
