@@ -85,6 +85,11 @@ The owner builds it for themselves and their partner. Reply to the owner in Thai
   on the backdrop, each spoken line in its own bubble. User messages, DM mode and the profile greeting keep the old box.
 - Character thought (rule 16): `; ความคิด=<emoji> <thought>` in the scene tag → `thought` on the reply (and swipes),
   shown as a "ความคิด" pill under it. Always asked for; not sent back to the model.
+- Expression pictures (`lib/expressions.js`, `components/PortraitView.jsx`): optional `character.expressions { happy, shy,
+  sad, angry }` (paths under `public/characters/expressions/`; only `ellie` has them, made on tensor.art with Img2Img at
+  strength ~0.8 from her main portrait). The emoji at the start of a reply's thought picks one (`pictureFor`); no match →
+  the main portrait. Shown as the header picture (tap = full size), the small avatar beside each reply, and a `MoodCard`
+  at the end of a reply, above the thought pill, when the expression changed (`moodChanges`). No side panel (owner removed it).
 - Swipes: a regenerated model message keeps `alts: [{ text, scene }]` + `altIndex` (only the last reply);
   dropped when the user sends the next message.
 - Story direction ("กำกับเรื่อง", `ChatInput`): one-shot out-of-story instruction sent as `direction`; never saved.

@@ -45,6 +45,13 @@ const BASE_CHARACTERS = [
       '"เราเพิ่งกลับมาเองนะ...เราไม่อยากเสียทุกอย่างไปอีกครั้ง"',
     ].join('\n'),
     avatar: '/characters/ellie.webp',
+    // Expression pictures (lib/expressions.js): the chat shows the one that fits the latest thought's emoji
+    expressions: {
+      happy: '/characters/expressions/ellie_happy.webp',
+      shy: '/characters/expressions/ellie_shy.webp',
+      sad: '/characters/expressions/ellie_sad.webp',
+      angry: '/characters/expressions/ellie_angry.webp',
+    },
     category: 'ปริศนา',
     userRoleHint: 'เช่น อดีตเพื่อนสนิทที่ยังรอคำอธิบายจากเธอ',
     defaultUserRole: {

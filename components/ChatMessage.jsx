@@ -197,6 +197,7 @@ export default function ChatMessage({
   onRetry,
   onEdit,
   onDelete,
+  moodCard,
 }) {
   const isUser = message.role === 'user';
   const hasText = message.text && message.text.length > 0;
@@ -232,7 +233,7 @@ export default function ChatMessage({
         <img
           src={avatar}
           alt={characterName || 'Character Avatar'}
-          className="w-8 h-8 rounded-full object-cover mt-1 border border-purple-400/30 flex-shrink-0 shadow-sm"
+          className="w-8 h-8 rounded-full object-cover object-top mt-1 border border-purple-400/30 flex-shrink-0 shadow-sm"
         />
       )}
 
@@ -278,6 +279,9 @@ export default function ChatMessage({
           </span>
         )}
       </div>
+
+      {/* Her face as she thinks it: the picture for a changed expression sits right above the thought pill */}
+      {moodCard && !isEditing && moodCard}
 
       {message.thought && !isEditing && (
         <div

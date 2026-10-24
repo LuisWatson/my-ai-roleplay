@@ -92,7 +92,7 @@ const REPLY_ERRORS = {
 
 // The character as sent to the server: the model never sees the pictures, and an uploaded photo is a
 // large data URL, so leave them out of every request
-function withoutImages({ avatar, background, ...persona }) {
+function withoutImages({ avatar, background, expressions, ...persona }) {
   return persona;
 }
 

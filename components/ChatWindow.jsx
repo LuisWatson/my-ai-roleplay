@@ -8,7 +8,9 @@ import { latestScene } from '../lib/scene';
 import { latestRelation, levelOf, levelName } from '../lib/relation';
 import { sceneBackgroundSrc } from '../constants/sceneBackgrounds';
 import OpeningCard from './OpeningCard';
+import { PortraitLightbox, MoodCard } from './PortraitView';
 import { openingOf } from '../lib/story';
+import { pictureFor, moodChanges } from '../lib/expressions';
 
 // Story-style lines shown while the reply is on its way; never about the app or the AI
 const WAITING_LINES = [
@@ -263,6 +265,12 @@ export default function ChatWindow({
   onExpandSidebar,
 }) {
   const scene = latestScene(messages);
+  const [zoomSrc, setZoomSrc] = useState(null); // the picture open at full size, or null
+  useEffect(() => setZoomSrc(null), [selectedChar.id]);
+  const lastThought = [...messages].reverse().find((m) => m.thought)?.thought;
+  const picture = pictureFor(selectedChar, lastThought);
+  // Where her expression changes, a small picture at the end of that reply, above her thought
+  const moodCards = moodChanges(messages, selectedChar);
   // Relationship now, and before the latest reply that changed it (for the +/- shown next to it)
   const shownRelation = showRelation ? latestRelation(messages) : null;
   const changes = showRelation ? relationChanges(messages) : [];
@@ -312,7 +320,8 @@ export default function ChatWindow({
   }, [messages, loading, waiting, suggesting, notice]);
 
   return (
-    <main className="flex-1 flex flex-col bg-slate-900/95 relative overflow-hidden isolate">
+    <div className="flex-1 flex min-w-0 overflow-hidden">
+    <main className="flex-1 min-w-0 flex flex-col bg-slate-900/95 relative overflow-hidden isolate">
       {/* Blurred scene backdrop; negative z keeps it under the messages, the overlay keeps text readable */}
       {backgroundSrc && (
         <div aria-hidden className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
@@ -346,11 +355,18 @@ export default function ChatWindow({
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <img
-            src={selectedChar.avatar}
-            alt={selectedChar.name}
-            className="w-10 h-10 rounded-full object-cover border border-purple-400/40 shadow-sm flex-shrink-0"
-          />
+          <button
+            onClick={() => setZoomSrc(picture.src)}
+            title="ดูรูปเต็ม"
+            aria-label={`ดูรูปของ ${selectedChar.name}`}
+            className="flex-shrink-0 rounded-full"
+          >
+            <img
+              src={picture.src}
+              alt={selectedChar.name}
+              className="w-12 h-12 md:w-10 md:h-10 rounded-full object-cover object-top border border-purple-400/40 shadow-sm"
+            />
+          </button>
           <div className="min-w-0">
             <div className="flex items-center gap-2 min-w-0">
               <h2 className="font-semibold text-sm md:text-base text-slate-100 truncate">{selectedChar.name}</h2>
@@ -429,7 +445,12 @@ export default function ChatWindow({
           )}
           <ChatMessage
             message={msg}
-            avatar={selectedChar.avatar}
+            moodCard={
+              moodCards[idx] && (
+                <MoodCard character={selectedChar} card={moodCards[idx]} onZoom={setZoomSrc} />
+              )
+            }
+            avatar={msg.role === 'model' ? pictureFor(selectedChar, msg.thought).src : selectedChar.avatar}
             characterName={selectedChar.name}
             disabled={loading}
             canRegenerate={
@@ -479,5 +500,7 @@ export default function ChatWindow({
         onToggleChatStyle={onToggleChatStyle}
       />
     </main>
+    {zoomSrc && <PortraitLightbox src={zoomSrc} name={selectedChar.name} onClose={() => setZoomSrc(null)} />}
+    </div>
   );
 }
