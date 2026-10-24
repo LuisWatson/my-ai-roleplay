@@ -435,7 +435,7 @@ export default function ChatWindow({
       )}
 
       {/* Messages Scroll Area */}
-      <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto overflow-x-hidden overscroll-x-none p-4 space-y-4 [overflow-wrap:anywhere]">
         {messages.map((msg, idx) => (
           <React.Fragment key={idx}>
           {idx === 0 && opening ? (
