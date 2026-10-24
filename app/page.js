@@ -16,7 +16,7 @@ import { normalizeUserRole, mergeUserProfile, USER_ROLE_FIELDS } from '../lib/us
 import { normalizeRealism } from '../constants/scenario';
 import { stripTrailingPartialTag, finalizeReply, latestScene, splitCut } from '../lib/scene';
 import { DEFAULT_CHARACTERS } from '../constants/characters';
-import { memoryKey, pinsKey, readMemory, readPins, cleanPins, chatWindow, nextMemoryBatch, fingerprint } from '../lib/memory';
+import { memoryKey, pinsKey, readMemory, readPins, cleanPins, chatWindow, nextMemoryBatch, fingerprint, rawMemoryNote } from '../lib/memory';
 import {
   journalKey,
   readJournal,
@@ -458,12 +458,14 @@ function RoleplayApp({ store, account, getAccessToken }) {
           }
         } else {
           const body = await res.json().catch(() => ({}));
+          console.warn(`Memory summary failed (${res.status}, ${body.kind || 'unknown'}):`, body.error);
           if (body.kind !== 'blocked') return;
           if (messages.length > 1) {
             memoryCapRef.current[charId] = { cap: Math.ceil(messages.length / 2), streak: 0 };
             return;
           }
-          summary = memory?.summary || ''; // a single message Google won't read: skip it
+          // A single message Google won't summarize: keep a short raw note of it, so the story doesn't lose it
+          summary = rawMemoryNote(memory?.summary, messages[0], persona.name);
         }
 
         // Keep it only if the summarized messages are still the ones saved (not edited or cleared meanwhile)

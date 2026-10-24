@@ -50,7 +50,9 @@ The owner builds it for themselves and their partner. Reply to the owner in Thai
 - `lib/prompt.js` — system instruction: persona, user role, memory, novel-style format rules, trailing scene tag;
   also `buildSummaryPrompt` for memory.
 - `lib/memory.js` + `app/api/memory/route.js` — long-term memory: older chat is summarized into
-  `chat_memory_<id>` and sent with each message; only the newest ~12–18k characters go as raw history.
+  `chat_memory_<id>` and sent with each message; raw history = everything after the summary's end (normally
+  ~12–18k characters, up to 60k while the summary lags). Over-long summaries are shortened by `/api/memory`, and the
+  chat prompt cuts the oldest lines, never the newest. A message Google won't summarize is kept as a raw note.
 - `lib/geminiServer.js` — shared by API routes: `authorize`, `resolveApiKey`, `tryModels` (fallback + skip
   models whose daily quota is gone).
 - `lib/scene.js` — parses the tag the model ends every reply with:
