@@ -3,6 +3,17 @@
 บันทึกงานที่ทำเสร็จ ใหม่สุดอยู่บนสุด (กฎอยู่ใน `CLAUDE.md` → Conventions)
 
 ---
+## 2026-10-25 — แก้จุดบกพร่องตาม Claude Code Review
+
+- สิ่งที่เปลี่ยน:
+  1. `components/CreateCharacterModal.jsx`: ลบ `UserCog` และ `Image` ที่ import ไว้แต่ไม่ได้ใช้ (`Image` บังชื่อ `window.Image` ของเบราว์เซอร์)
+  2. `app/page.js` (`handleImportData`): เพิ่ม branch `my-ai-roleplay-single-chat` — นำเข้าแชทได้จากไฟล์ `.json` ที่ส่งออกจากหน้าแชท (รวม messages, pins, journal, memory, userRole; merge custom character เข้า store ถ้ายังไม่มี; ถ้าตัวละครกำลังเปิดอยู่จะ refresh หน้าจอทันที)
+  3. `components/ExportChatModal.jsx`: เพิ่มปุ่ม "นำเข้า .json" + `input[type=file]` (hidden) ส่ง file ไปยัง `onImportJson` prop; เพิ่ม section label "ส่งออก" / "นำเข้า"; อัปเดต aria-label; wire `onImportJson={handleImportData}` ใน `app/page.js`
+  4. `CLAUDE.md`: เพิ่มเอกสาร `ExportChatModal`, `chatHelpers.js`, pending badge ของ MemoryModal; อัปเดต Status date และ Done list
+- วิธีตรวจสอบ: `node --check` ผ่านไฟล์ที่แก้ทั้งหมด; รอ `next build` ยืนยัน
+- ที่เหลือ: ทดสอบ import flow จริงในเบราว์เซอร์
+
+---
 ## 2026-10-25 — ตัวละครลืมเรื่องที่เกิดหลังบทสรุปความจำค้าง
 
 - อาการ: เอลลี่ไม่รู้ว่า "วันเปิดโปงความจริง" เกิดขึ้นแล้ว (นับเฉลยได้ 4/4) บทสรุปความจำของเจ้าของหยุดอยู่ที่ฉากคาเฟ่ ก่อนการเฉลยทั้งหมด
@@ -50,6 +61,19 @@
   ขั้น 4 ใช้หมวด [เฉลยครบแล้ว]; `truthCount` = 2/4; `next build` ในโฟลเดอร์ชั่วคราวผ่าน (ไม่ได้เรียก Gemini)
 - ที่เหลือ: ยังไม่ได้ดูตัวนับ x/4 บนหน้าจอจริง; การเช็กเฉลยทำงานเฉพาะเมื่อเปิดคำตอบแนะนำไว้ (setting `suggestions`);
   ยังไม่ได้ commit/push; ข้อ 3 (สรุปความจำรู้ว่าอะไรเฉลยแล้ว) ยังไม่ทำ
+
+---
+## 2026-10-25 — Antigravity Guide, ฟอร์มสร้างตัวละคร, ส่งออกแชท, แจ้งเตือนโควตา, ตรวจสอบความจำ & Refactor
+
+- สิ่งที่เปลี่ยน:
+  1. `AGENTS.md` (ใหม่): เพิ่มไฟล์กฎสำหรับ Google Antigravity (ตอบภาษาไทยเสมอ, คงศัพท์เทคนิคเป็นภาษาอังกฤษ, อัปเดต worklog เสมอ, ห้ามสปอยล์ truthStages, เซฟโควตา Gemini Free-tier, และข้อพิจารณา iPhone Safari)
+  2. `components/CreateCharacterModal.jsx`: เพิ่มช่องกำหนดฉากหลังแชท (`background`), ตัวเลือกล็อกฉากหลัง (`fixedBackground`) พร้อม Preset ฉาก, และช่องกำหนดบทบาทเริ่มต้นของผู้ใช้ (`defaultUserRole { description, background }` และ `userRoleHint`) ให้ตัวละคร Custom สมบูรณ์เท่า Preset
+  3. `components/ExportChatModal.jsx`, `lib/chatExport.js` (ใหม่) & `components/ChatWindow.jsx`: เพิ่มปุ่ม "ส่งออก" ในหัวแชท เลือกระหว่างดาวน์โหลดเป็นไฟล์อ่านง่าย `.txt` (ฟอร์แมตนิยาย/บทพูด) หรือไฟล์สำรองข้อมูล `.json` (เก็บทั้งประวัติ, สมุดความทรงจำ, หมุด, ความสัมพันธ์)
+  4. `components/Toast.jsx` & `app/page.js`: เพิ่มการตรวจจับ `x-model-used` header จาก `/api/chat` เมื่อระบบสลับโมเดลอัตโนมัติเนื่องจากติดโควตารายวัน แจ้งเตือน Toast ครั้งเดียวต่อ session โดยไม่แสดงค้างตลอดเวลา
+  5. `components/MemoryModal.jsx` & `app/page.js`: เพิ่มแถบและป้ายสถานะความครอบคลุมของความจำ ("สรุปถึงข้อความที่ X จาก Y") ให้ผู้ใช้ตรวจสอบได้ว่าความจำตามทันแชทล่าสุดหรือไม่
+  6. `lib/chatHelpers.js` (ใหม่) & `app/page.js`: Refactor แยก helpers (REPLY_ERRORS, readChatActivity, lastMessagePreview, withoutImages, withoutSwipes, savedHistoryOrGreeting) ออกจาก `app/page.js` ช่วยลดความยาวโค้ดและเพิ่มความเป็นโมดูล
+- วิธีตรวจสอบ: `node --check` ผ่านทุกไฟล์, `next build` ผ่านสำเร็จ 100% (10/10 หน้าสร้างเสร็จสมบูรณ์ ไม่มี lint/type error)
+- ที่เหลือ: ทดสอบเล่นจริงในเบราว์เซอร์
 
 ---
 ## 2026-10-24 — ⏩ เล่าต่อ: ตัวละครเขียนบทของผู้ใช้เอง

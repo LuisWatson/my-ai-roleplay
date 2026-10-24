@@ -109,7 +109,16 @@ The owner builds it for themselves and their partner. Reply to the owner in Thai
   `CONTINUE_MESSAGE` as the user turn. History that starts with model turns (greeting) gets that same stand-in turn
   in front instead of being dropped.
 - `components/MemoryModal.jsx` — tabs: memory journal (`components/JournalList.jsx`) and pins (`chat_pins_<id>`,
-  always sent, survive clearing the chat) + the editable auto summary.
+  always sent, survive clearing the chat) + the editable auto summary. Shows a **pending badge** (amber) only when
+  `nextMemoryBatch(messages, memory)` returns non-null — meaning older messages past the recent raw window have
+  accumulated enough chars to queue a new summary. Never fires on a normal in-progress chat.
+- `lib/chatExport.js` + `components/ExportChatModal.jsx` — "ส่งออก" button in the chat header opens a modal with:
+  `.txt` (human-readable novel-format transcript) and `.json` (single-character backup,
+  `app: 'my-ai-roleplay-single-chat'`, includes messages/pins/journal/memory/userRole).
+  The modal also has a **"นำเข้า .json"** button that restores from such a file via `handleImportData` in `app/page.js`
+  (dedicated branch for `my-ai-roleplay-single-chat`; separate from full-app backup restore).
+- `lib/chatHelpers.js` — shared client-side helpers extracted from `app/page.js`: `REPLY_ERRORS`, `readChatActivity`,
+  `lastMessagePreview`, `withoutImages`, `withoutSwipes`, `savedHistoryOrGreeting`, `markRolePrompted`.
 - Memory journal (`lib/journal.js`, `chat_journal_<id>`): the model flags key moments with an extra
   `; ความทรงจำ=<title>` part in the scene tag (rule 13, only when the journal setting isn't 'off');
   messages carry `moment: { title, state, entryId }`; saved moments are sent with every message.
@@ -141,13 +150,15 @@ The owner builds it for themselves and their partner. Reply to the owner in Thai
   `public/characters/<id>.webp`, quality 82.
 - Mobile matters (owner tests on iPhone Safari): use `h-dvh`, not `h-screen`; inputs 16px on phones.
 
-## Status (2026-10-22)
+## Status (2026-10-25)
 
 Done: chat input redesign, rename to Botbaat, Ava portrait, scene backgrounds, role form, iPhone layout fix,
 Google login + cloud data, Vercel deploy, model fallback, in-app dialogs, multi-device refresh, long-term memory,
 round 1 (swipes, story direction, memory panel, installable app), memory journal, photo upload, round 2,
 blocked-reply handling, relationship in header, speaker labels, character profiles + supporting cast,
 story layout + character thoughts + scene dividers (2026-10-23).
+Create-character form (background/fixedBackground/defaultUserRole), chat export (.txt + .json), single-chat JSON
+restore, model-fallback Toast, memory pending badge fix, shared chatHelpers, AGENTS.md (2026-10-25).
 
 ## TODO
 
@@ -157,8 +168,7 @@ story layout + character thoughts + scene dividers (2026-10-23).
    (a new account needs both). Partner has logged in.
 2. Portraits — done 2026-10-22: all 12 presets have photorealistic PNGs (Z-Image-Turbo; "anime" in the prompt
    gives 3D-cartoon results, use "photorealistic, realistic photo"). Free tensor.art runs one task at a time.
-3. Create-character form: has profile + cast now, but still no fields for `background` (chat backdrop) or
-   `defaultUserRole`. Profiles could later get a picture gallery (several images, swipe 1/3) once portraits exist.
+3. Create-character form — done 2026-10-25: added `background` (chat backdrop with presets & URL), `fixedBackground`, and `defaultUserRole { description, background }` + `userRoleHint`. Profiles could later get a picture gallery (several images, swipe 1/3) once portraits exist.
 4. Portraits as WebP — done 2026-10-22 (10 MB of PNG → 434 KB).
 5. **Parked 2026-10-22:** sexier "Khui AI style" 2nd image per character (profile gallery). Notes and the prompt in
    `drafts/sexy-portrait-handoff.md` (git-ignored). Tried tensor.art Z-Image (too mild, strips "cleavage"), Perchance
