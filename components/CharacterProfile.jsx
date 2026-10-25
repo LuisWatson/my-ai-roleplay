@@ -6,6 +6,7 @@ import { formatRoleplayText } from './ChatMessage';
 import { levelOf, levelName } from '../lib/relation';
 import { openingOf } from '../lib/story';
 import OpeningCard from './OpeningCard';
+import { PortraitLightbox } from './PortraitView';
 
 // "ผูกพัน Lv.4 · ผูกพันลึกซึ้ง"
 function meterText(key, label, points) {
@@ -51,19 +52,23 @@ function Row({ label, value }) {
  */
 export default function CharacterProfile({ character, role, status, hasChat, onClose, onStartChat, onEditRole, onEdit }) {
   const [tab, setTab] = useState('bio');
+  const [zoomed, setZoomed] = useState(false);
 
   useEffect(() => {
-    if (character) setTab('bio');
+    if (character) {
+      setTab('bio');
+      setZoomed(false);
+    }
   }, [character]);
 
   useEffect(() => {
-    if (!character) return;
+    if (!character || zoomed) return;
     const onKey = (e) => {
       if (e.key === 'Escape') onClose();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [character, onClose]);
+  }, [character, onClose, zoomed]);
 
   if (!character) return null;
   const profile = character.profile || {};
@@ -87,9 +92,16 @@ export default function CharacterProfile({ character, role, status, hasChat, onC
         className="w-full sm:max-w-md max-h-[92dvh] flex flex-col bg-slate-900 border border-slate-700/80 rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl"
       >
         {/* Picture with name */}
-        <div className="relative h-[38dvh] min-h-[220px] max-h-80 flex-shrink-0 bg-slate-800">
-          <img src={character.avatar} alt={character.name} className="absolute inset-0 w-full h-full object-cover object-top" />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/30 to-slate-950/20" />
+        {/* The whole picture (object-contain over a blurred copy of itself), tap for full size */}
+        <div className="relative h-[56dvh] min-h-[300px] max-h-[34rem] flex-shrink-0 bg-slate-800 overflow-hidden">
+          <img src={character.avatar} alt="" aria-hidden className="absolute inset-0 w-full h-full object-cover blur-2xl scale-110 opacity-60" />
+          <img
+            src={character.avatar}
+            alt={character.name}
+            onClick={() => setZoomed(true)}
+            className="absolute inset-0 w-full h-full object-contain cursor-zoom-in"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/10 to-transparent pointer-events-none" />
           <button
             onClick={onClose}
             title="ปิด"
@@ -225,6 +237,11 @@ export default function CharacterProfile({ character, role, status, hasChat, onC
           </button>
         </div>
       </div>
+      {zoomed && (
+        <div onClick={(e) => e.stopPropagation()}>
+          <PortraitLightbox src={character.avatar} name={character.name} onClose={() => setZoomed(false)} />
+        </div>
+      )}
     </div>
   );
 }
