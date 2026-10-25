@@ -238,6 +238,10 @@ export default function ChatMessage({
       )}
 
       <div className={`flex flex-col gap-1 max-w-[85%] ${isUser ? 'md:max-w-[70%] items-end' : 'md:max-w-[80%] items-start'}`}>
+      {/* The name beside her picture, so it is clear who is speaking */}
+      {!isUser && characterName && (
+        <div className="px-1 mt-1.5 text-xs font-semibold text-purple-200/90 drop-shadow">{characterName}</div>
+      )}
       <div
         className={`w-full text-base leading-relaxed transition-all ${
           storyLayout
