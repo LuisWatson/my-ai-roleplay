@@ -3,6 +3,24 @@
 บันทึกงานที่ทำเสร็จ ใหม่สุดอยู่บนสุด (กฎอยู่ใน `CLAUDE.md` → Conventions)
 
 ---
+## 2026-10-25 — เพิ่มตัวละคร แอช (Aster Quinn / Luna) ตามมาตรฐานเอลลี่
+
+- สิ่งที่เปลี่ยน: เรื่อง "The Voice Behind Midnight" จากเจ้าของ แปลงเป็นตัวละคร id `ash` ครบชุดเหมือนเอลลี่
+  - `constants/characters.js`: description, greeting (ฉากเปิดเต็ม), exampleDialogue (เสียงแอช/Luna/ตอนเขิน), situation, userSecret,
+    opening card (23:47 น. สถานีวิทยุ), defaultUserRole, userRoleHint
+  - `constants/characterProfiles.js`: profile, cast (พี่ไนท์, ปุ๊กกี้, อาจารย์ชนิดา), storyHooks 9 ข้อ
+  - `constants/storyArcs.js`: truthStages 4 ขั้น (ซ่อนจากหน้า UI เหมือนเอลลี่; ไม่คัดลอกเนื้อหามาไว้ที่อื่น)
+- ที่ตัดสินใจเพิ่มเอง: ชื่อเรียกผู้โทร "คุณนกฮูก", ฉากเปิดใช้พื้นหลัง `campus`, ข้อเสนอฝึกงานนอกเมืองและเงื่อนไขผู้สนับสนุนเป็นแรงกดดันของ 30 วัน
+- วิธีตรวจสอบ: `node --check` + โหลด `DEFAULT_CHARACTERS` ใน Node (14 ตัว, ash มีครบทุกฟิลด์); ยังไม่ได้เปิดดูในเบราว์เซอร์
+- รูป: `public/characters/ash.webp` (768×1024, 60 KB) ทำบน tensor.art — ZiT Niji Style + LoRA NijiReal **0.5** (0.8 ทำให้หน้าเหมือนเอลลี่),
+  seed 2025091987; prompt ตามสเปกหน้าตาที่เจ้าของให้ (ผมยาวถึงกลางหลัง หน้าม้าปัดข้าง ตาเทาอมม่วง หูฟังเงินคล้องคอ ฮู้ดดำ) — ไฝใต้ตาซ้ายยังไม่ขึ้นในรูป;
+  `profile.appearance` อัปเดตตามสเปกเดียวกัน
+- รูปสีหน้า: `public/characters/expressions/ash_{happy,shy,sad,angry}.webp` (768×1024, ~55 KB) ทำด้วย Img2Img จาก `ash.webp` บน tensor.art
+  (ZiT Niji Style + LoRA 0.5, ความแรง 0.8, 1.26 เครดิต/รูป) ต่อเข้า `expressions` ของ `ash`; หมายเหตุ: ช่องอัปโหลด Img2Img รับแค่ JPEG/PNG (WebP ถูกเมิน),
+  บัญชีฟรีสั่งได้พร้อมกัน ~2 งาน (เกินจะเด้งหน้า Pro — ไม่ได้สมัคร); ยิ้มกับเศร้าชัด เขินกับโกรธค่อนข้างเบา ท่าทางเกือบเหมือนกันทุกรูป (ฉากหลังต่างเล็กน้อย)
+- ที่เหลือ: รูปลุค Luna (คาร์ดิแกนกรมท่า รวบผมครึ่งหัว) ถ้าต้องการ; ยังไม่ได้เปิดดูในเบราว์เซอร์; ลองเล่นจริงแล้วปรับ prompt
+
+---
 ## 2026-10-25 — แก้จุดบกพร่องตาม Claude Code Review
 
 - สิ่งที่เปลี่ยน:
