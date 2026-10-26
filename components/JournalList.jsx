@@ -2,14 +2,14 @@
 
 import React, { useState } from 'react';
 import { BookHeart, MapPin, Clock, Pencil, Trash2, Check, X } from 'lucide-react';
-import { sceneBackgroundSrc } from '../constants/sceneBackgrounds';
+import { sceneBackgroundFor } from '../constants/sceneBackgrounds';
 
 const DATE_FORMAT = { day: 'numeric', month: 'short', year: 'numeric' };
 
-function JournalCard({ entry, fallbackBackground, onRename, onDelete }) {
+function JournalCard({ entry, character, fallbackBackground, onRename, onDelete }) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(null); // title being edited
-  const background = sceneBackgroundSrc(entry.background) || fallbackBackground;
+  const background = sceneBackgroundFor(character, entry.background) || fallbackBackground;
 
   const saveTitle = () => {
     if (draft?.trim()) onRename(entry.id, draft);
@@ -96,7 +96,7 @@ function JournalCard({ entry, fallbackBackground, onRename, onDelete }) {
 /**
  * The memory journal of one character, newest moment first.
  */
-export default function JournalList({ entries, fallbackBackground, onRename, onDelete }) {
+export default function JournalList({ entries, character, fallbackBackground, onRename, onDelete }) {
   if (!entries?.length) {
     return (
       <div className="rounded-2xl border border-dashed border-slate-600/70 px-4 py-8 text-center space-y-2">
@@ -116,6 +116,7 @@ export default function JournalList({ entries, fallbackBackground, onRename, onD
         <JournalCard
           key={entry.id}
           entry={entry}
+          character={character}
           fallbackBackground={fallbackBackground}
           onRename={onRename}
           onDelete={onDelete}

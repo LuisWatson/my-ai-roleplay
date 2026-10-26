@@ -21,3 +21,19 @@ const BY_ID = Object.fromEntries(SCENE_BACKGROUNDS.map((b) => [b.id, b]));
 export function sceneBackgroundSrc(id) {
   return BY_ID[id] ? `/characters/backgrounds/scenes/${id}.webp` : null;
 }
+
+/**
+ * A character may own its scene list (`sceneSet: [{ id, label, src? }]`) instead of the generic one, for a world
+ * the generic scenes do not fit (a mansion). A scene without `src` has no picture yet and falls back to the
+ * character's own `background`.
+ */
+export function sceneSetOf(char) {
+  return Array.isArray(char?.sceneSet) && char.sceneSet.length > 0 ? char.sceneSet : null;
+}
+
+/** Backdrop for a scene id in this character's story, or null (the caller then uses the character's `background`). */
+export function sceneBackgroundFor(char, id) {
+  const own = sceneSetOf(char);
+  if (own) return own.find((s) => s.id === id)?.src || null;
+  return char?.fixedBackground ? null : sceneBackgroundSrc(id);
+}

@@ -6,7 +6,7 @@ import ChatMessage from './ChatMessage';
 import ChatInput from './ChatInput';
 import { latestScene } from '../lib/scene';
 import { latestRelation, levelOf, levelName } from '../lib/relation';
-import { sceneBackgroundSrc } from '../constants/sceneBackgrounds';
+import { sceneBackgroundFor } from '../constants/sceneBackgrounds';
 import OpeningCard from './OpeningCard';
 import { PortraitLightbox, MoodCard } from './PortraitView';
 import { openingOf } from '../lib/story';
@@ -283,8 +283,7 @@ export default function ChatWindow({
     (showChoices || lastMessage?.choicesAsked) && !loading && lastMessage?.role === 'model' && lastMessage.choices?.length
       ? lastMessage.choices
       : null;
-  const backgroundSrc =
-    (!selectedChar.fixedBackground && sceneBackgroundSrc(scene?.background)) || selectedChar.background;
+  const backgroundSrc = sceneBackgroundFor(selectedChar, scene?.background) || selectedChar.background;
 
   // Follow new text only while the reader is at the bottom: scrolling up to reread stays put, even while a
   // reply streams in. Sending a message or opening a chat always goes to the bottom.

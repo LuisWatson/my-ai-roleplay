@@ -135,6 +135,7 @@ export default function MemoryModal({
         {tab === 'journal' && (
           <JournalList
             entries={journal}
+            character={character}
             fallbackBackground={character.background}
             onRename={onRenameJournalEntry}
             onDelete={onDeleteJournalEntry}
