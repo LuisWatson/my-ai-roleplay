@@ -3,6 +3,26 @@
 บันทึกงานที่ทำเสร็จ ใหม่สุดอยู่บนสุด (กฎอยู่ใน `CLAUDE.md` → Conventions)
 
 ---
+## 2026-10-26 — เพิ่มตัวละคร วิเวียน (Vivienne Laurent) + พื้นหลังแอช
+
+- ตัวละครใหม่ `vivienne` (My Fiancée Is a Stranger): `constants/characters.js` (ข้อมูลหลัก, situation, opening, greeting),
+  `constants/characterProfiles.js` (profile, cast 3 คน, storyHooks), `constants/storyArcs.js` (คำเฉลย 4 ขั้น — เจ้าของขอไม่ให้เปิดอ่าน)
+- `fixedBackground: true` เพราะฉากคือคฤหาสน์ ไม่เข้ากับพื้นหลังทั่วไป; ผู้เล่นเขียนบทบาทตัวเองในแอป จึงไม่มี `defaultUserRole`
+- แอช: เพิ่มพื้นหลังห้องส่งวิทยุ `public/characters/backgrounds/ash.webp` (1152×768) และ `background` ใน characters.js
+- วิเวียน: ใช้ชุดฉากของตัวเอง `sceneSet` (8 ฉาก: mansion_hall/study/bedroom/corridor/garden/dining, attic, rainy_street) แทน `fixedBackground`;
+  โค้ดใหม่ `sceneSetOf`/`sceneBackgroundFor` ใน `constants/sceneBackgrounds.js` ใช้ใน `ChatWindow`, `JournalList`/`MemoryModal` และ `lib/prompt.js` (กฎแท็กฉากเลือกจากชุดของตัวละคร);
+  ฉากที่ยังไม่มี `src` ใช้ `background` ของตัวละครแทน; ตัวละครอื่นไม่เปลี่ยนพฤติกรรม
+- ภาพฉากวิเวียน (เจนบน tensor.art, Z-Image-Turbo, WebP 1152×768) ใน `public/characters/backgrounds/vivienne/`:
+  mansion_hall, mansion_study, mansion_bedroom, mansion_corridor, attic, rainy_street; `background` ของตัวละคร = mansion_hall
+- รูปหลัก `vivienne.webp` + สีหน้า 4 แบบ `expressions/vivienne_{happy,shy,sad,angry}.webp` (768×1024) เสร็จแล้ว ผูกใน `characters.js`;
+  ใช้ Krea-2-Turbo + LoRA GlowFace & PearlGlow + semi style (ไม่ใช่ Niji เพราะ NijiReal ทำให้ทุกคนหน้าเหมือนกัน) รูปหลัก Text2Img 768×1024 seed 1353863161;
+  สีหน้าทำด้วย Img2Img จากรูปหลัก (denoise สูง, LoRA 0.7, prompt สั้นเน้นสีหน้า+ท่า ตัดคำบรรยายหน้า/ผมออก) — LoRA 1.0 ทำให้สีหน้าแทบไม่เปลี่ยน, ลดต่ำไปหน้าเพี้ยน
+- ยังไม่มีภาพ: mansion_garden, mansion_dining (ใช้พื้นหลังสำรอง)
+- ตรวจแล้ว: `node --check` ผ่าน; ยังไม่ได้ดูในแอปจริงและยังไม่ได้ `next build`
+- ตรวจ: `node --check` ผ่านทั้ง 3 ไฟล์ + ทดสอบ `sceneBackgroundFor` ด้วย Node (ชุดของตัวเอง / fixedBackground / ทั่วไป ถูกต้อง) (ยังไม่ได้เปิดดูในเบราว์เซอร์ ยังไม่ได้ commit)
+- ที่เหลือ: รูปฉาก mansion_garden, mansion_dining (`public/characters/backgrounds/vivienne/<id>.webp` 1152×768) → ใส่ `src` ใน `sceneSet`; ดูในแอปจริง + `next build`
+
+---
 ## 2026-10-25 — แชท: ชื่อตัวละครข้างรูปในทุกคำตอบ
 
 - `components/ChatMessage.jsx`: คำตอบของตัวละครมีป้ายชื่อ (เช่น "แอช (Ash)") ข้างรูปวงกลม เหนือข้อความ

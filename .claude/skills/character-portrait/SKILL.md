@@ -27,11 +27,24 @@ The built-in browser pane gets stuck on Cloudflare at tensor.art, so use Claude 
 1. `tabs_context_mcp`, open a new tab, go to `https://tensor.art`.
 2. If it shows **Sign In** at top right, stop and ask the user to sign in themselves (never type credentials, never tick the Cloudflare box). Continue after they confirm.
 3. Click the **Create / สร้าง** button in the top bar. Do not navigate to `/create`: that URL shows "This content is unavailable".
-4. In the left panel, leave the default model (Z-Image-Turbo) unless the user asks for another. Under aspect ratio choose **custom**, set width `768`, height `1024`.
+4. In the left panel, pick the model **ZiT | Niji Style** and add the LoRA **NijiReal Silky Soft** (the owner's "ORIGINAL CHARACTER" look, same as Ellie and Ash) at strength **0.5**. At 0.8 the face drifts toward Ellie's, so use 0.5 for a new face. Under aspect ratio choose **custom**, set width `768`, height `1024`. Scene backgrounds are the exception: default Z-Image-Turbo, Landscape 1152×768, no LoRA.
 5. Click the prompt box at the top, type the prompt, click the green **สร้าง / Create** button (about 0.36 credits per image; mention the cost and remaining credits shown at top left).
 6. Wait about 30 seconds, screenshot, and show the user a zoomed preview. Ask if they want to keep it or regenerate (different seed or tweaked prompt). Do not download before they say yes.
 
-Known result: Z-Image-Turbo comes out photo-realistic even with "anime" in the prompt. For a real 2.5D anime look, add a semi-realistic / Niji style LoRA via **เพิ่ม LoRA** (only if the user asks).
+Known result: plain Z-Image-Turbo comes out photo-realistic even with "anime" in the prompt, hence the Niji model + LoRA above. Write the exact appearance the owner gave (hair, eye colour, accessories) into the prompt; a small detail such as a mole may still not show.
+
+Face-similarity lesson (Vivienne): the NijiReal LoRA gives every character the same doll face, even at 0.2. For a character who must look different, use **Krea-2-Turbo** + LoRA **GlowFace & PearlGlow** + **semi style** (both 1.0; open the GlowFace model page and press Run so base + LoRA load together), Text2Img 768×1024, prompt starting `masterpiece, best quality, photorealistic, glowing porcelain skin, soft pearl glow, 1girl, ...`.
+
+Prompt box tip (embedded browser): the textarea is hidden, so fill it with `typeInPage` using the textbox ref from `readPage`. The ref changes after every generated image, so look it up again each time. Setting `.value` by script is ignored by the page ("Prompt cannot be null").
+
+## Expressions (happy / shy / sad / angry)
+
+Do not use text-to-image again (the face changes). Use **Img2Img** from the main portrait: same model + LoRA 0.5, strength **0.8**, about 1.26 credits each, and describe a different pose in the prompt. The upload field only accepts JPEG/PNG (not WebP). The free account runs about 2 tasks at once. For the Krea set-up above (Vivienne): Img2Img locks the size to the source image (768×1024 is fine), LoRA 1.0 barely changes the expression, so set both LoRAs to **0.7** with a high denoise; too low a LoRA drifts the face. Use a short prompt that starts with the weighted expression and pose, e.g. `(gentle warm smile:1.4), (happy bright eyes:1.3), head tilted, one hand brushing hair behind her ear, different pose, 1girl, <hair>, <dress>, <necklace>, upper body, photorealistic, glowing porcelain skin, ...`; leave out face/hair/eye detail the source image already has. Its cost is about 2.8 credits per image.
+Save as `public/characters/expressions/<id>_{happy,shy,sad,angry}.webp` (768×1024) and set `expressions` on the character.
+
+## Scene backgrounds (characters with a `sceneSet`)
+
+Prompt: `masterpiece, best quality, semi-realistic, <place>, no people, cinematic, dim moody lighting, bokeh, wide shot, background scenery`. Save as `public/characters/backgrounds/<id>/<scene>.webp` (1152×768, quality 82) and set each scene's `src`.
 
 ## 3. Download into the project
 
