@@ -3,6 +3,15 @@
 บันทึกงานที่ทำเสร็จ ใหม่สุดอยู่บนสุด (กฎอยู่ใน `CLAUDE.md` → Conventions)
 
 ---
+## 2026-10-27 — วิเวียน: เสริมโปรไฟล์ ตัวละครรอบข้าง และ hooks
+
+- `constants/characterProfiles.js`: ตัวละครรอบข้างเพิ่ม 3 คน (Mireille, Dr. Elias Thorne, Seraphine Dubois), storyHooks เพิ่ม 9 ข้อ (รวม 18),
+  บุคลิกเพิ่มด้านที่คนไม่ค่อยเห็น/อารมณ์ขันแห้งๆ, likes/dislikes ละเอียดขึ้น. ไม่แตะ truthStages
+- ตรวจด้วย `node --check` แล้วผ่าน ไม่ได้เรียก Gemini
+- เพิ่มรูปฉาก `mansion_garden` และ `mansion_dining` (WebP, `public/characters/backgrounds/vivienne/`) และใส่ `src` ใน `sceneSet` — ครบ 8 ฉากแล้ว
+- เปลี่ยน `vivienne_happy.webp` จากยิ้มกว้างอ้าปากเป็นยิ้มเขินๆ ปิดปาก (Img2Img denoise ~0.7–0.8, LoRA 0.85, ใส่สีผม/ตาไว้ใน prompt กันหน้าเพี้ยน)
+- ที่เหลือ: angry expression ให้แรงขึ้น
+
 ## 2026-10-26 — เพิ่มตัวละคร วิเวียน (Vivienne Laurent) + พื้นหลังแอช
 
 - ตัวละครใหม่ `vivienne` (My Fiancée Is a Stranger): `constants/characters.js` (ข้อมูลหลัก, situation, opening, greeting),
