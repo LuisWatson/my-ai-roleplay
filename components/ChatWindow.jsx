@@ -325,7 +325,9 @@ export default function ChatWindow({
       )}
 
       {/* Chat Header */}
-      <header className="px-3 py-2.5 md:p-4 bg-slate-800/70 backdrop-blur-md border-b border-slate-700/80 flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5 z-10">
+      <header className="relative px-3 py-2.5 md:p-4 border-b border-slate-700/80 flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5 z-10">
+        {/* The frosted glass sits on its own layer: on iPhone Safari a backdrop-filter blurs the pictures inside it */}
+        <div aria-hidden className="absolute inset-0 -z-10 bg-slate-800/70 backdrop-blur-md" />
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           {onExpandSidebar && (
             <button
@@ -348,12 +350,13 @@ export default function ChatWindow({
             onClick={() => setZoomSrc(picture.src)}
             title="ดูรูปเต็ม"
             aria-label={`ดูรูปของ ${selectedChar.name}`}
-            className="flex-shrink-0 rounded-full"
+            className="flex-shrink-0 block w-14 h-14 md:w-12 md:h-12 rounded-full overflow-hidden border border-purple-400/40 shadow-sm"
           >
+            {/* Portraits are upper body: zoom in so the face fills the circle */}
             <img
               src={picture.src}
               alt={selectedChar.name}
-              className="w-12 h-12 md:w-10 md:h-10 rounded-full object-cover object-top border border-purple-400/40 shadow-sm"
+              className="w-full h-full object-cover object-top scale-125 origin-[50%_20%]"
             />
           </button>
           <div className="min-w-0">
