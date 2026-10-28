@@ -221,7 +221,7 @@ export default function CharacterProfile({ character, role, status, hasChat, onC
             <div className="space-y-3">
               <OpeningCard opening={opening} />
               <div className="rounded-2xl rounded-tl-none bg-slate-800/90 border border-slate-700/80 p-3.5 text-sm leading-relaxed">
-                {formatRoleplayText(character.greeting || '', 'model', character.name)}
+                {formatRoleplayText(character.greeting || '', 'model', character.name, character.cast)}
               </div>
             </div>
           )}

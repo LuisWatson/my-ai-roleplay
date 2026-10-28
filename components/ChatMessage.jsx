@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Pencil, Trash2, RefreshCw, Check, X, ChevronLeft, ChevronRight, BookmarkPlus, BookHeart, Sparkles } from 'lucide-react';
-import { parseRoleplayText } from '../lib/roleplayFormat';
+import { parseRoleplayText, castRoleFor } from '../lib/roleplayFormat';
 
 const PARAGRAPH_CLASS = {
   model: { speech: 'font-semibold text-white', narration: 'text-slate-400' },
@@ -32,15 +32,27 @@ function isMainCharacter(speaker, characterName) {
   return names.includes(speaker.trim());
 }
 
+// "Adrian · หัวหน้าพ่อบ้านของคฤหาสน์ Laurent": the name, plus who they are when they are in the character's cast
+function SpeakerLabel({ speaker, cast, className }) {
+  const role = castRoleFor(speaker, cast);
+  return (
+    <div className={`text-[11px] font-medium ${className}`}>
+      {speaker}
+      {role && <span className="font-normal opacity-75"> · {role}</span>}
+    </div>
+  );
+}
+
 /**
  * Render novel-style text: each spoken line bold, narration and *actions* muted, one paragraph each.
  * Speech by someone other than the main character (a "name:" line) gets that person's name and colour.
  * @param {string} text - Raw message string
  * @param {'model'|'user'} role
  * @param {string} [characterName] - the chat's character, whose own lines need no label
+ * @param {{name: string, relation?: string}[]} [cast] - people around the character, to say who a speaker is
  * @returns {React.ReactNode} Formatted elements
  */
-export function formatRoleplayText(text, role = 'model', characterName) {
+export function formatRoleplayText(text, role = 'model', characterName, cast) {
   const styles = PARAGRAPH_CLASS[role] || PARAGRAPH_CLASS.model;
   return (
     <div className="space-y-2.5">
@@ -49,7 +61,7 @@ export function formatRoleplayText(text, role = 'model', characterName) {
           const style = speakerStyle(para.speaker);
           return (
             <div key={idx} className={`border-l-2 pl-2.5 ${style.bar}`}>
-              <div className={`text-[11px] font-medium ${style.label}`}>{para.speaker}</div>
+              <SpeakerLabel speaker={para.speaker} cast={cast} className={style.label} />
               <p className={`font-semibold ${style.speech}`}>{para.text}</p>
             </div>
           );
@@ -68,7 +80,7 @@ export function formatRoleplayText(text, role = 'model', characterName) {
  * A character's novel-style reply laid out like a story: narration as plain text on the backdrop,
  * each spoken line in its own bubble (other people's lines get their name and colour).
  */
-export function formatStoryText(text, characterName) {
+export function formatStoryText(text, characterName, cast) {
   return (
     <div className="space-y-2.5">
       {parseRoleplayText(text).map((para, idx) => {
@@ -83,7 +95,7 @@ export function formatStoryText(text, characterName) {
           const style = speakerStyle(para.speaker);
           return (
             <div key={idx} className="w-fit max-w-full space-y-1">
-              <div className={`px-1 text-[11px] font-medium ${style.label}`}>{para.speaker}</div>
+              <SpeakerLabel speaker={para.speaker} cast={cast} className={`px-1 ${style.label}`} />
               <p
                 className={`px-3.5 py-2.5 rounded-2xl rounded-tl-none bg-slate-800/90 border-l-2 ${style.bar} font-medium ${style.speech} shadow-md backdrop-blur-sm`}
               >
@@ -185,6 +197,7 @@ export default function ChatMessage({
   message,
   avatar,
   characterName,
+  cast,
   disabled,
   canRegenerate,
   onRegenerate,
@@ -273,8 +286,8 @@ export default function ChatMessage({
           message.style === 'dm'
             ? formatChatText(message.text)
             : storyLayout
-              ? formatStoryText(message.text, characterName)
-              : formatRoleplayText(message.text, message.role, characterName)
+              ? formatStoryText(message.text, characterName, cast)
+              : formatRoleplayText(message.text, message.role, characterName, cast)
         ) : (
           <span className="inline-flex items-center gap-1.5 py-1 px-1">
             <span className="w-2 h-2 rounded-full bg-purple-400 animate-bounce" />
