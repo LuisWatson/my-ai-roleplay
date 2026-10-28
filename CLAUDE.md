@@ -75,7 +75,7 @@ The owner builds it for themselves and their partner. Reply to the owner in Thai
 - Story setup (`lib/story.js`): optional `situation` (premise + open questions), `userSecret` (the user's side; the
   character must not know it), `opening { time, place, mood, background }` (card above the first message, `OpeningCard`)
   and `storyHooks` (events the model may bring in, rule 11). Sent only for chats whose first message has `storyStart`
-  (`openingMessage`), so chats from before keep their own story. `ellie` is the owner-written test character for this.
+  (`openingMessage`), so chats from before keep their own story. All four presets (`ellie`, `ash`, `vivienne`, `serena`) use it.
 - Hidden story truth (`constants/storyArcs.js` → `character.truthStages`, `lib/truth.js`): staged and paced by the app.
   **The owner chose to be surprised: never print, quote or summarize the stage texts (not in chat, worklog, commits);
   don't show them in the UI.** The stage is derived from `reveal` on model messages (tag part `; เฉลย=<n>`); the next stage
@@ -155,7 +155,7 @@ The owner builds it for themselves and their partner. Reply to the owner in Thai
   `public/characters/<id>.webp`, quality 82.
 - Mobile matters (owner tests on iPhone Safari): use `h-dvh`, not `h-screen`; inputs 16px on phones.
 
-## Status (2026-10-25)
+## Status (2026-10-28)
 
 Done: chat input redesign, rename to Botbaat, Ava portrait, scene backgrounds, role form, iPhone layout fix,
 Google login + cloud data, Vercel deploy, model fallback, in-app dialogs, multi-device refresh, long-term memory,
@@ -164,6 +164,10 @@ blocked-reply handling, relationship in header, speaker labels, character profil
 story layout + character thoughts + scene dividers (2026-10-23).
 Create-character form (background/fixedBackground/defaultUserRole), chat export (.txt + .json), single-chat JSON
 restore, model-fallback Toast, memory pending badge fix, shared chatHelpers, AGENTS.md (2026-10-25).
+Mobile chat header + export in the "+" menu; only 4 presets kept (ellie, ash, vivienne, serena); Serena added with
+portrait, 8 expressions and her own 8 scene backgrounds; supporting-character labels show who they are (`castRoleFor`);
+the scene pill/dividers no longer show the tag's time (story tells it, `TIME_RULE`); thought emoji limited to 8, one per
+expression; bigger reply avatars and mood cards; header picture blur fix for iPhone (2026-10-28, all pushed).
 
 ## TODO
 
@@ -171,8 +175,8 @@ restore, model-fallback Toast, memory pending badge fix, shared chatHelpers, AGE
    Supabase project `xksnjxsbpacsxmuhcrue`; Google OAuth client is in Testing mode. Decided: one shared Gemini key.
    Deployed to Vercel 2026-10-21. Partner's email added to `allowed_emails` and Google Test users 2026-10-22
    (a new account needs both). Partner has logged in.
-2. Portraits — done 2026-10-22: all 12 presets have photorealistic PNGs (Z-Image-Turbo; "anime" in the prompt
-   gives 3D-cartoon results, use "photorealistic, realistic photo"). Free tensor.art runs one task at a time.
+2. Portraits — the standard recipe is in the character-portrait skill (Krea-2 Turbo + semi style; 2026-10-28).
+   The 12 older presets and their PNG portraits were removed 2026-10-28 (still in git history).
 3. Create-character form — done 2026-10-25: added `background` (chat backdrop with presets & URL), `fixedBackground`, and `defaultUserRole { description, background }` + `userRoleHint`. Profiles could later get a picture gallery (several images, swipe 1/3) once portraits exist.
 4. Portraits as WebP — done 2026-10-22 (10 MB of PNG → 434 KB).
 5. **Parked 2026-10-22:** sexier "Khui AI style" 2nd image per character (profile gallery). Notes and the prompt in
@@ -180,8 +184,17 @@ restore, model-fallback Toast, memory pending badge fix, shared chatHelpers, AGE
    (filter off by owner; face stays ordinary — the look needs a model like majicMIX realistic), tensor.art majicMIX
    (owner unhappy with result). Claude Code auto mode blocked driving Chrome for this. Rules: adult-looking faces,
    never Tonkla, no school uniforms, clothed.
-6. Not yet checked with real Gemini replies: does the model always add `พื้นหลัง=`?
-6. **Feature rounds agreed with the owner** (one round at a time, used for a few days before the next):
+6. **Open as of 2026-10-28** (see `worklog.md` for details):
+   - Gemini free quota runs out daily ("ส่งข้อความไม่สำเร็จ", every model "โควตาหมด"): the owner's call — billing on the
+     key, or a second key from another Google project; an automatic backup-key switch in `/api/chat` was offered.
+   - Not yet checked with real Gemini replies: the time rule (`TIME_RULE`), the 8-emoji thought rule, cast labels on
+     real "name:" lines, and whether the model always adds `พื้นหลัง=`.
+   - Not yet checked on the owner's iPhone: the header picture no longer blurred; reply avatar / mood card sizes.
+   - Expressions: ellie, ash, vivienne have only happy/shy/sad/angry (teasing/worried fall back, thinking/surprised
+     show the portrait); the owner asked for Serena only so far. Serena's "thinking" is still close to her portrait.
+     tensor.art credits left ~10.8 (about 3 Img2Img pictures).
+   - Old chats of the 12 removed presets still sit in storage (`chat_history_<id>` etc.); harmless, could be cleaned.
+7. **Feature rounds agreed with the owner** (one round at a time, used for a few days before the next):
    - Round 1 — done 2026-10-21, live; home-screen install + login on iPhone confirmed working.
    - Round 2 — memory journal, suggested replies, relationship meters, DM mode: done 2026-10-22.
      Left: prompt tuning from the owner's examples of bad replies; maybe cap temperature for Lite models
