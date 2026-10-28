@@ -44,20 +44,20 @@ export async function POST(req) {
       return jsonResponse({ error: 'ข้อความยาวเกินไป' }, 400);
     }
 
-    const { key, error: keyError } = resolveApiKey(apiKey);
+    const { keys, error: keyError } = resolveApiKey(apiKey);
     if (keyError) return keyError;
 
-    const genAI = new GoogleGenerativeAI(key);
     const previous = typeof previousSummary === 'string' ? previousSummary.trim() : '';
     const age = Number.isFinite(characterAge) ? characterAge : null;
     const generate = (prompt) =>
       tryModels({
-        apiKey: key,
+        apiKeys: keys,
         models: SUMMARY_MODELS,
         perModelMs: PER_MODEL_MS,
         totalMs: TOTAL_MS,
         // Reading the text inside the attempt makes a blocked or empty summary count as a failed model
-        run: async (model) => {
+        run: async (model, key) => {
+          const genAI = new GoogleGenerativeAI(key);
           const { response } = await genAI.getGenerativeModel({ model, safetySettings: SAFETY_SETTINGS }).generateContent({
             contents: [{ role: 'user', parts: [{ text: prompt }] }],
             generationConfig: { temperature: 0.3 },

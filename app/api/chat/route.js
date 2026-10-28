@@ -54,10 +54,8 @@ export async function POST(req) {
       continueStory,
     } = await req.json();
 
-    const { key: activeKey, error: keyError } = resolveApiKey(apiKey);
+    const { keys: activeKeys, error: keyError } = resolveApiKey(apiKey);
     if (keyError) return keyError;
-
-    const genAI = new GoogleGenerativeAI(activeKey);
 
     const {
       length,
@@ -120,8 +118,8 @@ ${outgoingMessage}`;
       : CANDIDATE_MODELS;
     // Starts a streamed reply and waits for its first words, so a reply Google blocks (or an empty one)
     // counts as this model failing instead of a stream that breaks after the 200
-    const openStream = (history, text) => async (mName) => {
-      const { stream } = await genAI
+    const openStream = (history, text) => async (mName, key) => {
+      const { stream } = await new GoogleGenerativeAI(key)
         .getGenerativeModel({ model: mName, systemInstruction, safetySettings: SAFETY_SETTINGS })
         .startChat({ history, generationConfig: { temperature } })
         .sendMessageStream(text);
@@ -142,7 +140,7 @@ ${outgoingMessage}`;
       failures,
       errorResponse,
     } = await tryModels({
-      apiKey: activeKey,
+      apiKeys: activeKeys,
       models: ordered,
       perModelMs: FIRST_RESPONSE_TIMEOUT_MS,
       totalMs: TOTAL_BUDGET_MS,
@@ -185,7 +183,7 @@ ${outgoingMessage}`;
         if (cut) console.warn(`Reply from ${usedModel} was cut: ${cut}`);
         if (cut && !sent.includes(SCENE_TAG_MARKER)) {
           const { result: rest, usedModel: restModel } = await tryModels({
-            apiKey: activeKey,
+            apiKeys: activeKeys,
             models: LITE_MODELS,
             perModelMs: CONTINUE_CUT_MS,
             totalMs: CONTINUE_CUT_TOTAL_MS,

@@ -38,7 +38,7 @@ export async function POST(req) {
       .map((m) => ({ role: m.role === 'user' ? 'user' : 'model', text: m.text.slice(0, MAX_CHARS_PER_MESSAGE) }));
     if (recent.length === 0) return jsonResponse({ error: 'ข้อมูลไม่ครบ' }, 400);
 
-    const { key, error: keyError } = resolveApiKey(apiKey);
+    const { keys, error: keyError } = resolveApiKey(apiKey);
     if (keyError) return keyError;
 
     const profile = userProfile && typeof userProfile === 'object' ? userProfile : { name: userName };
@@ -53,15 +53,16 @@ export async function POST(req) {
       messages: recent,
       dm: chatStyle === 'dm',
     });
-    const genAI = new GoogleGenerativeAI(key);
     const generate = (models, text) =>
       tryModels({
-        apiKey: key,
+        apiKeys: keys,
         models,
         perModelMs: PER_MODEL_MS,
         totalMs: TOTAL_MS,
-        run: async (model) => {
-          const res = await genAI.getGenerativeModel({ model, safetySettings: SAFETY_SETTINGS }).generateContent(text);
+        run: async (model, key) => {
+          const res = await new GoogleGenerativeAI(key)
+            .getGenerativeModel({ model, safetySettings: SAFETY_SETTINGS })
+            .generateContent(text);
           return res.response.text();
         },
       });
