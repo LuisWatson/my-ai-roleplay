@@ -7,7 +7,9 @@ The owner builds it for themselves and their partner. Reply to the owner in Thai
 
 - `npm install`, then `npm run dev` → http://localhost:3000
 - Gemini key: `GEMINI_API_KEY` in `.env.local` (git-ignored), or typed into the in-app Settings (that one wins).
-  The owner and partner share the server key; a Settings key stays on its own device.
+  The owner and partner share the server key; a Settings key stays on its own device. Backup server keys:
+  `GEMINI_API_KEY_2` … `_9` (or several comma-separated in `GEMINI_API_KEY`), each from another Google project with its
+  own free quota; `tryModels` tries every model of a key before the next key (`lib/geminiServer.js`).
 - Login: set `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY` in `.env.local`. Left empty, the app runs
   as before (no login, localStorage only) — fine in dev; `/api/chat` refuses in production without them.
 - Don't run a second `next dev` in this folder: both share `.next` and one's env leaks into the other.
@@ -185,8 +187,9 @@ expression; bigger reply avatars and mood cards; header picture blur fix for iPh
    (owner unhappy with result). Claude Code auto mode blocked driving Chrome for this. Rules: adult-looking faces,
    never Tonkla, no school uniforms, clothed.
 6. **Open as of 2026-10-28** (see `worklog.md` for details):
-   - Gemini free quota runs out daily ("ส่งข้อความไม่สำเร็จ", every model "โควตาหมด"): the owner's call — billing on the
-     key, or a second key from another Google project; an automatic backup-key switch in `/api/chat` was offered.
+   - Gemini free quota runs out daily ("ส่งข้อความไม่สำเร็จ", every model "โควตาหมด"): backup keys are supported since
+     2026-10-28; the owner still has to create one in another Google project and add `GEMINI_API_KEY_2` in Vercel
+     (Production) + Redeploy. Not tested with a real second key yet.
    - Not yet checked with real Gemini replies: the time rule (`TIME_RULE`), the 8-emoji thought rule, cast labels on
      real "name:" lines, and whether the model always adds `พื้นหลัง=`.
    - Not yet checked on the owner's iPhone: the header picture no longer blurred; reply avatar / mood card sizes.
