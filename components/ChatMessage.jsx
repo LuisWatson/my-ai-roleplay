@@ -242,12 +242,15 @@ export default function ChatMessage({
 
   return (
     <div className={`group flex items-start gap-2.5 transition-all ${isUser ? 'justify-end' : 'justify-start'}`}>
+      {/* Her picture beside each reply; portraits are upper body, so zoom in on the face */}
       {!isUser && (
-        <img
-          src={avatar}
-          alt={characterName || 'Character Avatar'}
-          className="w-8 h-8 rounded-full object-cover object-top mt-1 border border-purple-400/30 flex-shrink-0 shadow-sm"
-        />
+        <span className="w-11 h-11 mt-1 flex-shrink-0 rounded-full overflow-hidden border border-purple-400/30 shadow-sm">
+          <img
+            src={avatar}
+            alt={characterName || 'Character Avatar'}
+            className="w-full h-full object-cover object-top scale-125 origin-[50%_20%]"
+          />
+        </span>
       )}
 
       <div className={`flex flex-col gap-1 max-w-[85%] ${isUser ? 'md:max-w-[70%] items-end' : 'md:max-w-[80%] items-start'}`}>

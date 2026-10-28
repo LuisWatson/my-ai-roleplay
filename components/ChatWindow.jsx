@@ -40,7 +40,9 @@ function WaitingIndicator({ avatar, name }) {
 
   return (
     <div className="flex items-start gap-2.5 animate-fadeIn">
-      <img src={avatar} alt={name} className="w-8 h-8 rounded-full object-cover mt-1 border border-purple-400/20" />
+      <span className="w-11 h-11 mt-1 flex-shrink-0 rounded-full overflow-hidden border border-purple-400/20">
+        <img src={avatar} alt={name} className="w-full h-full object-cover object-top scale-125 origin-[50%_20%]" />
+      </span>
       <div className="bg-slate-800/90 border border-slate-700/80 px-4 py-3 rounded-2xl rounded-tl-none flex items-center gap-3 shadow-md">
         <span className="flex gap-1" aria-hidden>
           {[0, 150, 300].map((delay) => (
@@ -350,13 +352,12 @@ export default function ChatWindow({
             onClick={() => setZoomSrc(picture.src)}
             title="ดูรูปเต็ม"
             aria-label={`ดูรูปของ ${selectedChar.name}`}
-            className="flex-shrink-0 block w-14 h-14 md:w-12 md:h-12 rounded-full overflow-hidden border border-purple-400/40 shadow-sm"
+            className="flex-shrink-0 rounded-full"
           >
-            {/* Portraits are upper body: zoom in so the face fills the circle */}
             <img
               src={picture.src}
               alt={selectedChar.name}
-              className="w-full h-full object-cover object-top scale-125 origin-[50%_20%]"
+              className="w-12 h-12 md:w-10 md:h-10 rounded-full object-cover object-top border border-purple-400/40 shadow-sm"
             />
           </button>
           <div className="min-w-0">

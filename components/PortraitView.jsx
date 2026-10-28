@@ -42,7 +42,7 @@ export function PortraitLightbox({ src, name, onClose }) {
 }
 
 /**
- * A small picture placed in the chat where a character's expression changes (see `moodChanges`). Tap for full size.
+ * A picture placed in the chat where a character's expression changes (see `moodChanges`). Tap for full size.
  */
 export function MoodCard({ character, card, onZoom, className = '' }) {
   return (
@@ -50,7 +50,7 @@ export function MoodCard({ character, card, onZoom, className = '' }) {
       <button
         onClick={() => onZoom(card.src)}
         title={`${character.name} · ${EXPRESSION_LABELS[card.key]} (แตะดูรูปเต็ม)`}
-        className="block w-24 aspect-[3/4] overflow-hidden rounded-xl border border-white/10 shadow-lg bg-slate-800"
+        className="block w-36 md:w-40 aspect-[3/4] overflow-hidden rounded-xl border border-white/10 shadow-lg bg-slate-800"
       >
         <img src={card.src} alt={`${character.name} ${EXPRESSION_LABELS[card.key]}`} className="w-full h-full object-cover object-top" />
       </button>
