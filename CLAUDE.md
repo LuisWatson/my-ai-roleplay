@@ -66,7 +66,7 @@ The owner builds it for themselves and their partner. Reply to the owner in Thai
 - Never `confirm()` either: use `useConfirm()` from `components/ConfirmDialog.jsx`.
 - Errors: never `alert()`. Chat errors → notice card in `ChatWindow` (by `kind` from `/api/chat`); elsewhere → `Toast`.
   Waiting text stays in-story (character narration), never about the app/AI.
-- `constants/characters.js` — 14 preset characters (12 + the `ellie` and `ash` story characters; `ash` has no portrait yet). Optional fields:
+- `constants/characters.js` — 3 preset characters (`ellie`, `ash`, `vivienne`, all story characters; the 12 older presets were removed 2026-10-28, still in git history). Optional fields:
   `avatar`, `background`, `defaultUserRole { description, background }`, `fixedBackground`, `userRoleHint`,
   `profile { age, occupation, appearance, personality, likes, dislikes, story }` and
   `cast: [{ name, relation, personality }]` (presets get both from `constants/characterProfiles.js`; custom
@@ -82,7 +82,7 @@ The owner builds it for themselves and their partner. Reply to the owner in Thai
   told (`complete`), rule 11 stops "keep secrets alive". If a due stage's reply has no tag, `/api/suggest` asks a separate
   Lite yes/no (`revealCheck` → `revealed`, never mixed into the suggestion prompt) and `markRevealed` sets `reveal`.
   The memory panel shows only the count told/total (`truthCount`); the persona
-  sent never carries `truthStages`. Only `ellie` and `ash` have one.
+  sent never carries `truthStages`. `ellie`, `ash` and `vivienne` have one.
 - `components/CharacterProfile.jsx` — tapping a card on the home grid opens the character's profile sheet
   (bio / your role / people around them / greeting, relation + journal count, "เริ่มแชท"/"คุยต่อ");
   the sidebar chat list still opens chats directly.

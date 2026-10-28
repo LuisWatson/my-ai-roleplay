@@ -3,6 +3,15 @@
 บันทึกงานที่ทำเสร็จ ใหม่สุดอยู่บนสุด (กฎอยู่ใน `CLAUDE.md` → Conventions)
 
 ---
+## 2026-10-28 — เหลือตัวละครพรีเซ็ตแค่ เอลลี่ แอช วิเวียน
+
+- เจ้าของสั่งลบตัวละครพรีเซ็ตอื่นทั้ง 12 (ava, leo, mew, dr_phat, irin, sasi, tonkla, chef_arm, maya, captain_nava, belle, coach_boss)
+- `constants/characters.js` + `constants/characterProfiles.js`: ลบข้อมูลของ 12 ตัวนั้น; ลบรูป `public/characters/<id>.webp` ของทั้ง 12 และ `backgrounds/ava.webp` (ยังกู้ได้จาก git history); เก็บ `backgrounds/scenes/` ไว้เพราะตัวละครที่สร้างเองใช้
+- ผลข้างเคียง: แชทเก่าของ 12 ตัวนั้นที่เคยบันทึกไว้ (localStorage / Supabase `user_kv`) ยังอยู่ในข้อมูล แต่ไม่โผล่ในแอปแล้ว (ไม่มีตัวละครรองรับ)
+- `CLAUDE.md`: อัปเดตจำนวนพรีเซ็ตและรายชื่อตัวที่มี truthStages
+- ตรวจ: โหลด `DEFAULT_CHARACTERS` ใน Node ได้ 3 ตัว (ellie/ash/vivienne มี truthStages 4 ขั้นทั้งสามตัว) ยังไม่ได้ `next build` และยังไม่ได้ดูในเบราว์เซอร์ ยังไม่ได้ commit
+
+---
 ## 2026-10-28 — หัวแชทบนมือถือ: จัดให้สมมาตร
 
 - `components/ChatWindow.jsx`: ปุ่มทางขวา 4 ปุ่มขนาดเท่ากัน (36×36 บนมือถือ); แถบ Lv ผูกพัน/ไว้ใจ ย้ายลงเป็นแถวของตัวเองกึ่งกลางใต้หัว (เฉพาะจอเล็ก, `md:` ขึ้นไปยังอยู่ใต้ชื่อเหมือนเดิม) — เดิมถูกบีบจนล้นไปชนปุ่ม "บทบาทของฉัน"
