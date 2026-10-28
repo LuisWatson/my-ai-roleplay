@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useEffect, useState } from 'react';
-import { ArrowLeft, Trash2, UserCog, X, MapPin, Clock, AlertCircle, RotateCcw, Brain, PanelLeftOpen } from 'lucide-react';
+import { ArrowLeft, Trash2, UserCog, X, MapPin, AlertCircle, RotateCcw, Brain, PanelLeftOpen } from 'lucide-react';
 import ChatMessage from './ChatMessage';
 import ChatInput from './ChatInput';
 import { latestScene } from '../lib/scene';
@@ -135,26 +135,15 @@ function sceneDividers(messages) {
 }
 
 /**
- * A thin line between messages where the story moves to a new place, with the place and time.
+ * A thin line between messages where the story moves to a new place, with the place (the story text tells the time).
  */
 function SceneDivider({ scene }) {
   return (
     <div className="flex items-center gap-3 py-1 text-[11px] text-slate-400" aria-label="เปลี่ยนฉาก">
       <span className="flex-1 h-px bg-white/10" />
-      <span className="flex items-center gap-2 min-w-0 px-3 py-1 rounded-full bg-slate-900/60 border border-white/10 backdrop-blur-md">
-        <span className="flex items-center gap-1 min-w-0">
-          <MapPin className="w-3 h-3 flex-shrink-0 text-violet-300/80" />
-          <span className="truncate">{scene.location}</span>
-        </span>
-        {scene.time && (
-          <>
-            <span className="w-px h-3 bg-white/15 flex-shrink-0" />
-            <span className="flex items-center gap-1 flex-shrink-0 max-w-[40%]">
-              <Clock className="w-3 h-3 flex-shrink-0 text-violet-300/80" />
-              <span className="truncate">{scene.time}</span>
-            </span>
-          </>
-        )}
+      <span className="flex items-center gap-1 min-w-0 px-3 py-1 rounded-full bg-slate-900/60 border border-white/10 backdrop-blur-md">
+        <MapPin className="w-3 h-3 flex-shrink-0 text-violet-300/80" />
+        <span className="truncate">{scene.location}</span>
       </span>
       <span className="flex-1 h-px bg-white/10" />
     </div>
@@ -425,19 +414,13 @@ export default function ChatWindow({
         )}
       </header>
 
-      {/* Scene bar: current in-story location/time, reported by the model after each reply */}
-      {scene && (
+      {/* Scene bar: current in-story place, reported by the model after each reply. The time is not shown:
+          it often disagreed with the time the story text gave, so the story itself tells the time */}
+      {scene?.location && (
         <div className="flex justify-center pt-3 px-4 z-10">
-          <div className="flex items-center gap-2.5 px-3.5 py-1 rounded-full bg-slate-900/50 border border-white/10 backdrop-blur-md text-[11px] text-slate-300 shadow-sm">
-            <span className="flex items-center gap-1.5">
-              <Clock className="w-3 h-3 text-violet-300/80" />
-              {scene.time}
-            </span>
-            <span className="w-px h-3 bg-white/15" />
-            <span className="flex items-center gap-1.5">
-              <MapPin className="w-3 h-3 text-violet-300/80" />
-              {scene.location}
-            </span>
+          <div className="flex items-center gap-1.5 max-w-full px-3.5 py-1 rounded-full bg-slate-900/50 border border-white/10 backdrop-blur-md text-[11px] text-slate-300 shadow-sm">
+            <MapPin className="w-3 h-3 flex-shrink-0 text-violet-300/80" />
+            <span className="truncate">{scene.location}</span>
           </div>
         </div>
       )}
@@ -460,6 +443,7 @@ export default function ChatWindow({
             }
             avatar={msg.role === 'model' ? pictureFor(selectedChar, msg.thought).src : selectedChar.avatar}
             characterName={selectedChar.name}
+            cast={selectedChar.cast}
             disabled={loading}
             canRegenerate={
               idx === messages.length - 1 && msg.role === 'model' && messages.some((m) => m.role === 'user')
