@@ -194,8 +194,7 @@ expression; bigger reply avatars and mood cards; header picture blur fix for iPh
      real "name:" lines, and whether the model always adds `พื้นหลัง=`.
    - Not yet checked on the owner's iPhone: the header picture no longer blurred; reply avatar / mood card sizes.
    - Expressions: ellie, ash, vivienne have only happy/shy/sad/angry (teasing/worried fall back, thinking/surprised
-     show the portrait); the owner asked for Serena only so far. Serena's "thinking" is still close to her portrait.
-     tensor.art credits left ~10.8 (about 3 Img2Img pictures).
+     show the portrait); the owner asked for Serena only so far. tensor.art credits left ~8 (about 2 Img2Img pictures).
    - Old chats of the 12 removed presets still sit in storage (`chat_history_<id>` etc.); harmless, could be cleaned.
 7. **Feature rounds agreed with the owner** (one round at a time, used for a few days before the next):
    - Round 1 — done 2026-10-21, live; home-screen install + login on iPhone confirmed working.
