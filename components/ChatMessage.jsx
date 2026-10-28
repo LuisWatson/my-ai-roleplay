@@ -36,7 +36,7 @@ function isMainCharacter(speaker, characterName) {
 function SpeakerLabel({ speaker, cast, className }) {
   const role = castRoleFor(speaker, cast);
   return (
-    <div className={`text-[11px] font-medium ${className}`}>
+    <div className={`text-[13px] font-medium ${className}`}>
       {speaker}
       {role && <span className="font-normal opacity-75"> · {role}</span>}
     </div>
