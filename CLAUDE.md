@@ -66,7 +66,8 @@ The owner builds it for themselves and their partner. Reply to the owner in Thai
 - Never `confirm()` either: use `useConfirm()` from `components/ConfirmDialog.jsx`.
 - Errors: never `alert()`. Chat errors → notice card in `ChatWindow` (by `kind` from `/api/chat`); elsewhere → `Toast`.
   Waiting text stays in-story (character narration), never about the app/AI.
-- `constants/characters.js` — 4 preset characters (`ellie`, `ash`, `vivienne`, `serena`; the 12 older presets were removed 2026-10-28, still in git history; `serena` has no portrait yet and uses `default-avatar.svg`). Optional fields:
+- `constants/characters.js` — 4 preset characters (`ellie`, `ash`, `vivienne`, `serena`; the 12 older presets were removed 2026-10-28, still in git history; `serena` has a portrait and the 4 expressions; her expression eyes look greyer than the portrait, owner accepted that;
+  `vivienne` and `serena` have their own `sceneSet` of 8 backgrounds). Optional fields:
   `avatar`, `background`, `defaultUserRole { description, background }`, `fixedBackground`, `userRoleHint`,
   `profile { age, occupation, appearance, personality, likes, dislikes, story }` and
   `cast: [{ name, relation, personality }]` (presets get both from `constants/characterProfiles.js`; custom
@@ -87,10 +88,12 @@ The owner builds it for themselves and their partner. Reply to the owner in Thai
   (bio / your role / people around them / greeting, relation + journal count, "เริ่มแชท"/"คุยต่อ");
   the sidebar chat list still opens chats directly.
 - Other people in a scene: rule 11 lets the model voice them; rule 4 makes it prefix their speech with `name:`;
-  `lib/roleplayFormat.js` turns that into `speaker` and `ChatMessage` shows a name label in that person's colour.
+  `lib/roleplayFormat.js` turns that into `speaker` and `ChatMessage` shows a name label in that person's colour,
+  plus who they are when the name matches the character's `cast` (`castRoleFor`: first phrase of `relation`).
 - `constants/sceneBackgrounds.js` — 8 scene background ids → `public/characters/backgrounds/scenes/<id>.webp`.
 - `components/ChatWindow.jsx` — blurred backdrop (scene background, else character background), floating scene pill,
-  a divider (place · time) before the first scene and wherever the place changes (`sceneDividers`).
+  a divider (place) before the first scene and wherever the place changes (`sceneDividers`). The tag's time is not
+  shown (it disagreed with the story text); the story tells the time (`TIME_RULE` in `lib/prompt.js`).
 - Story layout (`formatStoryText` in `ChatMessage`): novel-mode character replies have no outer bubble — narration
   on the backdrop, each spoken line in its own bubble. User messages, DM mode and the profile greeting keep the old box.
 - Character thought (rule 16): `; ความคิด=<emoji> <thought>` in the scene tag → `thought` on the reply (and swipes),
