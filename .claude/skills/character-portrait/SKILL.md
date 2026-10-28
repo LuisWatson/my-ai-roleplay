@@ -41,6 +41,15 @@ Standard recipe from Serena (2026-10-28), use this for new characters: official 
 
 ## Expressions (happy / shy / sad / angry)
 
+Hands and extra people (Serena's 4 newer expressions): asking for a new hand pose (finger on chin, hand near the mouth,
+holding her arm) gave an arm growing from the chest, a finger stuck to the lips and a stranger's hand on her arm. Keep the
+source pose (`same pose as the source, one hand resting on her hip`) and change only the face. Do not write "alone",
+"no other people" or "no one" in the prompt: those words brought people into the background. Put them in the negative
+prompt instead (open it with the Negative button; append `(extra arms, extra hands, other people, another person, hand of
+another person:1.3), finger in mouth, hand on face`). Untick A1111. Check every picture zoomed in (hands, background) before
+showing the owner. With the pose locked, a mild expression ("thoughtful", "teasing smirk") at denoise 0.65 looked the
+same as the portrait; ask for something visible in the face (eyes looking up to the side, a wink) and use denoise ~0.72.
+
 Warning: with the Krea + semi style recipe Img2Img did not keep Serena's face (bangs and a hair clip appeared, face shape drifted even at denoise 0.65), so her expression set was dropped; raising denoise changes the face, lowering it leaves the expression unchanged. Judge each set against the main portrait before wiring it in. What was tried: Img2Img from the main portrait with the main portrait uploaded as the source (copy the PNG into the scratchpad first, the upload tool only reads session folders), Krea-2 Turbo + semi style **0.7**, **denoise 0.65** (0.8 changed her face), ~2.8 credits each, prompt = weighted **eye colour first** (`(amber brown eyes:1.4), (golden brown irises:1.3)`: without it the eyes turn grey; weights of 1.5 or more raise a warning dialog) + weighted expression + pose + hair/dress/place, e.g. `(gentle warm closed-mouth smile:1.4), (happy bright eyes:1.3), head slightly tilted, ...`.
 
 Do not use text-to-image again (the face changes). Use **Img2Img** from the main portrait: same model + LoRA 0.5, strength **0.8**, about 1.26 credits each, and describe a different pose in the prompt. The upload field only accepts JPEG/PNG (not WebP). The free account runs about 2 tasks at once. For the Krea set-up above (Vivienne): Img2Img locks the size to the source image (768×1024 is fine), LoRA 1.0 barely changes the expression, so set both LoRAs to **0.7** with a high denoise; too low a LoRA drifts the face. Use a short prompt that starts with the weighted expression and pose, e.g. `(gentle warm smile:1.4), (happy bright eyes:1.3), head tilted, one hand brushing hair behind her ear, different pose, 1girl, <hair>, <dress>, <necklace>, upper body, photorealistic, glowing porcelain skin, ...`; leave out face/hair/eye detail the source image already has. Its cost is about 2.8 credits per image.

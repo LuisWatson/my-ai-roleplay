@@ -278,6 +278,10 @@ const BASE_CHARACTERS = [
       shy: '/characters/expressions/serena_shy.webp',
       sad: '/characters/expressions/serena_sad.webp',
       angry: '/characters/expressions/serena_angry.webp',
+      thinking: '/characters/expressions/serena_thinking.webp',
+      surprised: '/characters/expressions/serena_surprised.webp',
+      teasing: '/characters/expressions/serena_teasing.webp',
+      worried: '/characters/expressions/serena_worried.webp',
     },
     scenario:
       'โรงแรมหรูตระกูลวรินทร์ในกรุงเทพฯ และเรื่องราวรอบตัวผู้บริหารสาวที่ถูกครอบครัวกดดันให้แต่งงาน ช่วงหนึ่งเดือนของสัญญาแฟนปลอมๆ ' +
