@@ -256,11 +256,29 @@ const BASE_CHARACTERS = [
       background: 'mansion_hall',
     },
   },
-  // Romantic comedy, fake-couple contract: no hidden truth stages, no user secret; uses the generic scene backgrounds
+  // Romantic comedy, fake-couple contract: no hidden truth stages, no user secret; her own hotel-world scene list
   {
     id: 'serena',
-    // Placeholder until her portrait is made (character-portrait skill); expressions fall back to this too
-    avatar: '/characters/default-avatar.svg',
+    avatar: '/characters/serena.webp',
+    background: '/characters/backgrounds/serena/hotel_lounge.webp',
+    sceneSet: [
+      { id: 'hotel_lounge', label: 'ห้องรับรองส่วนตัวชั้น 28 ล็อบบี้ ห้องรับรองในโรงแรม', src: '/characters/backgrounds/serena/hotel_lounge.webp' },
+      { id: 'ballroom', label: 'ห้องบอลรูม งานเลี้ยง งานเปิดตัวโครงการ', src: '/characters/backgrounds/serena/ballroom.webp' },
+      { id: 'fine_dining', label: 'ร้านอาหารหรู ห้องอาหาร มื้อค่ำกับครอบครัว', src: '/characters/backgrounds/serena/fine_dining.webp' },
+      { id: 'exec_office', label: 'ห้องทำงานผู้บริหาร ห้องประชุม ออฟฟิศ', src: '/characters/backgrounds/serena/exec_office.webp' },
+      { id: 'serena_condo', label: 'คอนโดหรือบ้านของเซเรน่า ห้องนั่งเล่น ห้องครัว', src: '/characters/backgrounds/serena/serena_condo.webp' },
+      { id: 'car_night', label: 'ในรถตอนกลางคืน ระหว่างเดินทาง', src: '/characters/backgrounds/serena/car_night.webp' },
+      { id: 'rooftop', label: 'ดาดฟ้าโรงแรม บาร์บนดาดฟ้า ข้างนอกตอนกลางคืน', src: '/characters/backgrounds/serena/rooftop.webp' },
+      { id: 'beach_resort', label: 'รีสอร์ตริมทะเล ทริปผู้บริหาร สระว่ายน้ำ ชายหาด', src: '/characters/backgrounds/serena/beach_resort.webp' },
+    ],
+    // Expression pictures (lib/expressions.js): Img2Img from the main portrait, Krea-2-Turbo + semi style 0.7, denoise 0.65.
+    // The owner chose this first set; the eyes look greyer than the main portrait (a regenerated set drifted more in face)
+    expressions: {
+      happy: '/characters/expressions/serena_happy.webp',
+      shy: '/characters/expressions/serena_shy.webp',
+      sad: '/characters/expressions/serena_sad.webp',
+      angry: '/characters/expressions/serena_angry.webp',
+    },
     scenario:
       'โรงแรมหรูตระกูลวรินทร์ในกรุงเทพฯ และเรื่องราวรอบตัวผู้บริหารสาวที่ถูกครอบครัวกดดันให้แต่งงาน ช่วงหนึ่งเดือนของสัญญาแฟนปลอมๆ ' +
       'มีทั้งงานเลี้ยงครอบครัว งานเปิดตัวโครงการ และทริปพักผ่อนของผู้บริหาร',
@@ -319,7 +337,7 @@ const BASE_CHARACTERS = [
       time: '19:30 น. วันศุกร์ ต้นเดือนพฤศจิกายน',
       place: 'ห้องรับรองส่วนตัว ชั้น 28 โรงแรมวรินทร์ แกรนด์',
       mood: 'แสงยามเย็นกำลังจางเหนือขอบฟ้า กระจกบานใหญ่เผยแสงไฟของเมืองที่เริ่มสว่าง กลิ่นกาแฟคั่วหอมอ่อนๆ ลอยมาจากโต๊ะด้านข้าง และเสียงเปียโนจากล็อบบี้ดังแว่วขึ้นมาเบาๆ',
-      background: 'office',
+      background: 'hotel_lounge',
     },
   },
 ];
