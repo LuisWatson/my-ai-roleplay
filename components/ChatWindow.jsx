@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useEffect, useState } from 'react';
-import { ArrowLeft, Trash2, UserCog, X, MapPin, Clock, AlertCircle, RotateCcw, Brain, PanelLeftOpen, Download } from 'lucide-react';
+import { ArrowLeft, Trash2, UserCog, X, MapPin, Clock, AlertCircle, RotateCcw, Brain, PanelLeftOpen } from 'lucide-react';
 import ChatMessage from './ChatMessage';
 import ChatInput from './ChatInput';
 import { latestScene } from '../lib/scene';
@@ -336,7 +336,7 @@ export default function ChatWindow({
       )}
 
       {/* Chat Header */}
-      <header className="p-3.5 md:p-4 bg-slate-800/70 backdrop-blur-md border-b border-slate-700/80 flex items-center justify-between gap-2 z-10">
+      <header className="px-3 py-2.5 md:p-4 bg-slate-800/70 backdrop-blur-md border-b border-slate-700/80 flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5 z-10">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           {onExpandSidebar && (
             <button
@@ -377,7 +377,9 @@ export default function ChatWindow({
               )}
             </div>
             {shownRelation ? (
-              <RelationLine relation={shownRelation} />
+              <div className="hidden md:block">
+                <RelationLine relation={shownRelation} />
+              </div>
             ) : (
               <p className="text-xs text-slate-400 truncate sm:max-w-md">
                 {selectedChar.tagline || selectedChar.description}
@@ -386,11 +388,11 @@ export default function ChatWindow({
           </div>
         </div>
 
-        <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
+        <div className="flex items-center gap-1 flex-shrink-0">
         <button
           onClick={onOpenUserRole}
           title="บทบาทของฉันกับตัวละครนี้"
-          className={`p-1.5 sm:p-2 rounded-lg transition flex items-center gap-1.5 text-xs ${
+          className={`hidden sm:flex sm:p-2 rounded-lg transition items-center gap-1.5 text-xs ${
             hasUserRole
               ? 'bg-purple-900/40 text-purple-300 border border-purple-500/40'
               : 'hover:bg-slate-700/60 text-slate-400 hover:text-purple-300'
@@ -402,29 +404,25 @@ export default function ChatWindow({
         <button
           onClick={onOpenMemory}
           title="ความทรงจำของตัวละคร"
-          className="p-1.5 sm:p-2 rounded-lg transition flex items-center gap-1.5 text-xs hover:bg-slate-700/60 text-slate-400 hover:text-purple-300"
+          className="hidden sm:flex sm:p-2 rounded-lg transition items-center gap-1.5 text-xs hover:bg-slate-700/60 text-slate-400 hover:text-purple-300"
         >
           <Brain className="w-5 h-5" />
           <span className="hidden lg:inline">ความทรงจำ</span>
         </button>
-        {onOpenExport && (
-          <button
-            onClick={onOpenExport}
-            title="ส่งออกประวัติการสนทนา"
-            className="p-1.5 sm:p-2 rounded-lg transition flex items-center gap-1.5 text-xs hover:bg-slate-700/60 text-slate-400 hover:text-purple-300"
-          >
-            <Download className="w-5 h-5" />
-            <span className="hidden lg:inline">ส่งออก</span>
-          </button>
-        )}
         <button
           onClick={onClearHistory}
           title="ล้างประวัติการสนทนา"
-          className="p-1.5 sm:p-2 hover:bg-slate-700/60 rounded-lg text-slate-400 hover:text-red-400 transition"
+          className="w-9 h-9 flex items-center justify-center sm:w-auto sm:h-auto sm:p-2 hover:bg-slate-700/60 rounded-lg text-slate-400 hover:text-red-400 transition"
         >
           <Trash2 className="w-5 h-5" />
         </button>
         </div>
+
+        {shownRelation && (
+          <div className="basis-full md:hidden flex justify-center pt-1.5 border-t border-white/5">
+            <RelationLine relation={shownRelation} />
+          </div>
+        )}
       </header>
 
       {/* Scene bar: current in-story location/time, reported by the model after each reply */}
@@ -501,6 +499,7 @@ export default function ChatWindow({
         onSuggest={lastMessage?.role === 'model' && !suggesting ? onSuggest : undefined}
         onOpenMemory={onOpenMemory}
         onOpenUserRole={onOpenUserRole}
+        onOpenExport={onOpenExport}
         onStop={onStopReply}
         loading={loading}
         characterName={selectedChar.name}

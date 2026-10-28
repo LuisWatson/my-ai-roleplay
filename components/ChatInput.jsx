@@ -13,6 +13,7 @@ import {
   UserCog,
   BookOpen,
   MessageCircle,
+  Download,
 } from 'lucide-react';
 
 const MAX_HEIGHT_PX = 200;
@@ -42,6 +43,7 @@ export default function ChatInput({
   onSuggest,
   onOpenMemory,
   onOpenUserRole,
+  onOpenExport,
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
@@ -143,13 +145,14 @@ export default function ChatInput({
     },
     { key: 'memory', icon: Brain, label: 'ความทรงจำ', onClick: onOpenMemory },
     { key: 'role', icon: UserCog, label: 'บทบาทของฉัน', onClick: onOpenUserRole },
+    ...(onOpenExport ? [{ key: 'export', icon: Download, label: 'ส่งออก', onClick: onOpenExport }] : []),
   ];
 
   return (
     <div className="px-3 pt-3 pb-2 md:px-4 md:pt-4 bg-slate-900/60 backdrop-blur-md border-t border-slate-800">
       <div ref={menuRef} className="max-w-4xl mx-auto">
         {menuOpen && (
-          <div className="mb-2 grid grid-cols-3 sm:grid-cols-5 gap-1.5 rounded-2xl bg-slate-800/95 border border-slate-700/70 p-2 shadow-xl shadow-black/30 animate-fadeIn">
+          <div className="mb-2 grid grid-cols-3 sm:grid-cols-6 gap-1.5 rounded-2xl bg-slate-800/95 border border-slate-700/70 p-2 shadow-xl shadow-black/30 animate-fadeIn">
             {menuItems.map(({ key, icon: Icon, label, onClick, disabled, active }) => (
               <button
                 key={key}
