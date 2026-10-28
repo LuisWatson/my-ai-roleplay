@@ -66,7 +66,7 @@ The owner builds it for themselves and their partner. Reply to the owner in Thai
 - Never `confirm()` either: use `useConfirm()` from `components/ConfirmDialog.jsx`.
 - Errors: never `alert()`. Chat errors → notice card in `ChatWindow` (by `kind` from `/api/chat`); elsewhere → `Toast`.
   Waiting text stays in-story (character narration), never about the app/AI.
-- `constants/characters.js` — 3 preset characters (`ellie`, `ash`, `vivienne`, all story characters; the 12 older presets were removed 2026-10-28, still in git history). Optional fields:
+- `constants/characters.js` — 4 preset characters (`ellie`, `ash`, `vivienne`, `serena`; the 12 older presets were removed 2026-10-28, still in git history; `serena` has no portrait yet and uses `default-avatar.svg`). Optional fields:
   `avatar`, `background`, `defaultUserRole { description, background }`, `fixedBackground`, `userRoleHint`,
   `profile { age, occupation, appearance, personality, likes, dislikes, story }` and
   `cast: [{ name, relation, personality }]` (presets get both from `constants/characterProfiles.js`; custom
