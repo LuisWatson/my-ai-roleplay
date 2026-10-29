@@ -11,7 +11,7 @@ import OpeningCard from './OpeningCard';
 import { PortraitLightbox, MoodCard } from './PortraitView';
 import CharacterStage from './CharacterStage';
 import { openingOf } from '../lib/story';
-import { pictureFor, moodChanges } from '../lib/expressions';
+import { pictureFor, pictureOfMood, moodChanges } from '../lib/expressions';
 
 // Story-style lines shown while the reply is on its way; never about the app or the AI
 const WAITING_LINES = [
@@ -262,6 +262,11 @@ export default function ChatWindow({
   useEffect(() => setZoomSrc(null), [selectedChar.id]);
   const lastThought = [...messages].reverse().find((m) => m.thought)?.thought;
   const picture = pictureFor(selectedChar, lastThought);
+  // Her picture for an expression key; nothing when she has no picture for it (the main one would not show a change)
+  const pictureOf = (mood) => {
+    const p = pictureOfMood(selectedChar, mood);
+    return p.key ? p.src : undefined;
+  };
   // Where her expression changes, a small picture at the end of that reply, above her thought
   const moodCards = moodChanges(messages, selectedChar);
   // Relationship now, and before the latest reply that changed it (for the +/- shown next to it)
@@ -283,9 +288,34 @@ export default function ChatWindow({
   const atBottomRef = useRef(true);
   const lengthRef = useRef(0);
   const jumpRef = useRef(true); // a chat just opened: go straight to the end instead of animating through it
+  // The backdrop shows the face of the line being read: the bubble nearest the middle of the chat, or her latest
+  // one while the reader is at the bottom. Null (no marked bubble) falls back to the latest thought.
+  const [viewMood, setViewMood] = useState(null);
+  const moodFrame = useRef(0);
+  const updateViewMood = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const bubbles = el.querySelectorAll('[data-mood]');
+    let best = null;
+    if (atBottomRef.current) best = bubbles[bubbles.length - 1] || null;
+    else {
+      const box = el.getBoundingClientRect();
+      const middle = box.top + box.height / 2;
+      let gap = Infinity;
+      for (const b of bubbles) {
+        const r = b.getBoundingClientRect();
+        const d = middle < r.top ? r.top - middle : middle > r.bottom ? middle - r.bottom : 0;
+        if (d < gap) [best, gap] = [b, d];
+      }
+    }
+    setViewMood(best?.dataset.mood || null);
+  };
   const handleScroll = () => {
     const el = scrollRef.current;
     if (el) atBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+    if (!selectedChar.cutouts) return;
+    cancelAnimationFrame(moodFrame.current);
+    moodFrame.current = requestAnimationFrame(updateViewMood);
   };
 
   useEffect(() => {
@@ -311,12 +341,17 @@ export default function ChatWindow({
     jumpRef.current = false;
   }, [messages, loading, waiting, suggesting, notice]);
 
+  // New or edited text changes which bubble is the latest / nearest
+  useEffect(() => {
+    if (selectedChar.cutouts) updateViewMood();
+  }, [messages, selectedChar.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
   return (
     <div className="flex-1 flex min-w-0 overflow-hidden">
     <main className="flex-1 min-w-0 flex flex-col bg-slate-900/95 relative overflow-hidden isolate">
       {/* Blurred scene backdrop; negative z keeps it under the messages, the overlay keeps text readable */}
       {selectedChar.cutouts ? (
-        <CharacterStage key={selectedChar.id} character={selectedChar} sceneSrc={backgroundSrc} expression={picture.key} />
+        <CharacterStage key={selectedChar.id} character={selectedChar} sceneSrc={backgroundSrc} expression={viewMood || picture.key} />
       ) : backgroundSrc && (
         <div aria-hidden className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
           <img
@@ -450,6 +485,7 @@ export default function ChatWindow({
               )
             }
             avatar={msg.role === 'model' ? pictureFor(selectedChar, msg.thought).src : selectedChar.avatar}
+            pictureOf={pictureOf}
             characterName={selectedChar.name}
             cast={selectedChar.cast}
             disabled={loading}

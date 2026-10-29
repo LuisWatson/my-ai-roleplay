@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Pencil, Trash2, RefreshCw, Check, X, ChevronLeft, ChevronRight, BookmarkPlus, BookHeart, Sparkles } from 'lucide-react';
-import { parseRoleplayText, castRoleFor } from '../lib/roleplayFormat';
+import { parseRoleplayText, castRoleFor, isMainCharacter, speechMoods } from '../lib/roleplayFormat';
 
 const PARAGRAPH_CLASS = {
   model: { speech: 'font-semibold text-white', narration: 'text-slate-400' },
@@ -23,13 +23,6 @@ function speakerStyle(name) {
   let h = 0;
   for (const ch of name) h = (h * 31 + ch.codePointAt(0)) >>> 0;
   return SPEAKER_STYLES[h % SPEAKER_STYLES.length];
-}
-
-// "เอวา (Ava)" → also matches a label written as "เอวา" or "Ava"
-function isMainCharacter(speaker, characterName) {
-  if (!characterName) return false;
-  const names = [characterName, ...characterName.split(/[()]/)].map((n) => n.trim()).filter(Boolean);
-  return names.includes(speaker.trim());
 }
 
 // "Adrian · หัวหน้าพ่อบ้านของคฤหาสน์ Laurent": the name, plus who they are when they are in the character's cast
@@ -78,12 +71,19 @@ export function formatRoleplayText(text, role = 'model', characterName, cast) {
 
 /**
  * A character's novel-style reply laid out like a story: narration as plain text on the backdrop,
- * each spoken line in its own bubble (other people's lines get their name and colour).
+ * each spoken line in its own bubble (other people's lines get their name and colour). A bubble carries its
+ * expression in `data-mood` (the chat backdrop follows it); where the face changes from the bubble before, the
+ * small picture from `pictureOf(mood)` sits beside it.
+ * @param {string} [thought] - the reply's thought, the face of a line that has no mark
+ * @param {(mood: string) => string|undefined} [pictureOf]
  */
-export function formatStoryText(text, characterName, cast) {
+export function formatStoryText(text, characterName, cast, thought, pictureOf) {
+  const paragraphs = parseRoleplayText(text);
+  const moods = speechMoods(paragraphs, characterName, thought);
+  let shown = null; // the face the previous bubble of hers showed
   return (
     <div className="space-y-2.5">
-      {parseRoleplayText(text).map((para, idx) => {
+      {paragraphs.map((para, idx) => {
         if (para.type === 'narration') {
           return (
             <p key={idx} className="px-1 text-slate-300 [text-shadow:0_1px_2px_rgb(0_0_0/0.6)]">
@@ -104,13 +104,25 @@ export function formatStoryText(text, characterName, cast) {
             </div>
           );
         }
-        return (
+        const mood = moods[idx];
+        const face = shown && mood && mood !== shown ? pictureOf?.(mood) : null;
+        if (mood) shown = mood;
+        const bubble = (
           <p
-            key={idx}
+            data-mood={mood || undefined}
             className="w-fit max-w-full px-3.5 py-2.5 rounded-2xl rounded-tl-none bg-slate-800/90 border border-slate-700/80 font-medium text-white shadow-md backdrop-blur-sm"
           >
             {para.text}
           </p>
+        );
+        if (!face) return React.cloneElement(bubble, { key: idx });
+        return (
+          <div key={idx} className="flex items-end gap-2 animate-fadeIn">
+            <span className="w-8 h-8 flex-shrink-0 rounded-full overflow-hidden border border-purple-400/30 shadow-sm">
+              <img src={face} alt="" className="w-full h-full object-cover object-top scale-125 origin-[50%_20%]" />
+            </span>
+            {bubble}
+          </div>
         );
       })}
     </div>
@@ -211,9 +223,16 @@ export default function ChatMessage({
   onEdit,
   onDelete,
   moodCard,
+  pictureOf,
 }) {
   const isUser = message.role === 'user';
   const hasText = message.text && message.text.length > 0;
+  // The picture beside the reply is the face of her first line (a later change gets its own small picture)
+  const firstMood =
+    !isUser && hasText && message.style !== 'dm'
+      ? speechMoods(parseRoleplayText(message.text), characterName, message.thought).find(Boolean)
+      : null;
+  const avatarSrc = (firstMood && pictureOf?.(firstMood)) || avatar;
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState('');
   const [momentDraft, setMomentDraft] = useState(null); // title being typed when saving by hand
@@ -246,7 +265,7 @@ export default function ChatMessage({
       {!isUser && (
         <span className="w-11 h-11 mt-1 flex-shrink-0 rounded-full overflow-hidden border border-purple-400/30 shadow-sm">
           <img
-            src={avatar}
+            src={avatarSrc}
             alt={characterName || 'Character Avatar'}
             className="w-full h-full object-cover object-top scale-125 origin-[50%_20%]"
           />
@@ -289,7 +308,7 @@ export default function ChatMessage({
           message.style === 'dm'
             ? formatChatText(message.text)
             : storyLayout
-              ? formatStoryText(message.text, characterName, cast)
+              ? formatStoryText(message.text, characterName, cast, message.thought, pictureOf)
               : formatRoleplayText(message.text, message.role, characterName, cast)
         ) : (
           <span className="inline-flex items-center gap-1.5 py-1 px-1">

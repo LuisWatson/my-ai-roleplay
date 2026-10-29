@@ -109,8 +109,12 @@ The owner builds it for themselves and their partner. Reply to the owner in Thai
   at the end of a reply, above the thought pill, when the expression changed (`moodChanges`). No side panel (owner removed it).
 - Character as chat backdrop (`components/CharacterStage.jsx`): a character with `cutouts { main, happy, … }` (transparent
   WebP in `public/characters/cutouts/`, background removed with rembg; same keys as `expressions`, `cutoutFor`) shows its
-  current expression's cut-out centred (at most 80% of the chat area, whole figure visible) over the sharp (unblurred) scene, both cross-fading on change; no mood cards in the chat. Without `cutouts` the old
-  blurred backdrop is used. Only `serena` has them so far.
+  current expression's cut-out as a close-up (wider than a phone screen, anchored to the top) over the lightly blurred scene,
+  both cross-fading on change; no mood cards in the chat. Without `cutouts` the old blurred backdrop is used. Only `serena`
+  has them so far. The expression follows the bubble being read (`data-mood`, `updateViewMood` in `ChatWindow`).
+- Face per spoken line: rule 16 asks for `{😏} "..."` (one of the 8 thought emoji) before each of the character's quotes;
+  `parseRoleplayText` turns it into `mood` (never shown), `speechMoods` fills unmarked lines from the line before / the
+  thought. `ChatMessage` shows her picture for the first line and a small one beside a bubble where the face changes.
 - Swipes: a regenerated model message keeps `alts: [{ text, scene }]` + `altIndex` (only the last reply);
   dropped when the user sends the next message.
 - Story direction ("กำกับเรื่อง", `ChatInput`): one-shot out-of-story instruction sent as `direction`; never saved.
