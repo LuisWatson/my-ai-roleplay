@@ -3,6 +3,8 @@ import { AVAILABLE_MODELS } from '../../../constants/models';
 import { buildSuggestPrompt, buildRevealCheckPrompt } from '../../../lib/prompt';
 import { authorize, resolveApiKey, tryModels, jsonResponse, SAFETY_SETTINGS } from '../../../lib/geminiServer';
 import { pickChoices } from '../../../lib/choices';
+import { memoryExcerpt } from '../../../lib/memoryExcerpt';
+import { suggestionContext } from '../../../lib/suggestionContext';
 
 // On-demand suggestions are small; Lite models first so the Flash quota (20 a day) stays for the chat
 const SUGGEST_MODELS = [
@@ -15,8 +17,7 @@ const LITE_ONLY_MODELS = SUGGEST_MODELS.filter((m) => m.includes('lite'));
 
 const PER_MODEL_MS = 20000;
 const TOTAL_MS = 40000;
-const MAX_MESSAGES = 8;
-const MAX_CHARS_PER_MESSAGE = 1500;
+const MAX_MEMORY_CHARS = 1800;
 
 /**
  * Three suggested next messages for the user ("แนะนำคำตอบ" in the + menu).
@@ -27,15 +28,25 @@ export async function POST(req) {
     const denied = await authorize(req);
     if (denied) return denied;
 
-    const { characterName, characterDescription, userProfile, userName, messages, chatStyle, auto, revealCheck, apiKey } =
-      await req.json();
+    const {
+      characterName,
+      characterDescription,
+      userProfile,
+      userName,
+      memorySummary,
+      contextTruncated,
+      messages,
+      revealMessages,
+      chatStyle,
+      auto,
+      revealCheck,
+      apiKey,
+    } = await req.json();
     if (!characterName || !Array.isArray(messages) || messages.length === 0) {
       return jsonResponse({ error: 'ข้อมูลไม่ครบ' }, 400);
     }
-    const recent = messages
-      .filter((m) => typeof m?.text === 'string' && m.text.trim())
-      .slice(-MAX_MESSAGES)
-      .map((m) => ({ role: m.role === 'user' ? 'user' : 'model', text: m.text.slice(0, MAX_CHARS_PER_MESSAGE) }));
+    const context = suggestionContext(messages);
+    const recent = context.messages;
     if (recent.length === 0) return jsonResponse({ error: 'ข้อมูลไม่ครบ' }, 400);
 
     const { keys, error: keyError } = resolveApiKey(apiKey);
@@ -49,7 +60,13 @@ export async function POST(req) {
         name: String(profile.name || '').slice(0, 100),
         callMe: String(profile.callMe || '').slice(0, 100),
         description: String(profile.description || '').slice(0, 600),
+        background: String(profile.background || '').slice(0, 600),
+        personality: String(profile.personality || '').slice(0, 600),
+        likes: String(profile.likes || '').slice(0, 600),
+        dislikes: String(profile.dislikes || '').slice(0, 600),
       },
+      memorySummary: memoryExcerpt(memorySummary, MAX_MEMORY_CHARS),
+      contextTruncated: contextTruncated === true || context.truncated,
       messages: recent,
       dm: chatStyle === 'dm',
     });
@@ -68,8 +85,14 @@ export async function POST(req) {
       });
     // Hidden stage due but not tagged by the chat model: a separate Lite question, run alongside (lib/truth.js)
     const stageText = typeof revealCheck?.text === 'string' ? revealCheck.text.trim() : '';
+    const revealRecent = Array.isArray(revealMessages)
+      ? revealMessages
+          .filter((m) => typeof m?.text === 'string' && m.text.trim())
+          .slice(-8)
+          .map((m) => ({ role: m.role === 'user' ? 'user' : 'model', text: m.text.slice(0, 1500) }))
+      : recent.slice(-8);
     const revealPromise = stageText
-      ? generate(LITE_ONLY_MODELS, buildRevealCheckPrompt({ characterName, stageText, messages: recent }))
+      ? generate(LITE_ONLY_MODELS, buildRevealCheckPrompt({ characterName, stageText, messages: revealRecent }))
           .then(({ result }) => (typeof result === 'string' ? /^\s*["'*]*ใช่/.test(result) : undefined))
           .catch(() => undefined)
       : Promise.resolve(undefined);

@@ -33,6 +33,7 @@ import { openingMessage, personaForChat } from '../lib/story';
 import { characterAge } from '../lib/prompt';
 import { truthFor, acceptedReveal, truthCount, truthProgress } from '../lib/truth';
 import { cleanChoices } from '../lib/choices';
+import { suggestionContext } from '../lib/suggestionContext';
 import { AVAILABLE_MODELS, DEFAULT_MODEL } from '../constants/models';
 import {
   DEFAULT_RESPONSE_SETTINGS,
@@ -712,6 +713,9 @@ function RoleplayApp({ store, account, getAccessToken }) {
     const charId = persona.id;
     const index = msgs.length - 1;
     const target = msgs[index];
+    const role = mergeUserProfile(userProfile, userRoles[charId]);
+    const memory = readMemory(store, charId, msgs);
+    const context = suggestionContext(msgs, memory?.covered || 0);
     // A hidden stage was due but the reply carries no `เฉลย=` tag: the same call also asks whether it was told
     // anyway (models forget the tag), so the app's count does not fall behind the story.
     const before = msgs.slice(0, -1);
@@ -728,15 +732,14 @@ function RoleplayApp({ store, account, getAccessToken }) {
         body: JSON.stringify({
           characterName: persona.name,
           characterDescription: persona.description,
-          userProfile: (() => {
-            const role = mergeUserProfile(userProfile, userRoles[charId]);
-            return {
-              name: role.name,
-              callMe: role.callMe,
-              description: role.description || persona.defaultUserRole?.description || '',
-            };
-          })(),
-          messages: msgs.slice(-8).map(({ role, text }) => ({ role, text })),
+          userProfile: {
+            ...role,
+            description: role.description || persona.defaultUserRole?.description || '',
+          },
+          memorySummary: memory?.summary || '',
+          messages: context.messages,
+          contextTruncated: context.truncated,
+          revealMessages: dueTruth ? msgs.slice(-8).map(({ role, text }) => ({ role, text })) : undefined,
           chatStyle,
           auto: auto || undefined,
           revealCheck: dueTruth ? { number: dueTruth.number, text: dueTruth.text } : undefined,
@@ -746,7 +749,6 @@ function RoleplayApp({ store, account, getAccessToken }) {
       const data = await res.json().catch(() => ({}));
       if (dueTruth && data.revealed === true) markRevealed(charId, index, target, dueTruth.number);
       if (!res.ok || !data.choices?.length) throw new Error(data.error || `HTTP ${res.status}`);
-      const role = mergeUserProfile(userProfile, userRoles[charId]);
       const choices = cleanChoices(data.choices, { names: [role.name, role.callMe], reply: target.text });
       if (!choices) throw new Error('ตัวเลือกที่ได้มาใช้ไม่ได้ ลองอีกครั้ง');
       const attach = (list) => {
