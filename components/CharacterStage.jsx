@@ -57,7 +57,7 @@ export default function CharacterStage({ character, sceneSrc, expression }) {
           key={layer.id}
           src={layer.src}
           alt=""
-          className="absolute inset-0 w-full h-full object-cover scale-105 blur-[3px] brightness-[0.45] animate-stageScene"
+          className="absolute inset-0 w-full h-full object-cover brightness-[0.7] animate-stageScene"
         />
       ))}
       {moodLayers.map((layer) => (
@@ -67,7 +67,7 @@ export default function CharacterStage({ character, sceneSrc, expression }) {
           <img
             src={layer.src}
             alt=""
-            className="max-w-none shrink-0 w-[125%] mt-[6%] md:w-auto md:h-[105%] md:mt-0"
+            className="max-w-none shrink-0 w-[90%] mt-[10%] md:w-auto md:h-[82%] md:mt-[3%]"
           />
         </div>
       ))}
