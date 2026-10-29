@@ -61,13 +61,13 @@ export default function CharacterStage({ character, sceneSrc, expression }) {
         />
       ))}
       {moodLayers.map((layer) => (
-        <div key={layer.id} className="absolute inset-0 flex justify-center items-start overflow-hidden animate-stageMood">
+        <div key={layer.id} className="absolute inset-0 flex justify-center items-start md:items-center overflow-hidden animate-stageMood">
           {/* Close-up: wider than the screen on a phone, anchored to the top so the face sits in the upper third and
               the legs run off the bottom under the text; on wide screens it is sized by height instead */}
           <img
             src={layer.src}
             alt=""
-            className="max-w-none shrink-0 w-[90%] mt-[10%] md:w-auto md:h-[82%] md:mt-[3%]"
+            className="max-w-none shrink-0 w-[90%] mt-[12%] md:w-auto md:h-[82%] md:mt-[3%]"
           />
         </div>
       ))}
