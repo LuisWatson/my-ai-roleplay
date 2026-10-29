@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { AVAILABLE_MODELS } from '../../../constants/models';
 import { normalizeResponseSettings } from '../../../constants/chatSettings';
-import { buildSystemInstruction, CONTINUE_MESSAGE, continuePrompt } from '../../../lib/prompt';
+import { buildSystemInstruction, CONTINUE_MESSAGE, continuePrompt, replyReminder } from '../../../lib/prompt';
 import { authorize, resolveApiKey, tryModels, SAFETY_SETTINGS } from '../../../lib/geminiServer';
 import { CUT_MARKER } from '../../../lib/scene';
 
@@ -106,7 +106,7 @@ export async function POST(req) {
 
     // A failed or aborted send leaves history ending on a user turn; fold it into the outgoing message
     // so Gemini never sees two consecutive user turns.
-    let outgoingMessage = continueStory ? continuePrompt(userProfile) : message;
+    let outgoingMessage = continueStory ? continuePrompt(userProfile) : `${message}\n\n${replyReminder(userProfile)}`;
     if (formattedHistory.length > 0 && formattedHistory[formattedHistory.length - 1].role === 'user') {
       outgoingMessage = `${formattedHistory.pop().parts[0].text}
 ${outgoingMessage}`;
