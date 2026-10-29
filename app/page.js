@@ -462,6 +462,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
     const controller = new AbortController();
     abortRef.current = controller;
     let accumulatedText = '';
+    let usedModel = null;
 
     // Abort if the model goes quiet: `ms` without a response (first call) or without a new chunk (later calls)
     let stallTimer;
@@ -521,7 +522,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
       armStallTimer(STALL_TIMEOUT_MS);
 
       // Notify the user if the server had to fall back to another model (e.g., daily quota reached)
-      const usedModel = res.headers.get('x-model-used');
+      usedModel = res.headers.get('x-model-used');
       if (usedModel && usedModel !== model && fallbackNotifiedRef.current !== usedModel) {
         fallbackNotifiedRef.current = usedModel;
         const targetModel = AVAILABLE_MODELS.find((m) => m.id === usedModel);
@@ -641,6 +642,8 @@ function RoleplayApp({ store, account, getAccessToken }) {
           ...(thought && { thought }),
           ...(reveal && { reveal }),
           ...(chatStyle === 'dm' && { style: 'dm' }),
+          // Which model wrote it, to compare reply quality between Flash and Lite
+          ...(usedModel && { model: usedModel }),
         };
         if (previous) {
           const alts = previous.alts || [swipeVersion(previous)];

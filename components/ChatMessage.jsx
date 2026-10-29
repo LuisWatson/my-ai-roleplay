@@ -313,6 +313,13 @@ export default function ChatMessage({
         </div>
       )}
 
+      {/* Which model wrote this reply (page.js), to tell Flash from Lite when a reply feels flat */}
+      {message.model && !isEditing && (
+        <div className="px-1 text-[10px] text-slate-500" aria-label="โมเดลที่ตอบ">
+          {message.model.replace(/^gemini-/, '')}
+        </div>
+      )}
+
       {relationChange && !isEditing && (
         <div className="flex items-center gap-2.5 px-1 text-[11px] font-medium animate-fadeIn" aria-label="ความสัมพันธ์ที่เปลี่ยนไป">
           {[
