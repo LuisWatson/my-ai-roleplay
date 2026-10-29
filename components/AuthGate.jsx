@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Sparkles, LogOut, Loader2, UploadCloud, AlertTriangle } from 'lucide-react';
+import VerseLogo from './VerseLogo';
+import { LogOut, Loader2, UploadCloud, AlertTriangle } from 'lucide-react';
 import { isSupabaseConfigured, getBrowserSupabase } from '../lib/supabaseClient';
 import { createLocalStore, loadCloudStore, localDataKeys, copyLocalDataTo } from '../lib/store';
 
@@ -103,9 +104,9 @@ function CloudGate({ children }) {
       <div className="w-full max-w-sm bg-slate-800/80 border border-slate-700 rounded-2xl p-6 text-center space-y-5 shadow-xl">
         <div className="flex items-center justify-center gap-2">
           <div className="p-1.5 rounded-lg bg-purple-600">
-            <Sparkles className="w-5 h-5 text-white" />
+            <VerseLogo className="w-5 h-5 text-white" />
           </div>
-          <h1 className="font-bold text-lg text-white">Botbaat</h1>
+          <h1 className="font-bold text-lg text-white">Verse</h1>
         </div>
 
         {(state.status === 'loading' || state.status === 'importing') && (

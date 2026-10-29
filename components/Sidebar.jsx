@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useRef, useState, useMemo } from 'react';
-import { Sparkles, Settings, Plus, Download, Upload, Search, Home, Trash2, X, LogOut, PanelLeftClose } from 'lucide-react';
+import VerseLogo from './VerseLogo';
+import { Settings, Plus, Download, Upload, Search, Home, Trash2, X, LogOut, PanelLeftClose } from 'lucide-react';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -73,9 +74,9 @@ export default function Sidebar({
         <div className="p-4 border-b border-slate-700/80 flex justify-between items-center bg-slate-800/40">
           <div className="flex items-center gap-2">
             <div className="p-1.5 rounded-lg bg-purple-600">
-              <Sparkles className="w-5 h-5 text-white" />
+              <VerseLogo className="w-5 h-5 text-white" />
             </div>
-            <h1 className="font-bold text-base text-white tracking-wide">Botbaat</h1>
+            <h1 className="font-bold text-base text-white tracking-wide">Verse</h1>
           </div>
           <div className="flex items-center">
             <button

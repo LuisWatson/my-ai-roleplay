@@ -1,4 +1,4 @@
-# Botbaat - Roleplay Web Application
+# Verse - Roleplay Web Application
 
 เว็บแอปพลิเคชันสำหรับการสนทนาและสวมบทบาทกับตัวละครปัญญาประดิษฐ์ (AI Persona Roleplay) สำหรับการใช้งานส่วนบุคคล พัฒนาด้วย Next.js (App Router), React, Tailwind CSS และเชื่อมต่อกับ Google Gemini API
 
@@ -34,6 +34,8 @@
 ## การติดตั้งและการเริ่มต้นใช้งาน (Getting Started)
 
 ทดสอบ logic ความจำและคำแนะนำโดยไม่เรียก Gemini: `node --test tests/memory-suggestions.test.mjs`
+
+ทดสอบการส่งออกแชทและความเข้ากันได้ของ backup: `node --test tests/chat-export.test.mjs`
 
 ### 1. โคลนคลังข้อมูล (Clone Repository)
 ```bash

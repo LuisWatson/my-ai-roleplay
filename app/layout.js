@@ -11,10 +11,10 @@ const display = Prompt({
 });
 
 export const metadata = {
-  title: 'Botbaat',
+  title: 'Verse',
   description: 'Personal AI Roleplay App',
   // Added to the iPhone home screen, it opens full screen with the app's own title
-  appleWebApp: { capable: true, title: 'Botbaat', statusBarStyle: 'black' },
+  appleWebApp: { capable: true, title: 'Verse', statusBarStyle: 'black' },
 };
 
 export const viewport = {

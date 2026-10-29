@@ -1,8 +1,8 @@
 // Web app manifest: lets the site be installed to the home screen and open full screen like an app
 export default function manifest() {
   return {
-    name: 'Botbaat',
-    short_name: 'Botbaat',
+    name: 'Verse',
+    short_name: 'Verse',
     description: 'แชทโรลเพลย์กับตัวละคร AI',
     lang: 'th',
     start_url: '/',
