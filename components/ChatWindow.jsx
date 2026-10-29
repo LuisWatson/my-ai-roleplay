@@ -9,6 +9,7 @@ import { latestRelation, levelOf, levelName } from '../lib/relation';
 import { sceneBackgroundFor } from '../constants/sceneBackgrounds';
 import OpeningCard from './OpeningCard';
 import { PortraitLightbox, MoodCard } from './PortraitView';
+import CharacterStage from './CharacterStage';
 import { openingOf } from '../lib/story';
 import { pictureFor, moodChanges } from '../lib/expressions';
 
@@ -314,7 +315,9 @@ export default function ChatWindow({
     <div className="flex-1 flex min-w-0 overflow-hidden">
     <main className="flex-1 min-w-0 flex flex-col bg-slate-900/95 relative overflow-hidden isolate">
       {/* Blurred scene backdrop; negative z keeps it under the messages, the overlay keeps text readable */}
-      {backgroundSrc && (
+      {selectedChar.cutouts ? (
+        <CharacterStage key={selectedChar.id} character={selectedChar} sceneSrc={backgroundSrc} expression={picture.key} />
+      ) : backgroundSrc && (
         <div aria-hidden className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
           <img
             key={backgroundSrc}
@@ -441,7 +444,8 @@ export default function ChatWindow({
           <ChatMessage
             message={msg}
             moodCard={
-              moodCards[idx] && (
+              // With the character as the backdrop the expression is already on screen
+              !selectedChar.cutouts && moodCards[idx] && (
                 <MoodCard character={selectedChar} card={moodCards[idx]} onZoom={setZoomSrc} />
               )
             }

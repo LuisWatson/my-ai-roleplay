@@ -107,6 +107,10 @@ The owner builds it for themselves and their partner. Reply to the owner in Thai
   portrait (see the character-portrait skill). The emoji at the start of a reply's thought picks one (`pictureFor`); no match →
   the main portrait. Shown as the header picture (tap = full size), the small avatar beside each reply, and a `MoodCard`
   at the end of a reply, above the thought pill, when the expression changed (`moodChanges`). No side panel (owner removed it).
+- Character as chat backdrop (`components/CharacterStage.jsx`): a character with `cutouts { main, happy, … }` (transparent
+  WebP in `public/characters/cutouts/`, background removed with rembg; same keys as `expressions`, `cutoutFor`) shows its
+  current expression's cut-out centred (at most 80% of the chat area, whole figure visible) over the sharp (unblurred) scene, both cross-fading on change; no mood cards in the chat. Without `cutouts` the old
+  blurred backdrop is used. Only `serena` has them so far.
 - Swipes: a regenerated model message keeps `alts: [{ text, scene }]` + `altIndex` (only the last reply);
   dropped when the user sends the next message.
 - Story direction ("กำกับเรื่อง", `ChatInput`): one-shot out-of-story instruction sent as `direction`; never saved.

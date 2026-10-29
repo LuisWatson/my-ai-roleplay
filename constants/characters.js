@@ -283,6 +283,18 @@ const BASE_CHARACTERS = [
       teasing: '/characters/expressions/serena_teasing.webp',
       worried: '/characters/expressions/serena_worried.webp',
     },
+    // Transparent versions of the same pictures (background removed) for the full-chat backdrop (CharacterStage)
+    cutouts: {
+      main: '/characters/cutouts/serena.webp',
+      happy: '/characters/cutouts/serena_happy.webp',
+      shy: '/characters/cutouts/serena_shy.webp',
+      sad: '/characters/cutouts/serena_sad.webp',
+      angry: '/characters/cutouts/serena_angry.webp',
+      thinking: '/characters/cutouts/serena_thinking.webp',
+      surprised: '/characters/cutouts/serena_surprised.webp',
+      teasing: '/characters/cutouts/serena_teasing.webp',
+      worried: '/characters/cutouts/serena_worried.webp',
+    },
     scenario:
       'โรงแรมหรูตระกูลวรินทร์ในกรุงเทพฯ และเรื่องราวรอบตัวผู้บริหารสาวที่ถูกครอบครัวกดดันให้แต่งงาน ช่วงหนึ่งเดือนของสัญญาแฟนปลอมๆ ' +
       'มีทั้งงานเลี้ยงครอบครัว งานเปิดตัวโครงการ และทริปพักผ่อนของผู้บริหาร',
