@@ -153,6 +153,18 @@ test('met-people section survives truncation and setup text yields to what alrea
   assert.ok(buildSummaryPrompt({ characterName: 'ก', userName: 'ข', messages: [] }).includes('[คนที่เคยเจอแล้ว]'));
 });
 
+test('mergeSummaries joins a stand-alone summary by section without repeating headings or "none yet" lines', async () => {
+  const { mergeSummaries } = await import('../lib/memory.js');
+  const previous = ['[สถานะล่าสุด]', '- เก่า', '[คนที่เคยเจอแล้ว]', '- คุณอรอนงค์: เจอ 4 ครั้ง', '[เหตุการณ์ตามลำดับเวลา]', '- ก'].join('\n');
+  const fresh = ['[สถานะล่าสุด]:', '- ใหม่', '[คนที่เคยเจอแล้ว]:', '- ยังไม่มีตัวละครอื่น', '[เหตุการณ์ตามลำดับเวลา]:', '- ก', '- ข'].join('\n');
+  const merged = mergeSummaries(previous, fresh);
+  assert.equal(merged.split('[สถานะล่าสุด]').length, 2);
+  assert.ok(merged.includes('- เก่า\n- ใหม่'));
+  assert.ok(merged.includes('คุณอรอนงค์: เจอ 4 ครั้ง'));
+  assert.ok(!merged.includes('ยังไม่มี'));
+  assert.equal(merged.match(/^- ก$/gm).length, 1);
+});
+
 test('summary and shortening prompts keep each person\'s meetings and what they know of the player', async () => {
   const { buildCompressPrompt } = await import('../lib/prompt.js');
   const summaryPrompt = buildSummaryPrompt({ characterName: 'ก', userName: 'ข', messages: [] });

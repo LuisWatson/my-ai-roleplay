@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { AVAILABLE_MODELS } from '../../../constants/models';
 import { buildSummaryPrompt, buildCompressPrompt } from '../../../lib/prompt';
+import { mergeSummaries } from '../../../lib/memory';
 import { authorize, resolveApiKey, tryModels, jsonResponse, SAFETY_SETTINGS } from '../../../lib/geminiServer';
 
 // Summaries run in the background, so they use the Lite models first: their free quota is far larger
@@ -79,7 +80,7 @@ export async function POST(req) {
         const fresh = await summarize('');
         if (!fresh.errorResponse) {
           ({ usedModel, errorResponse } = fresh);
-          result = `${previous}\n${fresh.result}`;
+          result = mergeSummaries(previous, fresh.result);
         }
       }
     }
