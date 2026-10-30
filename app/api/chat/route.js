@@ -23,6 +23,11 @@ const SCENE_TAG_MARKER = '[ฉาก:';
 // How long to wait for a model to start replying before falling back to the next one.
 const FIRST_RESPONSE_TIMEOUT_MS = 20000;
 
+// Flash models "think" before the first word: 10–16 s with a long prompt (measured 2026-10-31, 3.5/3.6/3.8 Flash),
+// close to the 20 s limit above, so the reply fell through to a Lite model. A thinking budget of 1024 brings it
+// to ~1.5 s. Lite models are left alone (they reject a budget of 0).
+const thinkingFor = (model) => (model.includes('lite') ? {} : { thinkingConfig: { thinkingBudget: 1024 } });
+
 // Stop falling back after this long so the reply (or the error) arrives before the page gives up at 90 s.
 const TOTAL_BUDGET_MS = 70000;
 
@@ -121,7 +126,7 @@ ${outgoingMessage}`;
     const openStream = (history, text) => async (mName, key) => {
       const { stream } = await new GoogleGenerativeAI(key)
         .getGenerativeModel({ model: mName, systemInstruction, safetySettings: SAFETY_SETTINGS })
-        .startChat({ history, generationConfig: { temperature } })
+        .startChat({ history, generationConfig: { temperature, ...thinkingFor(mName) } })
         .sendMessageStream(text);
       const iterator = stream[Symbol.asyncIterator]();
       let firstText = '';

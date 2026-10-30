@@ -197,7 +197,7 @@ expression; bigger reply avatars and mood cards; header picture blur fix for iPh
 6. **Open as of 2026-10-28** (see `worklog.md` for details):
    - Gemini free quota runs out daily ("ส่งข้อความไม่สำเร็จ", every model "โควตาหมด"): backup keys are supported since
      2026-10-28; the owner still has to create one in another Google project and add `GEMINI_API_KEY_2` in Vercel
-     (Production) + Redeploy. Not tested with a real second key yet.
+     (Production) + Redeploy. Second key tested with real calls 2026-10-31 (locally); it still has to be in Vercel.
    - Not yet checked with real Gemini replies: the time rule (`TIME_RULE`), the 8-emoji thought rule, cast labels on
      real "name:" lines, and whether the model always adds `พื้นหลัง=`.
    - Not yet checked on the owner's iPhone: the header picture no longer blurred; reply avatar / mood card sizes.

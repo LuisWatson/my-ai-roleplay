@@ -16,8 +16,8 @@ const PER_MODEL_MS = 25000;
 const TOTAL_MS = 30000;
 
 // A summary longer than this is shortened once (Lite models ignore the length asked for, and it kept growing)
-const LONG_SUMMARY_CHARS = 5000;
-const SHORT_SUMMARY_CHARS = 3500;
+const LONG_SUMMARY_CHARS = 7000;
+const SHORT_SUMMARY_CHARS = 5000;
 
 // Upper bound on what one request may ask to summarize (the page sends at most ~30k characters)
 const MAX_TRANSCRIPT_CHARS = 40000;

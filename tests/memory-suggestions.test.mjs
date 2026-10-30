@@ -152,3 +152,18 @@ test('met-people section survives truncation and setup text yields to what alrea
   assert.ok(!prompt.includes('พบครอบครัวเป็นครั้งแรก'));
   assert.ok(buildSummaryPrompt({ characterName: 'ก', userName: 'ข', messages: [] }).includes('[คนที่เคยเจอแล้ว]'));
 });
+
+test('summary and shortening prompts keep each person\'s meetings and what they know of the player', async () => {
+  const { buildCompressPrompt } = await import('../lib/prompt.js');
+  const summaryPrompt = buildSummaryPrompt({ characterName: 'ก', userName: 'ข', messages: [] });
+  assert.ok(summaryPrompt.includes('เจอกันกี่ครั้ง'));
+  assert.ok(summaryPrompt.includes('ห้ามเขียนทับ "เจอครั้งแรก"'));
+  assert.ok(summaryPrompt.includes('ถูกแนะนำให้คนสำคัญรู้จักครั้งแรก'));
+  const compressPrompt = buildCompressPrompt({ characterName: 'ก', userName: 'ข', summary: '-', maxChars: 5000 });
+  assert.ok(compressPrompt.includes('เจอกันกี่ครั้งที่ไหน'));
+  const chat = buildSystemInstruction({
+    persona: { name: 'ก', description: 'ทดสอบ', greeting: '' },
+    memory: '[คนที่เคยเจอแล้ว]\n- คุณอรอนงค์: เจอ 2 ครั้ง',
+  });
+  assert.ok(chat.includes('จำคู่สนทนาได้'));
+});
