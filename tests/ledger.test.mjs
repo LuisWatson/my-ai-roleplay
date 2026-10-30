@@ -143,3 +143,10 @@ test('facts that outgrow their budget are folded only into a shorter list', () =
   const folded = applyFactsCompaction(data, Array.from({ length: 6 }, (_, i) => `- รวม ${i}`).join('\n'));
   assert.equal(folded.facts.length, 6);
 });
+
+test('a person\'s role is set once; a later vaguer answer does not overwrite it, but what they know can change', () => {
+  let data = applyDelta(emptyMemoryData(), { chapter: 'x', people: [{ name: 'คุณอรอนงค์', role: 'แม่ของเซเรน่า', knows: 'แฟนปลอม' }] });
+  data = applyDelta(data, { chapter: 'y', people: [{ name: 'คุณอรอนงค์', role: 'บุคคลที่ถูกกล่าวถึง', knows: 'แฟนจริง' }] });
+  assert.equal(data.people[0].role, 'แม่ของเซเรน่า');
+  assert.equal(data.people[0].knows, 'แฟนจริง');
+});
