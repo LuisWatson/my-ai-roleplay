@@ -117,8 +117,9 @@ export function formatStoryText(text, characterName, cast, thought, pictureOf) {
         );
         if (!face) return React.cloneElement(bubble, { key: idx });
         return (
-          <div key={idx} className="flex items-end gap-2 animate-fadeIn">
-            <span className="w-8 h-8 flex-shrink-0 rounded-full overflow-hidden border border-purple-400/30 shadow-sm">
+          <div key={idx} className="relative w-fit max-w-full animate-fadeIn">
+            {/* Hangs in the left gutter under the main avatar, so the bubble stays flush with the others */}
+            <span className="absolute -left-12 bottom-0 w-8 h-8 rounded-full overflow-hidden border border-purple-400/30 shadow-sm">
               <img src={face} alt="" className="w-full h-full object-cover object-top scale-125 origin-[50%_20%]" />
             </span>
             {bubble}
