@@ -150,3 +150,25 @@ test('a person\'s role is set once; a later vaguer answer does not overwrite it,
   assert.equal(data.people[0].role, 'แม่ของเซเรน่า');
   assert.equal(data.people[0].knows, 'แฟนจริง');
 });
+
+test('a vague first role is ignored, a cast role fills in, and short Thai words do not merge different people', () => {
+  let data = applyDelta(emptyMemoryData(), { chapter: 'x', people: [{ name: 'คุณอรอนงค์', role: 'บุคคลที่ถูกกล่าวถึง' }] });
+  assert.equal(data.people[0].role, '');
+  data = applyDelta(data, { chapter: 'y', people: [{ name: 'คุณอรอนงค์', role: 'แม่ของเซเรน่า' }] });
+  assert.equal(data.people[0].role, 'แม่ของเซเรน่า');
+  const cast = [{ name: 'คุณอรอนงค์', relation: 'แม่ของเซเรน่า อายุ 52 ปี' }];
+  const filled = applySpeakers(applyDelta(emptyMemoryData(), { chapter: 'z', people: [{ name: 'คุณอรอนงค์' }] }), [{ role: 'model', text: 'คุณอรอนงค์: "ค่ะ"' }], { cast });
+  assert.equal(filled.people[0].role, 'แม่ของเซเรน่า');
+
+  const two = applyDelta(emptyMemoryData(), { chapter: 'a', people: [{ name: 'แม่บ้าน', role: 'แม่บ้านเพนเฮาส์' }, { name: 'คุณแม่', role: 'แม่ของเซเรน่า' }] });
+  assert.equal(two.people.length, 2);
+  const one = applyDelta(emptyMemoryData(), { chapter: 'b', people: [{ name: 'คุณอานนท์' }, { name: 'คุณอาอานนท์' }, { name: 'อานนท์' }] });
+  assert.equal(one.people.length, 1);
+});
+
+test('a cast member keeps the role the cast gives, not the model\'s guess', () => {
+  const cast = [{ name: 'คุณอรอนงค์', relation: 'แม่ของเซเรน่า อายุ 52 ปี' }];
+  const guessed = applyDelta(emptyMemoryData(), { chapter: 'x', people: [{ name: 'คุณอรอนงค์', role: 'ผู้ใหญ่ในพื้นที่' }] });
+  const data = applySpeakers(guessed, [{ role: 'model', text: 'คุณอรอนงค์: "ค่ะ"' }], { cast });
+  assert.equal(data.people[0].role, 'แม่ของเซเรน่า');
+});
