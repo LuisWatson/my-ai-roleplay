@@ -55,6 +55,14 @@ The owner builds it for themselves and their partner. Reply to the owner in Thai
   `chat_memory_<id>` and sent with each message; raw history = everything after the summary's end (normally
   ~12–18k characters, up to 60k while the summary lags). Over-long summaries are shortened by `/api/memory`, and the
   chat prompt cuts the oldest lines, never the newest. A message Google won't summarize is kept as a raw note.
+  **Structured memory (2026-10-31, `lib/ledger.js`)**: a new chat (or one after "ลืมสรุป") keeps `data` next to the text
+  in the memory object (`{ summary, covered, hash, data, rendered }`): people (meetings, what they know, what was told
+  them, `spoke` = replies they speak in, counted by code), facts, relationship, status, event chapters. The model
+  reports only what a batch ADDS (JSON, `buildLedgerPrompt`); `applyDelta` merges it, nothing is deleted unless a fact is
+  named in `removeFacts`; over-budget chapters/facts are folded by a second call that cannot shrink data if it fails.
+  `summary` is rendered from `data` under the same five headings. It is "structured" only while `summary === rendered`:
+  a hand-edited summary, or an older plain-text memory, keeps the old text path (`buildSummaryPrompt`,
+  `mergeSummaries`) until cleared. Why: rewriting the whole text every batch wore early facts away (who met whom).
 - `lib/geminiServer.js` — shared by API routes: `authorize`, `resolveApiKey`, `tryModels` (fallback + skip
   models whose daily quota is gone).
 - `lib/scene.js` — parses the tag the model ends every reply with:

@@ -17,6 +17,7 @@ import { normalizeUserRole, mergeUserProfile, USER_ROLE_FIELDS } from '../lib/us
 import { normalizeRealism } from '../constants/scenario';
 import { stripTrailingPartialTag, finalizeReply, latestScene, splitCut } from '../lib/scene';
 import { DEFAULT_CHARACTERS } from '../constants/characters';
+import { addRawNote, emptyMemoryData, isStructured, withData } from '../lib/ledger';
 import { memoryKey, pinsKey, readMemory, readPins, cleanPins, chatWindow, nextMemoryBatch, fingerprint, rawMemoryNote } from '../lib/memory';
 import {
   journalKey,
@@ -375,6 +376,9 @@ function RoleplayApp({ store, account, getAccessToken }) {
     const charId = persona.id;
     if (memoryJobsRef.current.has(charId)) return;
     let memory = readMemory(store, charId, chatMessages);
+    // Structured memory (lib/ledger.js) for a new chat or one already in that format; a plain-text summary (older chats,
+    // or one the user edited by hand) keeps the plain-text path until it is cleared
+    const structured = !memory || isStructured(memory);
 
     memoryJobsRef.current.add(charId);
     try {
@@ -397,6 +401,10 @@ function RoleplayApp({ store, account, getAccessToken }) {
             characterName: persona.name,
             userName: mergeUserProfile(userProfile, userRoles[charId]).name,
             previousSummary: memory?.summary || '',
+            ...(structured && {
+              data: memory?.data || emptyMemoryData(),
+              cast: (persona.cast || []).map((c) => ({ name: c.name, relation: c.relation })).filter((c) => c.name),
+            }),
             messages,
             characterAge: characterAge(persona),
             apiKey,
@@ -404,8 +412,11 @@ function RoleplayApp({ store, account, getAccessToken }) {
         });
 
         let summary = '';
+        let data = null;
         if (res.ok) {
-          summary = (await res.json()).summary || '';
+          const body = await res.json();
+          summary = body.summary || '';
+          if (structured) data = body.data || null;
           if (!summary) return;
           // after a refusal, grow the batch again only once a few in a row have passed
           const state = memoryCapRef.current[charId];
@@ -422,14 +433,19 @@ function RoleplayApp({ store, account, getAccessToken }) {
             return;
           }
           // A single message Google won't summarize: keep a short raw note of it, so the story doesn't lose it
-          summary = rawMemoryNote(memory?.summary, messages[0], persona.name);
+          if (structured) {
+            data = addRawNote(memory?.data || emptyMemoryData(), messages[0], persona.name);
+            summary = withData({}, data).summary;
+          } else {
+            summary = rawMemoryNote(memory?.summary, messages[0], persona.name);
+          }
         }
 
         // Keep it only if the summarized messages are still the ones saved (not edited or cleared meanwhile)
         const hash = fingerprint(chatMessages, to);
         const saved = JSON.parse(store.getItem(`chat_history_${charId}`) || '[]');
         if (fingerprint(saved, to) !== hash) return;
-        memory = { summary, covered: to, hash };
+        memory = data ? { summary, covered: to, hash, data, rendered: summary } : { summary, covered: to, hash };
         store.setItem(memoryKey(charId), JSON.stringify(memory));
       }
     } catch (err) {
