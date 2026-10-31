@@ -21,6 +21,7 @@ const MAX_HEIGHT_PX = 200;
 const INSERT_BUTTONS = [
   { label: '**', open: '*', close: '*', tip: 'การกระทำ' },
   { label: '""', open: '"', close: '"', tip: 'คำพูด' },
+  { label: "''", open: "'", close: "'", tip: 'ความคิด (ตัวละครไม่รู้)' },
 ];
 
 /**
@@ -198,7 +199,7 @@ export default function ChatInput({
           </div>
         )}
         <div className="flex items-end gap-2 rounded-2xl bg-slate-800/70 border border-slate-700/70 px-2 py-2 shadow-lg shadow-black/20 transition focus-within:border-purple-500/70 focus-within:ring-2 focus-within:ring-purple-500/20">
-          {/* Round + and one ** | "" capsule: three separate boxes crowded the phone layout */}
+          {/* Round + and one ** | "" | '' capsule: three separate boxes crowded the phone layout */}
           <div className="flex items-center gap-2 flex-shrink-0 mb-0.5">
             <button
               type="button"
@@ -225,7 +226,7 @@ export default function ChatInput({
                       disabled={loading}
                       aria-label={tip}
                       className={`h-full px-2.5 grid place-items-center text-purple-300 hover:text-purple-100 hover:bg-slate-600/60 font-mono text-sm transition disabled:opacity-40 disabled:cursor-not-allowed ${
-                        i === 0 ? 'rounded-l-full pl-3' : 'rounded-r-full pr-3'
+                        i === 0 ? 'rounded-l-full pl-3' : i === INSERT_BUTTONS.length - 1 ? 'rounded-r-full pr-3' : ''
                       }`}
                     >
                       {label}
