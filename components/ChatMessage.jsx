@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Pencil, Trash2, RefreshCw, Check, X, ChevronLeft, ChevronRight, BookmarkPlus, BookHeart, Sparkles } from 'lucide-react';
 import { parseRoleplayText, castRoleFor, isMainCharacter, speechMoods } from '../lib/roleplayFormat';
+import { splitUserThoughts } from '../lib/userThoughts';
 
 const PARAGRAPH_CLASS = {
   model: { speech: 'font-semibold text-white', narration: 'text-slate-400' },
@@ -61,7 +62,17 @@ export function formatRoleplayText(text, role = 'model', characterName, cast) {
         }
         return (
           <p key={idx} className={styles[para.type]}>
-            {para.text}
+            {role === 'user' && para.type === 'narration'
+              ? splitUserThoughts(para.text).map((piece, i) =>
+                  piece.thought ? (
+                    <span key={i} className="italic text-fuchsia-200/60" title="ความคิด (ตัวละครไม่รู้)">
+                      {`💭 ${piece.text}`}
+                    </span>
+                  ) : (
+                    piece.text
+                  ),
+                )
+              : para.text}
           </p>
         );
       })}

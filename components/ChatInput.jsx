@@ -71,7 +71,7 @@ export default function ChatInput({
     chatStyle === 'dm'
       ? `แชทกับ ${shortName}...`
       : wide
-        ? `พิมพ์ *การกระทำ* "คำพูด" คุยกับ ${characterName || 'ตัวละคร'}...`
+        ? `พิมพ์ *ทำ* "พูด" 'คิด' คุยกับ ${characterName || 'ตัวละคร'}...`
         : `คุยกับ ${shortName}...`;
 
   useEffect(() => {

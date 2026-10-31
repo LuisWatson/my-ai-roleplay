@@ -4,6 +4,7 @@ import { normalizeResponseSettings } from '../../../constants/chatSettings';
 import { buildSystemInstruction, CONTINUE_MESSAGE, continuePrompt, replyReminder } from '../../../lib/prompt';
 import { authorize, resolveApiKey, tryModels, SAFETY_SETTINGS } from '../../../lib/geminiServer';
 import { CUT_MARKER } from '../../../lib/scene';
+import { stripUserThoughts, withoutUserThoughts } from '../../../lib/userThoughts';
 
 // Finish reasons that mean the reply ended normally
 const NORMAL_FINISH = new Set(['STOP', 'FINISH_REASON_UNSPECIFIED']);
@@ -89,7 +90,8 @@ export async function POST(req) {
     // Ensure chat history conforms to Gemini SDK requirements:
     // 1. First message must be from 'user'
     // 2. Roles must strictly alternate between 'user' and 'model'
-    let rawHistory = (history || []).filter((h) => h.text && h.text.trim().length > 0);
+    // The player's 'thoughts' stay on their screen; the character must not know them
+    let rawHistory = withoutUserThoughts(history).filter((h) => h.text && h.text.trim().length > 0);
     // The greeting (and "continue" replies before the user's first message) come before any user turn;
     // keep them behind a stand-in opening turn instead of dropping them, so the model sees its own words
     if (rawHistory.length > 0 && rawHistory[0].role !== 'user') {
@@ -111,7 +113,9 @@ export async function POST(req) {
 
     // A failed or aborted send leaves history ending on a user turn; fold it into the outgoing message
     // so Gemini never sees two consecutive user turns.
-    let outgoingMessage = continueStory ? continuePrompt(userProfile) : `${message}\n\n${replyReminder(userProfile)}`;
+    // A message that was only a thought reaches the character as silence
+    const spoken = stripUserThoughts(message) || '*นิ่งเงียบไปครู่หนึ่ง*';
+    let outgoingMessage = continueStory ? continuePrompt(userProfile) : `${spoken}\n\n${replyReminder(userProfile)}`;
     if (formattedHistory.length > 0 && formattedHistory[formattedHistory.length - 1].role === 'user') {
       outgoingMessage = `${formattedHistory.pop().parts[0].text}
 ${outgoingMessage}`;

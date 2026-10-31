@@ -8,6 +8,7 @@ import {
   buildFactsMergePrompt,
 } from '../../../lib/prompt';
 import { mergeSummaries } from '../../../lib/memory';
+import { withoutUserThoughts } from '../../../lib/userThoughts';
 import {
   CHAPTERS_MAX_CHARS,
   FACTS_MAX_CHARS,
@@ -84,7 +85,7 @@ export async function POST(req) {
     if (!characterName || !Array.isArray(messages) || messages.length === 0) {
       return jsonResponse({ error: 'ข้อมูลไม่ครบ' }, 400);
     }
-    const cleanMessages = messages
+    const cleanMessages = withoutUserThoughts(messages)
       .filter((m) => typeof m?.text === 'string' && m.text.trim())
       .map((m) => ({ role: m.role === 'user' ? 'user' : 'model', text: m.text }));
     const totalChars = cleanMessages.reduce((sum, m) => sum + m.text.length, 0);

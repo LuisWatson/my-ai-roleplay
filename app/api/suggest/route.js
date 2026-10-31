@@ -5,6 +5,7 @@ import { authorize, resolveApiKey, tryModels, jsonResponse, SAFETY_SETTINGS } fr
 import { pickChoices } from '../../../lib/choices';
 import { memoryExcerpt } from '../../../lib/memoryExcerpt';
 import { suggestionContext } from '../../../lib/suggestionContext';
+import { withoutUserThoughts } from '../../../lib/userThoughts';
 
 // On-demand suggestions are small; Lite models first so the Flash quota (20 a day) stays for the chat
 const SUGGEST_MODELS = [
@@ -45,7 +46,7 @@ export async function POST(req) {
     if (!characterName || !Array.isArray(messages) || messages.length === 0) {
       return jsonResponse({ error: 'ข้อมูลไม่ครบ' }, 400);
     }
-    const context = suggestionContext(messages);
+    const context = suggestionContext(withoutUserThoughts(messages));
     const recent = context.messages;
     if (recent.length === 0) return jsonResponse({ error: 'ข้อมูลไม่ครบ' }, 400);
 
@@ -86,7 +87,7 @@ export async function POST(req) {
     // Hidden stage due but not tagged by the chat model: a separate Lite question, run alongside (lib/truth.js)
     const stageText = typeof revealCheck?.text === 'string' ? revealCheck.text.trim() : '';
     const revealRecent = Array.isArray(revealMessages)
-      ? revealMessages
+      ? withoutUserThoughts(revealMessages)
           .filter((m) => typeof m?.text === 'string' && m.text.trim())
           .slice(-8)
           .map((m) => ({ role: m.role === 'user' ? 'user' : 'model', text: m.text.slice(0, 1500) }))
