@@ -2,7 +2,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { AVAILABLE_MODELS } from '../../../constants/models';
 import { normalizeResponseSettings } from '../../../constants/chatSettings';
 import { overusedPhrases } from '../../../lib/repeatGuard';
-import { buildSystemInstruction,CONTINUE_MESSAGE, continuePrompt, replyReminder } from '../../../lib/prompt';
+import { buildSystemInstruction, CONTINUE_MESSAGE, continuePrompt, directionReminder, replyReminder } from '../../../lib/prompt';
 import { authorize, resolveApiKey, tryModels, SAFETY_SETTINGS } from '../../../lib/geminiServer';
 import { CUT_MARKER } from '../../../lib/scene';
 import { stripUserThoughts, withoutUserThoughts } from '../../../lib/userThoughts';
@@ -117,7 +117,9 @@ export async function POST(req) {
     // so Gemini never sees two consecutive user turns.
     // A message that was only a thought reaches the character as silence
     const spoken = stripUserThoughts(message) || '*นิ่งเงียบไปครู่หนึ่ง*';
-    let outgoingMessage = continueStory ? continuePrompt(userProfile) : `${spoken}\n\n${replyReminder(userProfile)}`;
+    let outgoingMessage =
+      (continueStory ? continuePrompt(userProfile) : `${spoken}\n\n${replyReminder(userProfile)}`) +
+      directionReminder(direction);
     if (formattedHistory.length > 0 && formattedHistory[formattedHistory.length - 1].role === 'user') {
       outgoingMessage = `${formattedHistory.pop().parts[0].text}
 ${outgoingMessage}`;
