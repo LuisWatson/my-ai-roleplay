@@ -57,7 +57,7 @@ export default function CharacterStage({ character, sceneSrc, expression }) {
           key={layer.id}
           src={layer.src}
           alt=""
-          className="absolute inset-0 w-full h-full object-cover brightness-[0.5] animate-stageScene"
+          className="absolute inset-0 w-full h-full object-cover animate-stageScene"
         />
       ))}
       {moodLayers.map((layer) => (
@@ -67,12 +67,13 @@ export default function CharacterStage({ character, sceneSrc, expression }) {
           <img
             src={layer.src}
             alt=""
-            className="max-w-none shrink-0 brightness-[0.85] w-[90%] mt-[10%] md:w-auto md:h-[82%] md:mt-[3%]"
+            className="max-w-none shrink-0 w-[90%] mt-[10%] md:w-auto md:h-[82%] md:mt-[3%]"
           />
         </div>
       ))}
-      {/* Light dim overall, heavy at the bottom where the text is, clear around the face */}
-      <div className="absolute inset-0 bg-black/35" />
+      {/* Dim overall (an overlay, not a CSS brightness filter: filters on full-screen pictures are costly on phones),
+          heavy at the bottom where the text is, clear around the face */}
+      <div className="absolute inset-0 bg-black/55" />
       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/55 via-45% to-transparent to-70%" />
     </div>
   );

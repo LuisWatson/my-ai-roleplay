@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Pencil, Trash2, RefreshCw, Check, X, ChevronLeft, ChevronRight, BookmarkPlus, BookHeart, Sparkles } from 'lucide-react';
 import { parseRoleplayText, castRoleFor, isMainCharacter, speechMoods } from '../lib/roleplayFormat';
 import { splitUserThoughts } from '../lib/userThoughts';
@@ -108,7 +108,7 @@ export function formatStoryText(text, characterName, cast, thought, pictureOf) {
             <div key={idx} className="w-fit max-w-full space-y-1">
               <SpeakerLabel speaker={para.speaker} cast={cast} className={`px-1 ${style.label}`} />
               <p
-                className={`px-3.5 py-2.5 rounded-2xl rounded-tl-none bg-slate-800/90 border-l-2 ${style.bar} font-medium ${style.speech} shadow-md backdrop-blur-sm`}
+                className={`px-3.5 py-2.5 rounded-2xl rounded-tl-none bg-slate-800/90 border-l-2 ${style.bar} font-medium ${style.speech} shadow-md`}
               >
                 {para.text}
               </p>
@@ -121,7 +121,7 @@ export function formatStoryText(text, characterName, cast, thought, pictureOf) {
         const bubble = (
           <p
             data-mood={mood || undefined}
-            className="w-fit max-w-full px-3.5 py-2.5 rounded-2xl rounded-tl-none bg-slate-800/90 border border-slate-700/80 font-medium text-white shadow-md backdrop-blur-sm"
+            className="w-fit max-w-full px-3.5 py-2.5 rounded-2xl rounded-tl-none bg-slate-800/90 border border-slate-700/80 font-medium text-white shadow-md"
           >
             {para.text}
           </p>
@@ -240,10 +240,13 @@ export default function ChatMessage({
   const isUser = message.role === 'user';
   const hasText = message.text && message.text.length > 0;
   // The picture beside the reply is the face of her first line (a later change gets its own small picture)
-  const firstMood =
-    !isUser && hasText && message.style !== 'dm'
-      ? speechMoods(parseRoleplayText(message.text), characterName, message.thought).find(Boolean)
-      : null;
+  const firstMood = useMemo(
+    () =>
+      !isUser && hasText && message.style !== 'dm'
+        ? speechMoods(parseRoleplayText(message.text), characterName, message.thought).find(Boolean)
+        : null,
+    [isUser, hasText, message.text, message.style, message.thought, characterName]
+  );
   const avatarSrc = (firstMood && pictureOf?.(firstMood)) || avatar;
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState('');
@@ -270,6 +273,15 @@ export default function ChatMessage({
   const actionClass = 'p-1 rounded-md text-slate-500 hover:text-slate-200 hover:bg-slate-700/60 transition';
   // A character's novel-style reply has no outer bubble: narration sits on the backdrop, speech gets bubbles
   const storyLayout = !isUser && hasText && !isEditing && message.style !== 'dm';
+  // Parsing a long reply is the costly part of a render; only the message that is streaming changes its text,
+  // so the others reuse the same element instead of being parsed again on every chunk
+  const body = useMemo(() => {
+    if (!hasText) return null;
+    if (message.style === 'dm') return formatChatText(message.text);
+    return storyLayout
+      ? formatStoryText(message.text, characterName, cast, message.thought, pictureOf)
+      : formatRoleplayText(message.text, message.role, characterName, cast);
+  }, [hasText, message.text, message.style, message.role, message.thought, storyLayout, characterName, cast, pictureOf]);
 
   return (
     <div className={`group flex items-start gap-2.5 transition-all ${isUser ? 'justify-end' : 'justify-start'}`}>
@@ -294,8 +306,8 @@ export default function ChatMessage({
           storyLayout
             ? 'pt-1'
             : isUser
-            ? 'p-3.5 rounded-2xl shadow-md bg-violet-500/15 border border-violet-300/25 text-violet-50 rounded-tr-none backdrop-blur-sm'
-            : 'p-3.5 rounded-2xl shadow-md bg-slate-800/90 border border-slate-700/80 text-slate-100 rounded-tl-none backdrop-blur-sm'
+            ? 'p-3.5 rounded-2xl shadow-md bg-violet-500/15 border border-violet-300/25 text-violet-50 rounded-tr-none'
+            : 'p-3.5 rounded-2xl shadow-md bg-slate-800/90 border border-slate-700/80 text-slate-100 rounded-tl-none'
         }`}
       >
         {isEditing ? (
@@ -317,11 +329,7 @@ export default function ChatMessage({
             </div>
           </div>
         ) : hasText ? (
-          message.style === 'dm'
-            ? formatChatText(message.text)
-            : storyLayout
-              ? formatStoryText(message.text, characterName, cast, message.thought, pictureOf)
-              : formatRoleplayText(message.text, message.role, characterName, cast)
+          body
         ) : (
           <span className="inline-flex items-center gap-1.5 py-1 px-1">
             <span className="w-2 h-2 rounded-full bg-purple-400 animate-bounce" />
@@ -336,7 +344,7 @@ export default function ChatMessage({
 
       {message.thought && !isEditing && (
         <div
-          className="max-w-full inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900/70 border border-white/10 backdrop-blur-md text-xs text-slate-300 animate-fadeIn"
+          className="max-w-full inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900/80 border border-white/10 text-xs text-slate-300 animate-fadeIn"
           aria-label="ความคิดของตัวละคร"
         >
           <span className="text-violet-300/90 flex-shrink-0">ความคิด</span>

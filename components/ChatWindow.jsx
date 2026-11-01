@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { ArrowLeft, Trash2, UserCog, X, MapPin, Clock, AlertCircle, RotateCcw, Brain, PanelLeftOpen } from 'lucide-react';
 import ChatMessage from './ChatMessage';
 import ChatInput from './ChatInput';
@@ -274,10 +274,14 @@ export default function ChatWindow({
   const lastThought = [...messages].reverse().find((m) => m.thought)?.thought;
   const picture = pictureFor(selectedChar, lastThought);
   // Her picture for an expression key; nothing when she has no picture for it (the main one would not show a change)
-  const pictureOf = (mood) => {
-    const p = pictureOfMood(selectedChar, mood);
-    return p.key ? p.src : undefined;
-  };
+  // Stable between renders so the memoized message bodies in ChatMessage are not rebuilt on every streamed chunk
+  const pictureOf = useCallback(
+    (mood) => {
+      const p = pictureOfMood(selectedChar, mood);
+      return p.key ? p.src : undefined;
+    },
+    [selectedChar]
+  );
   // Where her expression changes, a small picture at the end of that reply, above her thought
   const moodCards = moodChanges(messages, selectedChar);
   // Relationship now, and before the latest reply that changed it (for the +/- shown next to it)
@@ -378,7 +382,7 @@ export default function ChatWindow({
       {/* Chat Header */}
       <header className="relative px-3 py-2.5 md:p-4 border-b border-slate-700/80 flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5 z-10">
         {/* The frosted glass sits on its own layer: on iPhone Safari a backdrop-filter blurs the pictures inside it */}
-        <div aria-hidden className="absolute inset-0 -z-10 bg-slate-800/70 backdrop-blur-md" />
+        <div aria-hidden className="absolute inset-0 -z-10 bg-slate-800/90" />
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           {onExpandSidebar && (
             <button

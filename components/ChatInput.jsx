@@ -150,7 +150,7 @@ export default function ChatInput({
   ];
 
   return (
-    <div className="px-3 pt-3 pb-2 md:px-4 md:pt-4 bg-slate-900/60 backdrop-blur-md border-t border-slate-800">
+    <div className="px-3 pt-3 pb-2 md:px-4 md:pt-4 bg-slate-900/90 border-t border-slate-800">
       <div ref={menuRef} className="max-w-4xl mx-auto">
         {menuOpen && (
           <div className="mb-2 grid grid-cols-3 sm:grid-cols-6 gap-1.5 rounded-2xl bg-slate-800/95 border border-slate-700/70 p-2 shadow-xl shadow-black/30 animate-fadeIn">

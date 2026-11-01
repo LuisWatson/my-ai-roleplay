@@ -44,6 +44,7 @@ import {
 import { exportChatAsText, exportChatAsJson } from '../lib/chatExport';
 import {
   STALL_TIMEOUT_MS,
+  STREAM_PAINT_MS,
   FIRST_RESPONSE_CLIENT_TIMEOUT_MS,
   SIDEBAR_COLLAPSED_KEY,
   readChatActivity,
@@ -560,6 +561,9 @@ function RoleplayApp({ store, account, getAccessToken }) {
       const reader = res.body.getReader();
       const decoder = new TextDecoder('utf-8');
 
+      // Chunks can arrive many times a second; repainting the whole chat for each one makes a phone hot and laggy,
+      // so the screen is refreshed at most every STREAM_PAINT_MS (the final text is set when the reply ends)
+      let lastPaint = 0;
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -568,6 +572,9 @@ function RoleplayApp({ store, account, getAccessToken }) {
         const chunk = decoder.decode(value, { stream: true });
         accumulatedText += chunk;
         if (activeCharIdRef.current !== charId) continue;
+        const now = Date.now();
+        if (now - lastPaint < STREAM_PAINT_MS) continue;
+        lastPaint = now;
 
         setMessages((prev) => {
           const nextState = [...prev];
