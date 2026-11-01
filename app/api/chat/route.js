@@ -1,7 +1,8 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { AVAILABLE_MODELS } from '../../../constants/models';
 import { normalizeResponseSettings } from '../../../constants/chatSettings';
-import { buildSystemInstruction, CONTINUE_MESSAGE, continuePrompt, replyReminder } from '../../../lib/prompt';
+import { overusedPhrases } from '../../../lib/repeatGuard';
+import { buildSystemInstruction,CONTINUE_MESSAGE, continuePrompt, replyReminder } from '../../../lib/prompt';
 import { authorize, resolveApiKey, tryModels, SAFETY_SETTINGS } from '../../../lib/geminiServer';
 import { CUT_MARKER } from '../../../lib/scene';
 import { stripUserThoughts, withoutUserThoughts } from '../../../lib/userThoughts';
@@ -85,6 +86,7 @@ export async function POST(req) {
       chatStyle: chatStyle === 'dm' ? 'dm' : 'novel',
       direction,
       continueStory: Boolean(continueStory),
+      avoidPhrases: overusedPhrases(history, { names: [persona?.name, userProfile?.name, userProfile?.callMe] }),
     });
 
     // Ensure chat history conforms to Gemini SDK requirements:
