@@ -80,6 +80,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
   const [confirmDialog, askConfirm] = useConfirm();
   const [showUserRole, setShowUserRole] = useState(false); // false | true (opened by the user) | 'auto' (first visit)
   const [chatActivity, setChatActivity] = useState({});
+  const [savedLoaded, setSavedLoaded] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   // Desktop only: the left panel can be hidden. Kept per device in localStorage, not in the synced store.
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -179,6 +180,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
 
   useEffect(() => {
     loadSaved();
+    setSavedLoaded(true);
   }, []);
 
   // Coming back to the tab: pick up what another device saved meanwhile, so this one doesn't write over it.
@@ -1368,6 +1370,8 @@ function RoleplayApp({ store, account, getAccessToken }) {
       ) : (
         <CharacterBrowser
           characters={characters}
+          recentChats={recentChats}
+          heroReady={savedLoaded}
           onSelectChar={openProfile}
           onDeleteChar={handleDeleteCharacter}
           onEditChar={handleEditCharacter}

@@ -3,6 +3,22 @@
 บันทึกงานที่ทำเสร็จ ใหม่สุดอยู่บนสุด (กฎอยู่ใน `CLAUDE.md` → Conventions)
 
 ---
+## 2026-11-02 (2) — hero บนหน้า home
+
+- `components/HomeHero.jsx` ใหม่: การ์ดใหญ่เหนือ grid ของตัวละครที่คุยล่าสุด (`recentChats[0]`; ยังไม่เคยคุย → ตัวแรกที่มี `cutouts`, ไม่มีก็ตัวแรก) ชั้น: ห้อง → ชื่อใหญ่ → cut-out/portrait → ข้อความ; ทักทายตามเวลา, บรรทัด "ล่าสุด", ปุ่ม คุยต่อ/เริ่มแชท; parallax ตาม scroll (ปิดเมื่อ reduced-motion); ซ่อนเมื่อค้นหา/กรองหมวด
+- `components/CharacterBrowser.jsx` ใส่ hero + รับ `recentChats`, `heroReady`; `app/page.js` ส่งสองค่านี้ (`savedLoaded` กันเซเรน่าแว้บก่อนแชทโหลด)
+- ตรวจ: สำเนาชั่วคราวพอร์ต 3002 บน desktop/มือถือ 320–430px, ไม่มี overflow แนวนอน, ไม่มีแว้บตัวละครผิด; ยังไม่ได้ลอง iPhone จริง, parallax ยังไม่เห็นทำงานจริง (pane เปิด reduced-motion), ไม่ได้รัน `next build`
+- เหลือ: แนวนอนจอเตี้ย hero สูงเกือบเต็มจอ; ตัวละครอื่นไม่มี cut-out; ยังไม่ commit/push
+
+---
+## 2026-11-02 — หน้า landing แบบ scroll-craft (`scrollcraft/builds/botbaat-night`)
+
+- หน้าเดียว static: scroll = คืนหนึ่ง 23:40 ถึง 06:05 เป็นแชทกับเซเรน่า ฉากหลัง 5 ห้อง (asset จากโปรเจกต์) หน้าเธอเปลี่ยนตามประโยคที่กำลังอ่าน นาฬิกาใน nav วิ่งตาม scroll จุดสูงสุดคือ 03:12 "ฉันอยู่ตรงนี้"
+- ไฟล์: `scrollcraft/builds/botbaat-night/{index.html,BRIEF.md,assets/}`; ไม่ได้แตะแอป Next; ไม่ generate รูป ไม่ใช้ engine
+- ตรวจ: playwright (`lab/shoot.mjs`) desktop 1440x900, มือถือ 390x844, reduced-motion; ไม่มี console error; ยังไม่ได้ลองบน iPhone จริง
+- เหลือ: ยังไม่ commit/deploy; บทสนทนาเป็นตัวอย่างที่เขียนเอง (มีป้ายบอกในหน้า); CTA ชี้ https://my-ai-roleplay-one.vercel.app
+
+---
 ## 2026-11-01 (3) — "กำกับเรื่อง" ไม่ถูกทำตามตอนกด ⏩ ต่อเนื้อเรื่อง
 
 - สาเหตุ: คำกำกับอยู่แค่ท้าย system instruction แต่ข้อความผู้ใช้ล่าสุดตอนต่อเรื่อง (`continuePrompt`) บอกว่า "เล่าต่อแล้วหยุดรอผู้เล่น" โมเดลเลยทำตามข้อความล่าสุดและมองข้ามคำกำกับ

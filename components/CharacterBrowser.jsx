@@ -1,14 +1,17 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { Search, Plus, MessageSquare, PanelLeftOpen } from 'lucide-react';
 import CharacterCard from './CharacterCard';
+import HomeHero from './HomeHero';
 
 /**
  * Home screen: searchable, filterable grid of every character. Picking a card opens its profile sheet.
  */
 export default function CharacterBrowser({
   characters,
+  recentChats = [],
+  heroReady = true,
   onSelectChar,
   onDeleteChar,
   onEditChar,
@@ -18,6 +21,11 @@ export default function CharacterBrowser({
 }) {
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('');
+  const scrollRef = useRef(null);
+
+  // The character you talked to last; before any chat, one that has a cut-out, else the first
+  const featured = recentChats[0] ?? null;
+  const heroCharacter = featured?.character ?? characters.find((c) => c.cutouts) ?? characters[0];
 
   const categories = useMemo(() => [...new Set(characters.map((c) => c.category).filter(Boolean))], [characters]);
 
@@ -32,7 +40,7 @@ export default function CharacterBrowser({
 
   return (
     <main className="flex-1 flex flex-col bg-slate-900/95 overflow-hidden">
-      <div className="flex-1 overflow-y-auto">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto">
         <div className="max-w-6xl mx-auto px-4 md:px-8 py-5 md:py-8 space-y-4">
           <div className="flex items-center gap-2">
             <button
@@ -70,6 +78,20 @@ export default function CharacterBrowser({
               <Plus className="w-5 h-5" />
             </button>
           </div>
+
+          {heroCharacter && !query.trim() && !category &&
+            (heroReady ? (
+              <HomeHero
+                character={heroCharacter}
+                preview={featured?.preview}
+                hasChat={Boolean(featured)}
+                onOpen={onSelectChar}
+                scrollRef={scrollRef}
+              />
+            ) : (
+              // Saved chats are still loading: keep the hero's space so the grid doesn't jump, and don't flash a default character
+              <div className="h-[60svh] min-h-[22rem] max-h-[36rem] rounded-2xl bg-slate-950/60 border border-slate-700/50" />
+            ))}
 
           <div className="flex flex-wrap gap-1.5">
             {['', ...categories].map((cat) => (
