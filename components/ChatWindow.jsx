@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { ArrowLeft, Trash2, UserCog, X, MapPin, Clock, AlertCircle, RotateCcw, Brain, PanelLeftOpen } from 'lucide-react';
+import { ArrowLeft, UserCog, X, MapPin, Clock, AlertCircle, RotateCcw, Brain, PanelLeftOpen } from 'lucide-react';
 import ChatMessage from './ChatMessage';
 import ChatInput from './ChatInput';
 import { latestScene } from '../lib/scene';
@@ -453,13 +453,6 @@ export default function ChatWindow({
           <Brain className="w-5 h-5" />
           <span className="hidden lg:inline">ความทรงจำ</span>
         </button>
-        <button
-          onClick={onClearHistory}
-          title="ล้างประวัติการสนทนา"
-          className="w-9 h-9 flex items-center justify-center sm:w-auto sm:h-auto sm:p-2 hover:bg-slate-700/60 rounded-lg text-slate-400 hover:text-red-400 transition"
-        >
-          <Trash2 className="w-5 h-5" />
-        </button>
         </div>
       </header>
 
@@ -545,6 +538,7 @@ export default function ChatWindow({
         onOpenMemory={onOpenMemory}
         onOpenUserRole={onOpenUserRole}
         onOpenExport={onOpenExport}
+        onClearHistory={onClearHistory}
         onStop={onStopReply}
         loading={loading}
         characterName={selectedChar.name}
