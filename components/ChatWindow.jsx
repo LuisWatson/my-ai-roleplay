@@ -373,9 +373,9 @@ export default function ChatWindow({
             key={backgroundSrc}
             src={backgroundSrc}
             alt=""
-            className="w-full h-full object-cover scale-110 blur-md animate-fadeIn"
+            className="w-full h-full object-cover scale-105 blur-[3px] animate-fadeIn"
           />
-          <div className="absolute inset-0 bg-slate-950/70" />
+          <div className="absolute inset-0 bg-slate-950/60" />
         </div>
       )}
 
