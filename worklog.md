@@ -3,6 +3,21 @@
 บันทึกงานที่ทำเสร็จ ใหม่สุดอยู่บนสุด (กฎอยู่ใน `CLAUDE.md` → Conventions)
 
 ---
+## 2026-11-03 — ตัวละครใหม่ โนเอล (`noelle`)
+
+- พล็อต "คู่แข่งคนโปรด": เชฟขนมหวาน 24 ปี ถูกจับคู่แข่งรายการ THE PERFECT PLATE กับผู้เล่น (โรแมนติกคอมเมดี้ จีบยากนิดหนึ่งแต่ไม่เย็นชา)
+- `constants/characters.js`: ข้อมูลหน้าการ์ด, greeting (ฉากเปิดสตูดิโอ), situation, defaultUserRole, opening card (`background: 'studio_kitchen'`)
+- `constants/characterProfiles.js`: profile, cast (เจสัน, มิล่า, เชฟอเล็กซ์), storyHooks 11 ข้อ (รวมโมเมนต์ใช้ชีวิตร่วมกัน: ขนมแอบซื้อ เลือกเพลง ล้างจาน หึง)
+- ไม่ทำ `userSecret`: พล็อตให้ผู้เล่นกำหนดความลับฝั่งตัวเองได้; `truthStages` (4 ขั้น) ให้ subagent คิดและเขียนลง `constants/storyArcs.js` เอง รายงานกลับมาแค่ความยาวกับผลตรวจ ไม่มีใครในแชทนี้ได้อ่านเนื้อหา (เจ้าของอยากประหลาดใจ)
+- ตรวจ: โหลด `DEFAULT_CHARACTERS` ใน Node ได้ (noelle ครบ cast/hooks/truthStages 4 ขั้น, prompt ส่งขั้นที่ถึงเวลาเท่านั้น); เปิดแอปทดสอบ (ไม่มี login พอร์ต 3002) เห็นการ์ด โปรไฟล์ แชท การ์ดเปิดเรื่อง ฉาก studio_kitchen และ cutout โหลด 200 ไม่มี error; ไม่ได้ลองตอบจริงจาก Gemini; `next build` ผ่านก่อน push (compile, lint, types)
+- รูป (เพิ่มภายหลังวันเดียวกัน): `public/characters/noelle.webp` 768×1024 (44 KB) จาก tensor.art สูตร Krea-2 Turbo + semi style 1.0 (ภาพแรกหน้าเหมือนเซเรน่า เลยเปลี่ยนเป็นหน้าทรงหัวใจ ตาหางตาเฉี่ยว กระที่จมูก ไม่มีหน้าม้า) แต่ผมออกมารวบสูงแทนรวบครึ่งหัว (แก้ในรูปหลัก v3 ด้านล่าง); ไม่ได้ทำภาพ 18+ (คงแนว clothed/SFW)
+- รูปหลักเปลี่ยนเป็นภาพ v3 (ผมรวบครึ่งหัวมีมวยเล็กตามสเปก): เห็นหัวครบมีที่ว่างเหนือหัว พื้นขาวตัดกับชุดดำ (ภาพแรกผมโดนตัดขอบบนและชุดดำกลืนฉากครัวมืด จะลบพื้นหลังแล้วแหว่ง)
+- expressions 8 แบบ + cutouts: Img2Img จากรูปหลัก (Krea-2 Turbo + semi style 0.7, denoise 0.72, no bangs) เปลี่ยนท่าตามอารมณ์ (happy มือเท้าเอว, shy มือไขว้หลัง, sad ก้มหน้า, angry กอดอก, surprised มือแตะอก ฯลฯ); angry ทำสองรอบ (รอบแรกไม่โกรธพอ) ลบพื้นหลังด้วย rembg `isnet-general-use` + alpha matting (Python API; CLI พังเพราะ gradio ชน huggingface_hub) ผลตรวจบนพื้นชมพู ไม่มีรูโหว่ที่ชุดดำ/ผม; ไฟล์ `public/characters/{expressions/noelle_<k>,cutouts/noelle(_<k>)}.webp`
+- ที่รู้: ภาพ shy/thinking/teasing มีหน้าม้าโผล่เล็กน้อย; เหลือ ~24 credits tensor.art
+- ฉากหลังของโนเอลเอง 8 ฉาก (`sceneSet` ใน `characters.js`, ไฟล์ `public/characters/backgrounds/noelle/*.webp` 1152×768): studio_kitchen, judges_stage, market, cafe_break, dorm_lounge, van, family_bakery, rooftop_night; สร้างบน tensor.art ด้วย Krea-2 Turbo ไม่ใส่ LoRA (Landscape, prompt "no people", negative เติม people/face/hands) ~0.8 credit/ภาพ; cafe_break รอบแรกมีฝูงชนเบลอเลยสร้างใหม่ (prompt "ว่าง ไม่มีลูกค้า"); judges_stage มีคนตัวจิ๋วที่มุมขวาไกล ยอมรับ; กระดานดำใน cafe_break มีตัวอักษรเพี้ยน (เบลอ+หรี่ในแชท); การ์ดเปิดเรื่องใช้ `studio_kitchen`
+- เหลือ: ยังไม่ได้ดูอีก 7 ฉากในแอป (ดูแค่ studio_kitchen) และยังไม่เห็นการเปลี่ยนฉาก/อารมณ์ตอนตอบจริงจาก Gemini; เจ้าของยังไม่ได้เล่น จึงยังไม่รู้ว่าเฉลยลับ 4 ขั้นเข้ากับพล็อตไหม (ถ้าขั้นไหนไม่เข้า ให้ subagent เขียนขั้นนั้นใหม่ โดยไม่ต้องอ่านเนื้อหา); ฉากที่อยากสร้างใหม่: judges_stage (คนจิ๋วมุมขวา), cafe_break (ตัวอักษรกระดานเพี้ยน)
+
+---
 ## 2026-11-02 (3) — ย้ายปุ่มช่องพิมพ์
 
 - ถังขยะ (ล้างประวัติ) ย้ายจาก header ไปอยู่ในเมนู "+" (ปุ่ม "ล้างประวัติ" สีแดง, ยัง `useConfirm` ตามเดิม); `ChatWindow` ส่ง `onClearHistory` ให้ `ChatInput`

@@ -76,8 +76,8 @@ The owner builds it for themselves and their partner. Reply to the owner in Thai
 - Never `confirm()` either: use `useConfirm()` from `components/ConfirmDialog.jsx`.
 - Errors: never `alert()`. Chat errors → notice card in `ChatWindow` (by `kind` from `/api/chat`); elsewhere → `Toast`.
   Waiting text stays in-story (character narration), never about the app/AI.
-- `constants/characters.js` — 4 preset characters (`ellie`, `ash`, `vivienne`, `serena`; the 12 older presets were removed 2026-10-28, still in git history; `serena` has a portrait and the 4 expressions; her expression eyes look greyer than the portrait, owner accepted that;
-  `vivienne` and `serena` have their own `sceneSet` of 8 backgrounds). Optional fields:
+- `constants/characters.js` — 5 preset characters (`ellie`, `ash`, `vivienne`, `serena`, `noelle` — a cooking-contest romcom added 2026-11-03, with `truthStages` and her own `sceneSet` of 8 backgrounds); the 12 older presets were removed 2026-10-28, still in git history; `serena` has a portrait and the 4 expressions; her expression eyes look greyer than the portrait, owner accepted that;
+  `vivienne`, `serena` and `noelle` have their own `sceneSet` of 8 backgrounds). Optional fields:
   `avatar`, `background`, `defaultUserRole { description, background }`, `fixedBackground`, `userRoleHint`,
   `profile { age, occupation, appearance, personality, likes, dislikes, story }` and
   `cast: [{ name, relation, personality }]` (presets get both from `constants/characterProfiles.js`; custom
@@ -93,7 +93,8 @@ The owner builds it for themselves and their partner. Reply to the owner in Thai
   told (`complete`), rule 11 stops "keep secrets alive". If a due stage's reply has no tag, `/api/suggest` asks a separate
   Lite yes/no (`revealCheck` → `revealed`, never mixed into the suggestion prompt) and `markRevealed` sets `reveal`.
   The memory panel shows only the count told/total (`truthCount`); the persona
-  sent never carries `truthStages`. `ellie`, `ash` and `vivienne` have one.
+  sent never carries `truthStages`. `ellie`, `ash`, `vivienne` and `noelle` have one (noelle's was written by a subagent
+  that reported no content; nobody here has read it).
 - `components/CharacterProfile.jsx` — tapping a card on the home grid opens the character's profile sheet
   (bio / your role / people around them / greeting, relation + journal count, "เริ่มแชท"/"คุยต่อ");
   the sidebar chat list still opens chats directly.
@@ -118,8 +119,9 @@ The owner builds it for themselves and their partner. Reply to the owner in Thai
 - Character as chat backdrop (`components/CharacterStage.jsx`): a character with `cutouts { main, happy, … }` (transparent
   WebP in `public/characters/cutouts/`, background removed with rembg; same keys as `expressions`, `cutoutFor`) shows its
   current expression's cut-out as a close-up (wider than a phone screen, anchored to the top) over the lightly blurred scene,
-  both cross-fading on change; no mood cards in the chat. Without `cutouts` the old blurred backdrop is used. Only `serena`
-  has them so far. The expression follows the bubble being read (`data-mood`, `updateViewMood` in `ChatWindow`).
+  both cross-fading on change; no mood cards in the chat. Without `cutouts` the old blurred backdrop is used. Only `serena` and
+  `noelle` have them so far (noelle: 8 expressions with a changed pose each, white-backdrop sources so the black jacket
+  cuts out cleanly; rembg `isnet-general-use` via its Python API, not the CLI). The expression follows the bubble being read (`data-mood`, `updateViewMood` in `ChatWindow`).
 - Face per spoken line: rule 16 asks for `{😏} "..."` (one of the 8 thought emoji) before each of the character's quotes;
   `parseRoleplayText` turns it into `mood` (never shown), `speechMoods` fills unmarked lines from the line before / the
   thought. `ChatMessage` shows her picture for the first line and a small one beside a bubble where the face changes.
