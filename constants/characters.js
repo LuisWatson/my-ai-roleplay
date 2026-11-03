@@ -359,7 +359,7 @@ const BASE_CHARACTERS = [
   // Rival-turned-partner romcom, cooking contest: no hidden truth stages, no user secret; her own 8-scene set (kitchen studio, market, bakery ...)
   {
     id: 'noelle',
-    avatar: '/characters/noelle.webp',
+    avatar: '/characters/noelle_r.webp',
     background: '/characters/backgrounds/noelle/studio_kitchen.webp',
     sceneSet: [
       { id: 'studio_kitchen', label: 'ครัวสตูดิโอแข่งขัน เคาน์เตอร์ทำอาหาร ห้องถ่ายทำรายการ', src: '/characters/backgrounds/noelle/studio_kitchen.webp' },
@@ -371,29 +371,14 @@ const BASE_CHARACTERS = [
       { id: 'family_bakery', label: 'ร้านเบเกอรีของครอบครัวโนเอล ร้านขนมเล็กๆ ตอนเช้า', src: '/characters/backgrounds/noelle/family_bakery.webp' },
       { id: 'rooftop_night', label: 'ดาดฟ้า ระเบียง ข้างนอกตอนกลางคืน ทิวทัศน์เมืองยามค่ำ', src: '/characters/backgrounds/noelle/rooftop_night.webp' },
     ],
-    // Expression pictures: Img2Img from the main portrait (Krea-2 Turbo + semi style 0.7, denoise 0.72) with a changed pose
-    // for each mood, plain white backdrop so the cut-outs (isnet-general-use, alpha matting) have no holes in black clothes
+    // Realistic recipe (REAL PHOTOGRAPHY Krea 2 + Angel Face/Cherish/SerenFace LoRAs): Img2Img from the main portrait,
+    // denoise 0.72. No `cutouts` on purpose: the chat shows the scene as backdrop and these pictures as mood cards.
+    // teasing falls back to happy, worried to sad; thinking/surprised show the main portrait.
     expressions: {
-      happy: '/characters/expressions/noelle_happy.webp',
-      shy: '/characters/expressions/noelle_shy.webp',
-      sad: '/characters/expressions/noelle_sad.webp',
-      angry: '/characters/expressions/noelle_angry.webp',
-      thinking: '/characters/expressions/noelle_thinking.webp',
-      surprised: '/characters/expressions/noelle_surprised.webp',
-      teasing: '/characters/expressions/noelle_teasing.webp',
-      worried: '/characters/expressions/noelle_worried.webp',
-    },
-    // Transparent versions for the full-chat backdrop (CharacterStage)
-    cutouts: {
-      main: '/characters/cutouts/noelle.webp',
-      happy: '/characters/cutouts/noelle_happy.webp',
-      shy: '/characters/cutouts/noelle_shy.webp',
-      sad: '/characters/cutouts/noelle_sad.webp',
-      angry: '/characters/cutouts/noelle_angry.webp',
-      thinking: '/characters/cutouts/noelle_thinking.webp',
-      surprised: '/characters/cutouts/noelle_surprised.webp',
-      teasing: '/characters/cutouts/noelle_teasing.webp',
-      worried: '/characters/cutouts/noelle_worried.webp',
+      happy: '/characters/expressions/noelle_r_happy.webp',
+      shy: '/characters/expressions/noelle_r_shy.webp',
+      sad: '/characters/expressions/noelle_r_sad.webp',
+      angry: '/characters/expressions/noelle_r_angry.webp',
     },
     scenario:
       'สตูดิโอและโรงแรมที่พักของรายการแข่งขันทำอาหารระดับประเทศ THE PERFECT PLATE รอบแรกถึงรอบชิงชนะเลิศ ' +

@@ -3,6 +3,16 @@
 บันทึกงานที่ทำเสร็จ ใหม่สุดอยู่บนสุด (กฎอยู่ใน `CLAUDE.md` → Conventions)
 
 ---
+## 2026-11-03 (ค่ำ) — โนเอลสูตรเหมือนจริง กลับไปแบบฉากพื้นหลัง + การ์ดสีหน้า
+
+- เจ้าของเลือก: ไม่ใช้ cut-out แล้ว ให้ฉากเป็นพื้นหลังแชท รูปสีหน้าแนบท้ายข้อความแบบตัวละครอื่น → เอา `cutouts` ของ noelle ออก (`CharacterStage` กลับไปใช้ฉากเบลอเอง)
+- รูปใหม่สูตร realistic (REAL PHOTOGRAPHY Krea 2 + Angel Face 0.8 / Cherish 0.4 / SerenFace 0.3, ดู skill character-portrait): รูปหลัก = "picture 3" (`drafts/noelle_v2_base.png`) → `public/characters/noelle_r.webp`; สีหน้า happy, angry (ดึงจากประวัติงาน tensor.art ไม่เสียเครดิต) + shy, sad (Img2Img ใหม่ denoise 0.72, 5.6 เครดิต) → `public/characters/expressions/noelle_r_{happy,shy,sad,angry}.webp`; ครอป 768×1152 → 768×1024 เก็บส่วนบน
+- ชื่อไฟล์ใหม่ (`noelle_r_*`) กัน iPhone แคชรูปเก่า; ลบไฟล์สูตร semi เดิม (`noelle.webp`, `expressions/noelle_*`, `cutouts/noelle*`) ออกแล้ว (กู้ได้จาก commit 05c93e6)
+- ตรวจ: สำเนาชั่วคราวพอร์ต 3002 การ์ด/โปรไฟล์/แชทโหลดรูปใหม่ 768×1024, พื้นหลังแชทเป็นฉาก studio_kitchen เบลอ, การ์ดสีหน้า angry ท้ายข้อความเก่า, ไม่มี console error; ไม่ได้ส่งข้อความใหม่ (ไม่เปลือง quota); `next build` ผ่าน; push ขึ้น production แล้ว
+- ที่รู้: happy กับ angry มีคนเบลอข้างหลัง; shy/sad มีหน้าม้าเล็กน้อย; angry ออกแนวงอนมากกว่าโกรธ; thinking/surprised ใช้รูปหลัก, teasing→happy, worried→sad
+- เหลือ: เครดิต tensor.art 8.80 (ทำได้อีก 3 รูป Img2Img เช่น thinking, surprised); ยังไม่ได้ดูบน iPhone จริง
+
+---
 ## 2026-11-03 (ท้ายวัน) — รูปการ์ดโนเอลมีพื้นหลัง + skills
 
 - เจ้าของชี้ว่ารูปหลักพื้นขาวทำให้การ์ดโล่ง: `public/characters/noelle.webp` ตอนนี้เป็น cut-out ซ้อนบนฉาก studio_kitchen (เบลอ 6, มืดลง 20%) ด้วย `sharp` ไม่เสียเครดิต; ภาพพื้นขาวเดิมใช้เป็นต้นทาง rembg เท่านั้น. ขอบมีเศษขาวเล็กมากตรงช่องแขนขวา ยังไม่ได้ดูในแอปจริง
