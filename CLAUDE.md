@@ -164,6 +164,7 @@ The owner builds it for themselves and their partner. Reply to the owner in Thai
 - Installable app: `app/manifest.js`, `appleWebApp` in `app/layout.js`, icons in `public/icons/` + `app/*icon.png`.
 - `components/UserRoleModal.jsx` — "บทบาทของฉัน"; opens by itself the first time a character is opened (`user_role_prompted` in the store). Nothing is required; empty fields use `defaultUserRole`.
 - `.claude/skills/character-portrait/` — how to generate a character portrait on tensor.art and wire it in.
+- `.claude/skills/add-preset-character/` — checklist for adding a whole new preset (data, hidden truth via subagent, pictures, test, deploy).
 
 ## Conventions
 

@@ -55,9 +55,43 @@ Warning: with the Krea + semi style recipe Img2Img did not keep Serena's face (b
 Do not use text-to-image again (the face changes). Use **Img2Img** from the main portrait: same model + LoRA 0.5, strength **0.8**, about 1.26 credits each, and describe a different pose in the prompt. The upload field only accepts JPEG/PNG (not WebP). The free account runs about 2 tasks at once. For the Krea set-up above (Vivienne): Img2Img locks the size to the source image (768×1024 is fine), LoRA 1.0 barely changes the expression, so set both LoRAs to **0.7** with a high denoise; too low a LoRA drifts the face. Use a short prompt that starts with the weighted expression and pose, e.g. `(gentle warm smile:1.4), (happy bright eyes:1.3), head tilted, one hand brushing hair behind her ear, different pose, 1girl, <hair>, <dress>, <necklace>, upper body, photorealistic, glowing porcelain skin, ...`; leave out face/hair/eye detail the source image already has. Its cost is about 2.8 credits per image.
 Save as `public/characters/expressions/<id>_{happy,shy,sad,angry}.webp` (768×1024) and set `expressions` on the character.
 
+## Expressions with a changed pose + cut-outs (Noelle, 2026-11-03: the recipe to use now)
+
+The older notes above say the pose must stay and Serena's set was dropped; Noelle's set worked like this, so prefer it.
+
+1. **Source portrait on a white high-key backdrop** with headroom above the hair (a dark jacket on a dark backdrop cuts out
+   badly, and a clipped ponytail looks "แหว่ง" as a backdrop). Use it only as the Img2Img source and the rembg source.
+2. **8 expressions** (happy, shy, sad, angry, thinking, surprised, teasing, worried), each a visibly different pose:
+   Img2Img from that source, Krea-2 Turbo + semi style LoRA **0.7**, **denoise 0.72**, prompt = weighted eye colour first,
+   then weighted expression + pose, then the short look. An angry face needs a strong prompt (frown, narrowed eyes,
+   crossed arms); the first try looked not angry. Zoom on every picture (hands, extra people). Known leftover: shy,
+   thinking and teasing may show slight bangs that the main portrait does not have; the owner accepted that.
+3. **Cut-outs**: rembg through its **Python API** (the CLI crashes on gradio / `HfFolder`; pip must be upgraded first),
+   model `isnet-general-use`, alpha matting on. Run it in a venv inside the session scratchpad. Save as
+   `public/characters/cutouts/<id>.webp` (main) and `<id>_<key>.webp`, transparent WebP 768×1024.
+4. Contact-sheet all 9 cut-outs before wiring `expressions` and `cutouts` in `constants/characters.js`.
+
+## Downloading many pictures from tensor.art
+
+The "download" helper kept returning the wrong image (a thumbnail or the previous result) and a Create click was dropped
+when the prompt box had grown. What worked: set the prompt with a script, click Create by script, wait for the task to
+finish, take the **largest** result `<img>` in DOM order, and check its `src` differs from the previous one before saving.
+Chrome leaves some downloads as `<uuid>.tmp`; match them by byte size, then look at a contact sheet. Delete duplicates by
+hand. Leftovers in `Downloads` (`.tmp`, `botbaat-*.png`) are the owner's to clean.
+
+## Main portrait needs a background (Noelle, 2026-11-03)
+
+A white-backdrop portrait (made so the cut-out is clean) must NOT be the card avatar: on the home grid it looks empty next to
+the others. Keep the white one only as the rembg source; make `public/characters/<id>.webp` by compositing the cut-out
+(`cutouts/<id>.webp`) over the character's first scene (cover-resize to height 1024, crop centre 768, blur ~6, brightness 0.8)
+with `sharp`. No credits needed.
+
 ## Scene backgrounds (characters with a `sceneSet`)
 
-Prompt: `masterpiece, best quality, semi-realistic, <place>, no people, cinematic, dim moody lighting, bokeh, wide shot, background scenery`. Save as `public/characters/backgrounds/<id>/<scene>.webp` (1152×768, quality 82) and set each scene's `src`.
+Prompt: `masterpiece, best quality, semi-realistic, <place>, no people, cinematic, dim moody lighting, bokeh, wide shot, background scenery`.
+Noelle's 8 scenes used **Krea-2 Turbo with no LoRA**, 1152×768 (not Z-Image-Turbo). Write the place as **empty** (`empty cafe`,
+`empty market stalls`): "no people" alone still brought a blurred crowd. Small text on signs/chalkboards comes out garbled;
+dimmed and blurred in the chat it is fine. Check each scene for tiny figures at the edges. Save as `public/characters/backgrounds/<id>/<scene>.webp` (1152×768, quality 82) and set each scene's `src`.
 
 ## 3. Download into the project
 
