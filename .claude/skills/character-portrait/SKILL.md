@@ -39,6 +39,35 @@ Prompt box tip (embedded browser): the textarea is hidden, so fill it with `type
 
 Standard recipe from Serena (2026-10-28), use this for new characters: official **Krea-2 Turbo** base + only the **semi style** LoRA (1.0, opens with its page's Run button; accept the "recommended parameters" dialogs), no GlowFace (it gives Vivienne's face to everyone), 768×1024, 8 steps. Let the prompt decide the face: `masterpiece, best quality, semi-realistic, 1girl, <age> years old adult <ethnicity> woman, <face shape>, <eyes>, <lips>, <hair>, <outfit>, <expression/pose>, <place>, soft cinematic lighting, bokeh, upper body, looking at viewer`. Keep outfits clothed. Tensor.art tips: the prompt textarea is the one whose text contains your prompt (set it with a script: native value setter + `input` event, then click Create); the LoRA picker only lists LoRAs for the current base model, so switch the base first (base picker → OFFICIAL MODEL → Krea-2 Turbo); the result's send-arrow icon opens a public *Post* dialog, do not use it; the download icon is the middle one; a click on Create while the previous task is still queued is dropped, so wait.
 
+## Realistic recipe (2026-11-03, owner's pick: "must look like a real person")
+
+The owner wants real-person faces like popular tensor.art posts, not the semi style look. Their posts use the same 8-step
+Krea speed but a different base and stacked LoRAs. Recipe (tested on Noelle, owner liked "picture 3"):
+
+- Base: **REAL PHOTOGRAPHY (realism/photorealistic)**, version **KREA 2** (base picker: search "REAL PHOTOGRAPHY KREA", the
+  card defaults to version MOSS; switch the dropdown to KREA 2).
+- LoRAs: **Angel Face (Krea2) 0.8** + **Cherish ! <3 0.4** + **SerenFace (version "Testing") 0.3**. Fastest set-up: open the
+  Angel Face model page, click its first sample image, press "ทำซ้ำ" and decline the "recommended parameters" dialog.
+- 768×1152, 8 steps, CFG 1, euler/simple. Text2Img 0.8 credit; Img2Img 2.8 credits.
+- Prompt: beauty words + Noelle's look + confident expression + warm cinematic light. A pure beauty prompt (douyin makeup,
+  blush, bright beauty lighting) looked prettier but flat and doll-like; mixing both looked best. Template used:
+  `1girl, solo, beautiful young Asian woman, 24 years old adult, gorgeous delicate face, small face with defined jawline,
+  flawless fair skin, smooth natural skin texture, large sharp almond-shaped <eye colour> eyes, aegyo-sal, long fluttery
+  eyelashes, soft natural makeup, gradient pink glossy lips, <hair>, <expression>, <outfit>, <pose>, <place>, softly blurred
+  background, warm cinematic lighting with gentle shadows, soft key light on her face, cinematic photography, realistic skin
+  texture, upper body, looking directly at viewer, highly detailed`.
+- Negative must include `other people, person in background`: a restaurant kitchen made the model add staff behind her.
+  With CFG 1 the negative is weak; the Img2Img expressions still got a person in the background.
+- Expressions by Img2Img from that picture, same base + LoRAs, denoise 0.72: the face held (happy was good; angry came out
+  sulky, needs a stronger prompt).
+- Cut-out test (rembg) on the kitchen version: face and hair clean, but the stove, dark smudges and the ponytail cut by the
+  top edge stayed. The owner then chose **no cut-outs** for realistic characters: scene as the chat backdrop, expression
+  pictures as mood cards (leave `cutouts` out). So expressions come straight from the kitchen picture, no white backdrop.
+- Wired for Noelle (2026-11-03): main = picture 3 (`drafts/noelle_v2_base.png`), happy/shy/sad/angry by Img2Img, all cropped
+  768×1152 → 768×1024 from the top, saved with new names (`noelle_r*.webp`) so phones don't show cached old pictures.
+- Earlier results stay in tensor.art's task list (งาน tab, Img2Img/Text2Img filters): reuse them before paying again. The
+  list is virtualised, so collect `img` URLs (`workspace/generation`) while scrolling it.
+
 ## Expressions (happy / shy / sad / angry)
 
 Hands and extra people (Serena's 4 newer expressions): asking for a new hand pose (finger on chin, hand near the mouth,

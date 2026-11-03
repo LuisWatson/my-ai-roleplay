@@ -119,9 +119,9 @@ The owner builds it for themselves and their partner. Reply to the owner in Thai
 - Character as chat backdrop (`components/CharacterStage.jsx`): a character with `cutouts { main, happy, … }` (transparent
   WebP in `public/characters/cutouts/`, background removed with rembg; same keys as `expressions`, `cutoutFor`) shows its
   current expression's cut-out as a close-up (wider than a phone screen, anchored to the top) over the lightly blurred scene,
-  both cross-fading on change; no mood cards in the chat. Without `cutouts` the old blurred backdrop is used. Only `serena` and
-  `noelle` have them so far (noelle: 8 expressions with a changed pose each, white-backdrop sources so the black jacket
-  cuts out cleanly; rembg `isnet-general-use` via its Python API, not the CLI). The expression follows the bubble being read (`data-mood`, `updateViewMood` in `ChatWindow`).
+  both cross-fading on change; no mood cards in the chat. Without `cutouts` the old blurred backdrop is used. Only `serena` has them now
+  (rembg `isnet-general-use` via its Python API, not the CLI). `noelle` had them (semi style) until 2026-11-03; she now uses
+  realistic pictures (`noelle_r*.webp`, 4 expressions) without cut-outs, by the owner's choice. The expression follows the bubble being read (`data-mood`, `updateViewMood` in `ChatWindow`).
 - Face per spoken line: rule 16 asks for `{😏} "..."` (one of the 8 thought emoji) before each of the character's quotes;
   `parseRoleplayText` turns it into `mood` (never shown), `speechMoods` fills unmarked lines from the line before / the
   thought. `ChatMessage` shows her picture for the first line and a small one beside a bubble where the face changes.
