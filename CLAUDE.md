@@ -115,7 +115,7 @@ The owner builds it for themselves and their partner. Reply to the owner in Thai
   `serena` all 8; a missing teasing/worried falls back to happy/sad). Made on tensor.art with Img2Img from the main
   portrait (see the character-portrait skill). The emoji at the start of a reply's thought picks one (`pictureFor`); no match →
   the main portrait. Shown as the header picture (tap = full size), the small avatar beside each reply, and a `MoodCard`
-  at the end of a reply, above the thought pill, when the expression changed (`moodChanges`). No side panel (owner removed it).
+  at the end of a reply, above the thought pill, when the expression changed or has repeated for 3 replies (`moodChanges`). No side panel (owner removed it).
 - Character as chat backdrop (`components/CharacterStage.jsx`): a character with `cutouts { main, happy, … }` (transparent
   WebP in `public/characters/cutouts/`, background removed with rembg; same keys as `expressions`, `cutoutFor`) shows its
   current expression's cut-out as a close-up (wider than a phone screen, anchored to the top) over the lightly blurred scene,
