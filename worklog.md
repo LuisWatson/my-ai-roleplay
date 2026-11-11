@@ -3,6 +3,19 @@
 บันทึกงานที่ทำเสร็จ ใหม่สุดอยู่บนสุด (กฎอยู่ใน `CLAUDE.md` → Conventions)
 
 ---
+## 2026-11-12 — ตัวละครใหม่ ยูนะ (Yuna) ร้านชาตอนตีสาม
+
+- ข้อมูล: `yuna` ใน `constants/characters.js` (หมวด แฟนตาซี, situation + คำถามเปิดที่ห้ามโมเดลตอบ, opening 03:07 ร้านชายามรุ่ง, sceneSet 8 ฉาก, expressions 8 แบบ, ไม่มี cutouts), `constants/characterProfiles.js` (profile, cast: ลุงเหม / คุณนิ่ม / ป้าศรี, storyHooks 10), `constants/storyArcs.js` (ความจริง 4 ขั้น เขียนโดย subagent ไม่มีใครอ่าน)
+- รูป: เจ้าของบอกหน้ารอบแรกเหมือนโนเอล (ลอกสูตร Angel Face + prompt ของโนเอล) และชอบวิเวียน/เซเรน่าที่สุด → ใช้ Krea-2 Turbo + semi style 1.0 กับ prompt ที่เขียนให้ยูนะเอง (ตาชั้นเดียว ผมดำปักปิ่นไม้ เสื้อไหมครีมเลื่อนไหล่ ผ้ากันเปื้อนคราม โคมส้ม) แบบเซ็กซี่ขึ้นตามที่เจ้าของขอ → `public/characters/yuna.webp`
+- สีหน้า 8 แบบ: Img2Img จากรูปหลัก semi style 0.7 denoise 0.72 → `public/characters/expressions/yuna_*.webp` (หน้าคงที่; teasing ไม่ขยิบตา, happy มีถ้วยสองใบ)
+- ฉาก 8 ฉาก: Krea-2 Turbo ไม่ใส่ LoRA 1152×768 → `public/characters/backgrounds/yuna/*.webp`; PNG ต้นฉบับอยู่ `drafts/` (ignored)
+- skill ใหม่ `character-look` (เลือกหน้า/LoRA จากหมวด OC ของ tensor.art ตามบทบาท, โมเดลซ้ำได้ prompt ห้ามซ้ำ); `add-preset-character` และ `character-portrait` เลิกพื้นขาว/cut-out; `.claude/nologin-dev.js` + `nologin-main` ใน launch.json รันแอปพอร์ต 3002 แบบไม่ล็อกอินในโฟลเดอร์หลัก
+- ตรวจ: พอร์ต 3002 การ์ด/โปรไฟล์/การ์ดเปิดเรื่อง/พื้นหลัง tea_room ขึ้นครบ, รูปทั้ง 17 ไฟล์ตอบ 200, ไม่มี console error
+- tensor.art: บัญชีฟรีรันได้ทีละ 1 งาน (กดซ้อนจะเด้งไปหน้าซื้อ Pro); ช่อง prompt ต้องกางก่อนตั้งค่าด้วยสคริปต์ (ตอนพับ สคริปต์เขียนไม่ติด เสียไป 6.4 เครดิตกับรูปผิด); คำว่า "cleavage" ถูกบล็อก; เครดิตเหลือ ~16.4
+- ส่งข้อความจริง 1 ครั้ง: gemini-3.8-flash และ 3.7-flash timeout ทั้งคู่ (Google ไม่ตอบใน 20 วิ) → ยังไม่ได้เห็นคำตอบจริงของยูนะ; `next build` ผ่าน; commit แล้ว ยังไม่ push
+- เหลือ: ทดสอบคำตอบจริง (การ์ดสีหน้า แท็กฉาก ไม่แต่งเรื่องเกิน), push ขึ้น production (ถามเจ้าของก่อน)
+
+---
 ## 2026-11-04 — การ์ดสีหน้าขึ้นซ้ำเมื่อท่าเดิมครบ 3 คำตอบ
 
 - เจ้าของแจ้งว่าแชทเซเรน่าไม่มีรูปท้ายข้อความเลย: รูปหัวแชทเปลี่ยนตามอีโมจิถูกต้อง (ยืนยันจากภาพหน้าจอ = `serena_shy`) แต่ `moodChanges` ใน `lib/expressions.js` ขึ้นการ์ดเฉพาะตอนสีหน้าเปลี่ยน และโมเดลใส่ 😳 ซ้ำเกือบทุกคำตอบ การ์ดเลยไม่เคยขึ้นหลังครั้งแรก

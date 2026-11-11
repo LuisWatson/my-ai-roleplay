@@ -1,6 +1,6 @@
 ---
 name: add-preset-character
-description: Checklist for adding a new preset character to Botbaat (data, profile, hidden story truth, portrait, expressions, cut-outs, scene set, test, deploy). Use when the owner pastes a plot/character card and asks for a new character ("อยากได้ตัวละครใหม่", "เพิ่มตัวละคร", "add a preset").
+description: Checklist for adding a new preset character to Botbaat (data, profile, hidden story truth, look, portrait, expressions, scene set, test, deploy). Use when the owner pastes a plot/character card and asks for a new character ("อยากได้ตัวละครใหม่", "เพิ่มตัวละคร", "add a preset").
 ---
 
 # Add a preset character
@@ -29,18 +29,21 @@ Don't open `constants/storyArcs.js` with Read/Grep output you will show.
 
 ## 3. Pictures (skill `character-portrait`)
 
-Order: main portrait on a white high-key backdrop -> 8 expressions (changed pose) -> rembg cut-outs -> main portrait
-composited over a scene (the card avatar must have a background) -> 8 scenes in `public/characters/backgrounds/<id>/`.
-Everything WebP via `sharp` (portraits 768×1024 q82, scenes 1152×768). Show the owner each picture type before the next:
-faces must not look like an existing character (Serena/Vivienne).
+First the look: skill `character-look` (face design from the role + a LoRA from the tensor.art OC channel). LoRAs may
+repeat across characters; the prompt must be written for this character, never copied.
+
+Order (owner, 2026-11-11: **no white backdrop, no cut-outs**): main portrait made in the character's own setting (it is the
+card avatar as-is) -> 8 expressions by Img2Img from it (changed pose) -> 8 scenes in `public/characters/backgrounds/<id>/`.
+Chat = scene backdrop + expression pictures as mood cards (leave `cutouts` out). Everything WebP via `sharp` (portraits
+768×1024 q82, scenes 1152×768). Show the owner each picture type before the next.
 
 ## 4. Verify
 
 - Node check scripts need a resolve hook because imports have no `.js` extension (see `CLAUDE.md`): data merges, prompt builds,
-  `truthFor` stages, 8 expression + 9 cut-out files exist, all `sceneSet` paths exist.
+  `truthFor` stages, 8 expression files exist, all `sceneSet` paths exist.
 - Run the app without login: main folder, `NEXT_PUBLIC_SUPABASE_URL=` and `NEXT_PUBLIC_SUPABASE_ANON_KEY=` set empty,
   `npx next dev -p 3002` (a temp copy with a `node_modules` junction breaks webpack). Check card, profile sheet, opening card,
-  backdrop, cut-out.
+  backdrop, mood cards.
 - One real Gemini message (quota is tiny; never loop). Look for: in character, no invented facts, scene tag present.
 - `next build` before pushing.
 

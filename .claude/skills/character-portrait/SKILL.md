@@ -7,6 +7,12 @@ description: Generate an AI portrait for a Botbaat character on tensor.art (in t
 
 Makes one portrait per character with the same size and prompt shape, so every card in the grid looks consistent.
 
+**Current rules (owner, 2026-11-11), these override older notes below:**
+- Pick the face and LoRA first with the `character-look` skill (role → face design → a LoRA from the tensor.art
+  ORIGINAL CHARACTER channel). LoRAs may be reused; the prompt must be written for this character, never copied.
+- No white backdrop, no rembg cut-outs, no compositing: the main portrait is made in the character's own setting and is
+  the card avatar. Expressions are Img2Img from it; chat = scene backdrop + mood cards.
+
 ## 1. Build the prompt
 
 1. Find the character in `constants/characters.js` by `id` or `name`. Read `description`, `tagline`, `scenario`, `category`.
@@ -46,8 +52,11 @@ Krea speed but a different base and stacked LoRAs. Recipe (tested on Noelle, own
 
 - Base: **REAL PHOTOGRAPHY (realism/photorealistic)**, version **KREA 2** (base picker: search "REAL PHOTOGRAPHY KREA", the
   card defaults to version MOSS; switch the dropdown to KREA 2).
-- LoRAs: **Angel Face (Krea2) 0.8** + **Cherish ! <3 0.4** + **SerenFace (version "Testing") 0.3**. Fastest set-up: open the
-  Angel Face model page, click its first sample image, press "ทำซ้ำ" and decline the "recommended parameters" dialog.
+- LoRAs used for Noelle: **Angel Face (Krea2) 0.8** + **Cherish ! <3 0.4** + **SerenFace (version "Testing") 0.3**. The same
+  LoRAs plus Noelle's prompt words gave Yuna Noelle's face: reuse is fine, but write a new prompt and keep the face LoRA
+  under 0.8 (see `character-look`).
+  Picker tips: the LoRA search box is the textbox inside the picker (find it by ref; the old query stays in it); each pick
+  opens a "recommended base" dialog, press ยกเลิก; weights are easiest with the − / + buttons.
 - 768×1152, 8 steps, CFG 1, euler/simple. Text2Img 0.8 credit; Img2Img 2.8 credits.
 - Prompt: beauty words + Noelle's look + confident expression + warm cinematic light. A pure beauty prompt (douyin makeup,
   blush, bright beauty lighting) looked prettier but flat and doll-like; mixing both looked best. Template used:
@@ -84,12 +93,12 @@ Warning: with the Krea + semi style recipe Img2Img did not keep Serena's face (b
 Do not use text-to-image again (the face changes). Use **Img2Img** from the main portrait: same model + LoRA 0.5, strength **0.8**, about 1.26 credits each, and describe a different pose in the prompt. The upload field only accepts JPEG/PNG (not WebP). The free account runs about 2 tasks at once. For the Krea set-up above (Vivienne): Img2Img locks the size to the source image (768×1024 is fine), LoRA 1.0 barely changes the expression, so set both LoRAs to **0.7** with a high denoise; too low a LoRA drifts the face. Use a short prompt that starts with the weighted expression and pose, e.g. `(gentle warm smile:1.4), (happy bright eyes:1.3), head tilted, one hand brushing hair behind her ear, different pose, 1girl, <hair>, <dress>, <necklace>, upper body, photorealistic, glowing porcelain skin, ...`; leave out face/hair/eye detail the source image already has. Its cost is about 2.8 credits per image.
 Save as `public/characters/expressions/<id>_{happy,shy,sad,angry}.webp` (768×1024) and set `expressions` on the character.
 
-## Expressions with a changed pose + cut-outs (Noelle, 2026-11-03: the recipe to use now)
+## Expressions with a changed pose (Noelle, 2026-11-03: the recipe to use now)
 
 The older notes above say the pose must stay and Serena's set was dropped; Noelle's set worked like this, so prefer it.
+Steps 1, 3 and 4 (white backdrop, cut-outs) are **dropped** by the owner (2026-11-11); kept only as history.
 
-1. **Source portrait on a white high-key backdrop** with headroom above the hair (a dark jacket on a dark backdrop cuts out
-   badly, and a clipped ponytail looks "แหว่ง" as a backdrop). Use it only as the Img2Img source and the rembg source.
+1. ~~Source portrait on a white high-key backdrop~~: use the main portrait in its own setting as the Img2Img source.
 2. **8 expressions** (happy, shy, sad, angry, thinking, surprised, teasing, worried), each a visibly different pose:
    Img2Img from that source, Krea-2 Turbo + semi style LoRA **0.7**, **denoise 0.72**, prompt = weighted eye colour first,
    then weighted expression + pose, then the short look. An angry face needs a strong prompt (frown, narrowed eyes,
@@ -108,7 +117,7 @@ finish, take the **largest** result `<img>` in DOM order, and check its `src` di
 Chrome leaves some downloads as `<uuid>.tmp`; match them by byte size, then look at a contact sheet. Delete duplicates by
 hand. Leftovers in `Downloads` (`.tmp`, `botbaat-*.png`) are the owner's to clean.
 
-## Main portrait needs a background (Noelle, 2026-11-03)
+## Main portrait needs a background (Noelle, 2026-11-03; obsolete since there is no white backdrop any more)
 
 A white-backdrop portrait (made so the cut-out is clean) must NOT be the card avatar: on the home grid it looks empty next to
 the others. Keep the white one only as the rembg source; make `public/characters/<id>.webp` by compositing the cut-out
