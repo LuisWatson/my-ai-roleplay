@@ -426,7 +426,7 @@ export default function ChatMessage({
         </button>
       )}
 
-      {hasText && !isEditing && (canRegenerate || !disabled) && (
+      {(hasText || (!disabled && !isUser)) && !isEditing && (canRegenerate || !disabled) && (
         <div className="flex items-center gap-0.5">
           {canRegenerate && message.alts?.length > 1 && (
             <div className="flex items-center gap-0.5 mr-1 text-[11px] text-slate-400" aria-label="เลือกคำตอบ">

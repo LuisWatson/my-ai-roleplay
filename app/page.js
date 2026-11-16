@@ -625,7 +625,17 @@ function RoleplayApp({ store, account, getAccessToken }) {
           detail: cut,
         });
       }
-      if (replyText && !controller.discard) {
+      // A reply that is only the scene tag has no story in it: keep it out of the chat (it showed as endless dots)
+      const emptyStory = Boolean(replyText) && !finalizeReply(replyText).cleanText.trim();
+      if (emptyStory && !controller.discard && activeCharIdRef.current === charId) {
+        setMessages((prev) => {
+          const last = prev[prev.length - 1];
+          const rest = last?.role === 'model' && !last.text ? prev.slice(0, -1) : prev;
+          return previous ? [...rest, previous] : rest;
+        });
+        setNotice({ ...REPLY_ERRORS.busy, retry: !previous });
+      }
+      if (replyText && !emptyStory && !controller.discard) {
         const {
           cleanText,
           scene,
