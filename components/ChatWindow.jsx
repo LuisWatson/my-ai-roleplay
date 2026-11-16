@@ -231,6 +231,8 @@ function NoticeCard({ notice, onRetry, onDismiss }) {
 /**
  * Main chat container component handling message flow, active persona info, and input controls.
  */
+const PAGE_SIZE = 40;
+
 export default function ChatWindow({
   selectedChar,
   onBack,
@@ -271,6 +273,11 @@ export default function ChatWindow({
   const scene = latestScene(messages);
   const [zoomSrc, setZoomSrc] = useState(null); // the picture open at full size, or null
   useEffect(() => setZoomSrc(null), [selectedChar.id]);
+  // Only the latest messages are in the page: a long chat with every bubble mounted made scrolling and each
+  // streamed chunk slow. Older ones load on request (a chat opening or switching resets it).
+  const [shownCount, setShownCount] = useState(PAGE_SIZE);
+  useEffect(() => setShownCount(PAGE_SIZE), [selectedChar.id]);
+  const firstShown = Math.max(0, messages.length - shownCount);
   const lastThought = [...messages].reverse().find((m) => m.thought)?.thought;
   const picture = pictureFor(selectedChar, lastThought);
   // Her picture for an expression key; nothing when she has no picture for it (the main one would not show a change)
@@ -479,7 +486,16 @@ export default function ChatWindow({
 
       {/* Messages Scroll Area */}
       <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto overflow-x-hidden overscroll-x-none p-4 space-y-4 [overflow-wrap:anywhere]">
-        {messages.map((msg, idx) => (
+        {firstShown > 0 && (
+          <button
+            type="button"
+            onClick={() => setShownCount((n) => n + PAGE_SIZE)}
+            className="block mx-auto px-3 py-1 rounded-full text-xs text-slate-300 bg-slate-900/60 border border-white/10 hover:bg-slate-800/70"
+          >
+            แสดงข้อความก่อนหน้า ({firstShown})
+          </button>
+        )}
+        {messages.map((msg, idx) => idx < firstShown ? null : (
           <React.Fragment key={idx}>
           {idx === 0 && opening ? (
             <OpeningCard opening={opening} className="max-w-md mx-auto" />
