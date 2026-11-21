@@ -15,7 +15,7 @@ import Toast from '../components/Toast';
 import { useConfirm } from '../components/ConfirmDialog';
 import { normalizeUserRole, mergeUserProfile, USER_ROLE_FIELDS } from '../lib/userRole';
 import { normalizeRealism } from '../constants/scenario';
-import { stripTrailingPartialTag, finalizeReply, latestScene, splitCut } from '../lib/scene';
+import { stripTrailingPartialTag, finalizeReply, hasVisibleReplyText, latestScene, splitCut } from '../lib/scene';
 import { DEFAULT_CHARACTERS } from '../constants/characters';
 import { addRawNote, emptyMemoryData, isStructured, withData } from '../lib/ledger';
 import { memoryKey, pinsKey, readMemory, readPins, cleanPins, chatWindow, nextMemoryBatch, fingerprint, rawMemoryNote } from '../lib/memory';
@@ -54,6 +54,7 @@ import {
   swipeVersion,
   withoutSwipes,
   savedHistoryOrGreeting,
+  restoreAfterEmptyReply,
 } from '../lib/chatHelpers';
 
 function RoleplayApp({ store, account, getAccessToken }) {
@@ -592,11 +593,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
       if ((failed || controller.userStopped || controller.stalled) && !accumulatedText && activeCharIdRef.current === charId) {
         // Drop the empty placeholder bubble (or bring back the reply that was being regenerated);
         // keep any partial reply already received
-        setMessages((prev) => {
-          const last = prev[prev.length - 1];
-          const rest = last?.role === 'model' && !last.text ? prev.slice(0, -1) : prev;
-          return previous ? [...rest, previous] : rest;
-        });
+        setMessages((prev) => restoreAfterEmptyReply(prev, previous));
       }
       if (activeCharIdRef.current === charId) {
         if (controller.stalled) {
@@ -626,13 +623,9 @@ function RoleplayApp({ store, account, getAccessToken }) {
         });
       }
       // A reply that is only the scene tag has no story in it: keep it out of the chat (it showed as endless dots)
-      const emptyStory = Boolean(replyText) && !finalizeReply(replyText).cleanText.trim();
+      const emptyStory = Boolean(replyText) && !hasVisibleReplyText(replyText);
       if (emptyStory && !controller.discard && activeCharIdRef.current === charId) {
-        setMessages((prev) => {
-          const last = prev[prev.length - 1];
-          const rest = last?.role === 'model' && !last.text ? prev.slice(0, -1) : prev;
-          return previous ? [...rest, previous] : rest;
-        });
+        setMessages((prev) => restoreAfterEmptyReply(prev, previous));
         setNotice({ ...REPLY_ERRORS.busy, retry: !previous });
       }
       if (replyText && !emptyStory && !controller.discard) {

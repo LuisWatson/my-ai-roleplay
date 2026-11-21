@@ -16,9 +16,9 @@ test('cutoutFor picks the expression, its fallback, then the main cut-out', () =
   assert.equal(cutoutFor({}, 'happy'), null);
 });
 
-test('every Serena cut-out has a matching expression picture', () => {
+test('Serena expression pictures resolve without optional cut-outs', () => {
   const serena = DEFAULT_CHARACTERS.find((c) => c.id === 'serena');
-  assert.ok(serena.cutouts.main);
-  for (const key of Object.keys(serena.expressions)) assert.ok(serena.cutouts[key], key);
-  assert.equal(cutoutFor(serena, pictureFor(serena, '😳 อะไรกัน').key), serena.cutouts.shy);
+  assert.equal(serena.cutouts, undefined);
+  assert.equal(pictureFor(serena, '😳 อะไรกัน').src, serena.expressions.shy);
+  assert.equal(pictureFor(serena, '😊 ยิ้ม').src, serena.expressions.happy);
 });

@@ -3,7 +3,9 @@ import { AVAILABLE_MODELS } from '../../../constants/models';
 import { normalizeResponseSettings } from '../../../constants/chatSettings';
 import { overusedPhrases } from '../../../lib/repeatGuard';
 import { buildSystemInstruction, CONTINUE_MESSAGE, continuePrompt, directionReminder, replyReminder } from '../../../lib/prompt';
-import { authorize, resolveApiKey, tryModels, SAFETY_SETTINGS } from '../../../lib/geminiServer';
+import { authorize, resolveApiKey, tryModels, SAFETY_SETTINGS, jsonResponse } from '../../../lib/geminiServer';
+import { validateChatRequest } from '../../../lib/chatRequest';
+import { readFirstStreamText } from '../../../lib/geminiStream';
 import { CUT_MARKER } from '../../../lib/scene';
 import { stripUserThoughts, withoutUserThoughts } from '../../../lib/userThoughts';
 
@@ -41,6 +43,15 @@ export async function POST(req) {
     const denied = await authorize(req);
     if (denied) return denied;
 
+    let body;
+    try {
+      body = await req.json();
+    } catch {
+      return jsonResponse({ error: 'รูปแบบข้อมูลคำขอไม่ถูกต้อง', kind: 'invalid_request' }, 400);
+    }
+    const requestError = validateChatRequest(body);
+    if (requestError) return jsonResponse({ error: requestError, kind: 'invalid_request' }, 400);
+
     const {
       message,
       history,
@@ -59,7 +70,7 @@ export async function POST(req) {
       chatStyle,
       direction,
       continueStory,
-    } = await req.json();
+    } = body;
 
     const { keys: activeKeys, error: keyError } = resolveApiKey(apiKey);
     if (keyError) return keyError;
@@ -137,13 +148,7 @@ ${outgoingMessage}`;
         .startChat({ history, generationConfig: { temperature, ...thinkingFor(mName) } })
         .sendMessageStream(text);
       const iterator = stream[Symbol.asyncIterator]();
-      let firstText = '';
-      while (!firstText) {
-        const { value, done } = await iterator.next();
-        if (done) break;
-        firstText = value.text(); // throws when the reply was blocked
-      }
-      if (!firstText) throw new Error('Empty reply');
+      const firstText = await readFirstStreamText(iterator); // throws when the reply was blocked or empty
       return { iterator, firstText };
     };
 

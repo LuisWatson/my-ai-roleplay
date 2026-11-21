@@ -12,6 +12,12 @@ import { PortraitLightbox, MoodCard } from './PortraitView';
 import CharacterStage from './CharacterStage';
 import { openingOf } from '../lib/story';
 import { pictureFor, pictureOfMood, moodChanges } from '../lib/expressions';
+import {
+  canRegenerateReply,
+  CHAT_MESSAGE_PAGE_SIZE,
+  firstVisibleMessageIndex,
+  visibleMessages,
+} from '../lib/chatHelpers';
 
 // Story-style lines shown while the reply is on its way; never about the app or the AI
 const WAITING_LINES = [
@@ -231,8 +237,6 @@ function NoticeCard({ notice, onRetry, onDismiss }) {
 /**
  * Main chat container component handling message flow, active persona info, and input controls.
  */
-const PAGE_SIZE = 40;
-
 export default function ChatWindow({
   selectedChar,
   onBack,
@@ -275,9 +279,9 @@ export default function ChatWindow({
   useEffect(() => setZoomSrc(null), [selectedChar.id]);
   // Only the latest messages are in the page: a long chat with every bubble mounted made scrolling and each
   // streamed chunk slow. Older ones load on request (a chat opening or switching resets it).
-  const [shownCount, setShownCount] = useState(PAGE_SIZE);
-  useEffect(() => setShownCount(PAGE_SIZE), [selectedChar.id]);
-  const firstShown = Math.max(0, messages.length - shownCount);
+  const [shownCount, setShownCount] = useState(CHAT_MESSAGE_PAGE_SIZE);
+  useEffect(() => setShownCount(CHAT_MESSAGE_PAGE_SIZE), [selectedChar.id]);
+  const firstShown = firstVisibleMessageIndex(messages.length, shownCount);
   const lastThought = [...messages].reverse().find((m) => m.thought)?.thought;
   const picture = pictureFor(selectedChar, lastThought);
   // Her picture for an expression key; nothing when she has no picture for it (the main one would not show a change)
@@ -489,48 +493,50 @@ export default function ChatWindow({
         {firstShown > 0 && (
           <button
             type="button"
-            onClick={() => setShownCount((n) => n + PAGE_SIZE)}
+            onClick={() => setShownCount((n) => n + CHAT_MESSAGE_PAGE_SIZE)}
             className="block mx-auto px-3 py-1 rounded-full text-xs text-slate-300 bg-slate-900/60 border border-white/10 hover:bg-slate-800/70"
           >
             แสดงข้อความก่อนหน้า ({firstShown})
           </button>
         )}
-        {messages.map((msg, idx) => idx < firstShown ? null : (
-          <React.Fragment key={idx}>
-          {idx === 0 && opening ? (
-            <OpeningCard opening={opening} className="max-w-md mx-auto" />
-          ) : (
-            dividers[idx] && <SceneDivider scene={dividers[idx]} />
-          )}
-          <ChatMessage
-            message={msg}
-            moodCard={
-              // With the character as the backdrop the expression is already on screen
-              !selectedChar.cutouts && moodCards[idx] && (
-                <MoodCard character={selectedChar} card={moodCards[idx]} onZoom={setZoomSrc} />
+        {visibleMessages(messages, firstShown).map((msg, visibleIndex) => {
+          const idx = firstShown + visibleIndex;
+          return (
+            <React.Fragment key={idx}>
+              {idx === 0 && opening ? (
+                <OpeningCard opening={opening} className="max-w-md mx-auto" />
+              ) : (
+                dividers[idx] && <SceneDivider scene={dividers[idx]} />
               )
-            }
-            avatar={msg.role === 'model' ? pictureFor(selectedChar, msg.thought).src : selectedChar.avatar}
-            pictureOf={pictureOf}
-            characterName={selectedChar.name}
-            cast={selectedChar.cast}
-            disabled={loading}
-            canRegenerate={
-              idx === messages.length - 1 && msg.role === 'model' && messages.some((m) => m.role === 'user')
-            }
-            onRegenerate={onRegenerate}
-            onSwipe={onSwipe}
-            onSaveMoment={(title) => onSaveMoment(idx, title)}
-            onDismissMoment={() => onDismissMoment(idx)}
-            onUndoMoment={() => onUndoMoment(idx)}
-            relationChange={changes[idx]}
-            canRetry={idx === messages.length - 1 && msg.role === 'user' && !loading}
-            onRetry={onRetry}
-            onEdit={(text) => onEditMessage(idx, text)}
-            onDelete={() => onDeleteMessage(idx)}
-          />
-          </React.Fragment>
-        ))}
+              }
+              <ChatMessage
+                message={msg}
+                moodCard={
+                  // With the character as the backdrop the expression is already on screen
+                  !selectedChar.cutouts && moodCards[idx] && (
+                    <MoodCard character={selectedChar} card={moodCards[idx]} onZoom={setZoomSrc} />
+                  )
+                }
+                avatar={msg.role === 'model' ? pictureFor(selectedChar, msg.thought).src : selectedChar.avatar}
+                pictureOf={pictureOf}
+                characterName={selectedChar.name}
+                cast={selectedChar.cast}
+                disabled={loading}
+                canRegenerate={canRegenerateReply(messages, idx)}
+                onRegenerate={onRegenerate}
+                onSwipe={onSwipe}
+                onSaveMoment={(title) => onSaveMoment(idx, title)}
+                onDismissMoment={() => onDismissMoment(idx)}
+                onUndoMoment={() => onUndoMoment(idx)}
+                relationChange={changes[idx]}
+                canRetry={idx === messages.length - 1 && msg.role === 'user' && !loading}
+                onRetry={onRetry}
+                onEdit={(text) => onEditMessage(idx, text)}
+                onDelete={() => onDeleteMessage(idx)}
+              />
+            </React.Fragment>
+          );
+        })}
 
         {waiting && (
           <WaitingIndicator avatar={selectedChar.avatar} name={selectedChar.name} />

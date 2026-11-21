@@ -3,6 +3,30 @@
 บันทึกงานที่ทำเสร็จ ใหม่สุดอยู่บนสุด (กฎอยู่ใน `CLAUDE.md` → Conventions)
 
 ---
+## 2026-11-20 — ทดสอบ API error paths และลดงาน render ของแชทยาว
+
+- แก้: API ปฏิเสธ JSON/ฟิลด์คำขอที่ไม่ครบด้วย 400; แยกการอ่าน chunk แรกเพื่อทดสอบ stream ว่างและ fallback; จำกัด `.map()` ใน `ChatWindow` เฉพาะข้อความที่แสดง; ลบ placeholder ที่มีแต่ช่องว่างเมื่อคำตอบไม่มีเนื้อเรื่อง
+- ไฟล์: `app/api/chat/route.js`, `app/page.js`, `lib/chatRequest.js`, `lib/geminiStream.js`, `lib/chatHelpers.js`, `components/ChatWindow.jsx`, `tests/chat-api-errors.test.mjs`, `tests/chat-regressions.test.mjs`
+- ตรวจ: `node --test tests/*.test.mjs` ผ่าน 43 tests และ `npm run build` ผ่าน; ตรวจ HTTP 400 ของคำขอไม่ครบในสำเนาแยก ไม่เรียก Gemini; หน้าแรกโหลดในเบราว์เซอร์
+- เหลือ: เครื่องมือ browser เสียการเชื่อมต่อกับหน้าทดสอบ จึงยังไม่ได้วัดแชทยาวหรือทดสอบ UI บนมือถือ/iPhone
+
+---
+## 2026-11-20 — ปรับ README ให้ตรงกับฟีเจอร์ปัจจุบัน
+
+- แก้: อัปเดตจำนวนตัวละครพรีเซ็ต ฟีเจอร์แชท/ความจำ/ส่งออก และคำสั่งรันทดสอบ; ปรับ project structure และคำอธิบายการเก็บข้อมูลให้ตรงกับ Supabase `user_kv`
+- ไฟล์: `README.md`, `worklog.md`
+- ตรวจ: เทียบรายการฟีเจอร์กับโค้ดและ `package.json`; เป็นการแก้เอกสาร ไม่ต้องรันชุดทดสอบ
+- เหลือ: ยังไม่ได้ตรวจการแสดงผลของ README บน GitHub
+
+---
+## 2026-11-20 — เพิ่ม regression tests สำหรับคำตอบว่างและแชทยาว
+
+- แก้: แยกตัวช่วยตรวจเนื้อเรื่องที่มองเห็นได้, การแบ่งหน้าข้อความ และเงื่อนไขสร้างคำตอบใหม่ให้ทดสอบได้โดยไม่เรียก Gemini; ปรับ test เซเรน่าให้ตรงกับการใช้ expression pictures โดยไม่มี cut-outs
+- ไฟล์: `lib/scene.js`, `lib/chatHelpers.js`, `app/page.js`, `components/ChatWindow.jsx`, `tests/chat-regressions.test.mjs`, `tests/character-stage.test.mjs`
+- ตรวจ: `node --test tests/*.test.mjs` ผ่าน 37 tests; ไม่เรียก Gemini; `npm run lint` ใช้ไม่ได้แบบ non-interactive เพราะโปรเจกต์ยังไม่มี ESLint config และ Next เปิดตัวเลือกตั้งค่า
+- เหลือ: ยังไม่ได้ตรวจ UI บนเบราว์เซอร์หรือ iPhone
+
+---
 ## 2026-11-16 — คำตอบที่มีแต่แท็กฉาก ค้างเป็นจุด ... ไม่มีปุ่มสร้างใหม่
 
 - อาการ: โมเดลตอบมาแต่แท็ก `[ฉาก: ...]` ไม่มีเนื้อเรื่อง → ข้อความถูกบันทึกด้วย text ว่าง แสดงเป็นจุดเด้งตลอดและไม่มีปุ่มสร้างคำตอบใหม่
