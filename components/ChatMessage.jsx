@@ -108,7 +108,7 @@ export function formatStoryText(text, characterName, cast, thought, pictureOf) {
             <div key={idx} className="w-fit max-w-full space-y-1">
               <SpeakerLabel speaker={para.speaker} cast={cast} className={`px-1 ${style.label}`} />
               <p
-                className={`px-3.5 py-2.5 rounded-2xl rounded-tl-none bg-slate-800/90 border-l-2 ${style.bar} font-medium ${style.speech} shadow-md`}
+                className={`px-3.5 py-2.5 rounded-2xl rounded-tl-none bg-slate-800/90 border ${style.bar} font-medium ${style.speech} shadow-md`}
               >
                 {para.text}
               </p>

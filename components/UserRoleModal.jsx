@@ -61,7 +61,7 @@ export default function UserRoleModal({ isOpen, firstTime = false, onClose, char
             <UserCog className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h2 className="text-base font-bold">บทบาทของฉันกับ {character.name}</h2>
+            <h2 className="text-base font-semibold">บทบาทของฉันกับ {character.name}</h2>
             <p className="text-xs text-slate-400">ไม่ต้องกรอกครบ ช่องที่เว้นว่างจะใช้ค่าเริ่มต้นของตัวละคร</p>
           </div>
         </div>
@@ -133,7 +133,7 @@ export default function UserRoleModal({ isOpen, firstTime = false, onClose, char
             </button>
             <button
               onClick={handleSave}
-              className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium rounded-xl transition"
+              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-xl transition"
             >
               บันทึกบทบาท
             </button>

@@ -62,7 +62,7 @@ export default function ExportChatModal({
 
         {/* Export section */}
         <div className="space-y-2 pt-1">
-          <p className="text-[11px] uppercase tracking-widest text-slate-500 px-1">ส่งออก</p>
+          <p className="text-xs text-slate-400 px-1">ส่งออก</p>
 
           <button
             type="button"
@@ -110,7 +110,7 @@ export default function ExportChatModal({
         {/* Import section */}
         {onImportJson && (
           <div className="space-y-2">
-            <p className="text-[11px] uppercase tracking-widest text-slate-500 px-1">นำเข้า</p>
+            <p className="text-xs text-slate-400 px-1">นำเข้า</p>
 
             <button
               type="button"

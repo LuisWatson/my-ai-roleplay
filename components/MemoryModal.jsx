@@ -100,7 +100,7 @@ export default function MemoryModal({
             <Brain className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h2 className="text-base font-bold">ความทรงจำของ {character.name}</h2>
+            <h2 className="text-base font-semibold">ความทรงจำของ {character.name}</h2>
             <p className="text-xs text-slate-400">สิ่งที่ตัวละครจำได้จากเรื่องที่คุยกัน</p>
             {/* Only the count of the hidden story's stages told so far, never what they say */}
             {truthCount && (
@@ -258,7 +258,7 @@ export default function MemoryModal({
           {tab === 'notes' && (
           <button
             onClick={handleSave}
-            className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium rounded-xl transition"
+            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-xl transition"
           >
             บันทึก
           </button>

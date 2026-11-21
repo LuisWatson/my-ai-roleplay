@@ -1,3 +1,9 @@
+// Scale from CSS channel variables in app/globals.css (keeps `/opacity` modifiers working)
+const scale = (name) =>
+  Object.fromEntries(
+    [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950].map((n) => [n, `rgb(var(--${name}-${n}) / <alpha-value>)`])
+  );
+
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
@@ -6,6 +12,14 @@ module.exports = {
   ],
   theme: {
     extend: {
+      // The old class names stay; the colours behind them are the "quiet night" tokens
+      colors: {
+        slate: scale('ink'),
+        purple: scale('accent'),
+        violet: scale('accent'),
+        fuchsia: scale('accent'),
+        indigo: scale('accent'),
+      },
       // `animate-fadeIn`: cards, pills and dialogs ease in. Opacity only, so it never fights the transforms
       // some of them use for positioning (e.g. the centred toast)
       keyframes: {

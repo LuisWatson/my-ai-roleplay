@@ -272,7 +272,7 @@ export default function ChatInput({
               onClick={onContinue}
               title="ให้ตอบต่อทันที"
               aria-label="ให้ตอบต่อทันที"
-              className="h-10 w-10 grid place-items-center rounded-xl transition flex-shrink-0 bg-teal-600 hover:bg-teal-500 text-white"
+              className="h-10 w-10 grid place-items-center rounded-xl transition flex-shrink-0 bg-slate-700 hover:bg-slate-600 text-purple-300"
             >
               <FastForward className="w-4 h-4 fill-current" />
             </button>
@@ -283,7 +283,7 @@ export default function ChatInput({
               title="ส่งข้อความ"
               className={`h-10 w-10 grid place-items-center rounded-xl transition flex-shrink-0 ${
                 canSend
-                  ? 'bg-purple-500 hover:bg-purple-400 text-white'
+                  ? 'bg-purple-600 hover:bg-purple-700 text-white'
                   : 'bg-slate-700/60 text-slate-500 cursor-not-allowed'
               }`}
             >
@@ -293,7 +293,7 @@ export default function ChatInput({
         </div>
         <div className="mt-1.5 px-1 hidden sm:flex items-center justify-end">
           <p className="text-[11px] text-slate-500">
-            <kbd className="font-sans text-slate-400">Enter</kbd> ส่ง ·{' '}
+            <kbd className="font-sans text-slate-400">Enter</kbd> ส่ง {' '}
             <kbd className="font-sans text-slate-400">Shift + Enter</kbd> ขึ้นบรรทัดใหม่
           </p>
         </div>

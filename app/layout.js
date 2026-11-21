@@ -1,13 +1,19 @@
 import './globals.css';
-import { Prompt } from 'next/font/google';
+import { Maitree, IBM_Plex_Sans_Thai } from 'next/font/google';
 
-// Prompt for names and headings only (self-hosted by Next at build time); body text stays on the system
-// font, which is easiest to read at chat length
-const display = Prompt({
+// Self-hosted by Next at build time. Maitree (soft Thai serif) for names and headings; IBM Plex Sans Thai
+// for everything else: the system font drew Thai badly on Windows
+const display = Maitree({
   subsets: ['thai', 'latin'],
   weight: ['500', '600'],
   display: 'swap',
   variable: '--font-display',
+});
+const body = IBM_Plex_Sans_Thai({
+  subsets: ['thai', 'latin'],
+  weight: ['400', '500', '600'],
+  display: 'swap',
+  variable: '--font-plex',
 });
 
 export const metadata = {
@@ -18,12 +24,12 @@ export const metadata = {
 };
 
 export const viewport = {
-  themeColor: '#0f172a',
+  themeColor: '#141114',
 };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="th" className={display.variable}>
+    <html lang="th" className={`${display.variable} ${body.variable}`}>
       <body className="bg-slate-900 text-slate-100 antialiased h-dvh overflow-hidden">
         {children}
       </body>

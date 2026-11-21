@@ -66,17 +66,17 @@ export default function Sidebar({
     <>
       {isOpen && <div onClick={onClose} className="md:hidden fixed inset-0 bg-slate-950/60 z-30" />}
       <aside
-        className={`fixed md:static inset-y-0 left-0 z-40 w-80 bg-slate-800 md:bg-slate-800/80 backdrop-blur-md border-r border-slate-700/80 flex flex-col h-full transition-transform ${
+        className={`fixed md:static inset-y-0 left-0 z-40 w-80 bg-slate-950 md:bg-slate-950/90 backdrop-blur-md border-r border-slate-800 flex flex-col h-full transition-transform ${
           isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         } ${collapsed ? 'md:hidden' : ''}`}
       >
         {/* Header */}
-        <div className="p-4 border-b border-slate-700/80 flex justify-between items-center bg-slate-800/40">
+        <div className="p-4 border-b border-slate-800 flex justify-between items-center">
           <div className="flex items-center gap-2">
             <div className="p-1.5 rounded-lg bg-purple-600">
               <VerseLogo className="w-5 h-5 text-white" />
             </div>
-            <h1 className="font-bold text-base text-white tracking-wide">Verse</h1>
+            <h1 className="font-semibold text-xl text-white">Verse</h1>
           </div>
           <div className="flex items-center">
             <button
@@ -119,7 +119,7 @@ export default function Sidebar({
           </button>
           <button
             onClick={onOpenCreateModal}
-            className="w-full py-2.5 px-4 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition"
+            className="w-full py-2.5 px-4 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition"
           >
             <Plus className="w-4 h-4" />
             <span>สร้างตัวละครใหม่</span>
@@ -128,7 +128,7 @@ export default function Sidebar({
 
         {/* Chat history */}
         <div className="flex-1 overflow-y-auto p-3 space-y-3">
-          <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider px-1">แชทของฉัน</div>
+          <div className="text-xs font-medium text-slate-400 px-1">แชทของฉัน</div>
           <div className="relative">
             <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
@@ -185,7 +185,7 @@ export default function Sidebar({
         </div>
 
         {/* Backup */}
-        <div className="p-3 border-t border-slate-700/80 bg-slate-800/40 grid grid-cols-2 gap-2">
+        <div className="p-3 border-t border-slate-800 grid grid-cols-2 gap-2">
           <button
             onClick={onExportData}
             className="py-2 px-3 bg-slate-700/60 hover:bg-slate-700 text-slate-300 text-xs rounded-xl flex items-center justify-center gap-1.5 transition"

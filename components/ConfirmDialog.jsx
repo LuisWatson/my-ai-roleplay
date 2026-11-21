@@ -86,7 +86,7 @@ function ConfirmDialog({ request, onAnswer }) {
             className={`flex-1 py-2.5 rounded-xl text-white text-sm font-medium transition focus:outline-none focus:ring-2 ${
               danger
                 ? 'bg-rose-600 hover:bg-rose-500 focus:ring-rose-400'
-                : 'bg-purple-600 hover:bg-purple-500 focus:ring-purple-400'
+                : 'bg-purple-600 hover:bg-purple-700 focus:ring-purple-400'
             }`}
           >
             {confirmLabel}

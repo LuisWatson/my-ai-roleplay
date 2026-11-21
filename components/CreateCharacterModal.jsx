@@ -185,7 +185,7 @@ export default function CreateCharacterModal({
             <Sparkles className="w-5 h-5 text-purple-400" />
           </div>
           <div>
-            <h2 className="text-base font-bold">{editingCharacter ? 'แก้ไขตัวละคร' : 'สร้างตัวละครใหม่'}</h2>
+            <h2 className="text-base font-semibold">{editingCharacter ? 'แก้ไขตัวละคร' : 'สร้างตัวละครใหม่'}</h2>
             <p className="text-xs text-slate-400">กำหนดบุคลิกและบทบาทสำหรับ Roleplay</p>
           </div>
         </div>
@@ -217,7 +217,7 @@ export default function CreateCharacterModal({
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploading}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-purple-600/80 hover:bg-purple-500 text-white text-sm font-medium transition disabled:opacity-50"
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-purple-600/80 hover:bg-purple-700 text-white text-sm font-medium transition disabled:opacity-50"
                 >
                   <Camera className="w-4 h-4" />
                   {uploading ? 'กำลังเตรียมรูป...' : 'แตะเพื่อเลือกรูป'}
@@ -661,7 +661,7 @@ export default function CreateCharacterModal({
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium rounded-xl transition"
+              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-xl transition"
             >
               {editingCharacter ? 'บันทึกการแก้ไข' : 'สร้างตัวละคร'}
             </button>

@@ -106,7 +106,7 @@ function CloudGate({ children }) {
           <div className="p-1.5 rounded-lg bg-purple-600">
             <VerseLogo className="w-5 h-5 text-white" />
           </div>
-          <h1 className="font-bold text-lg text-white">Verse</h1>
+          <h1 className="font-semibold text-lg text-white">Verse</h1>
         </div>
 
         {(state.status === 'loading' || state.status === 'importing') && (
@@ -154,7 +154,7 @@ function CloudGate({ children }) {
             <div className="space-y-2">
               <button
                 onClick={importLocalData}
-                className="w-full py-2.5 px-4 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-medium text-sm transition"
+                className="w-full py-2.5 px-4 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-medium text-sm transition"
               >
                 ย้ายข้อมูลขึ้นบัญชี
               </button>
