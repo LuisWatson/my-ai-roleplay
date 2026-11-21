@@ -13,8 +13,8 @@ The owner builds it for themselves and their partner. Reply to the owner in Thai
 - Login: set `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY` in `.env.local`. Left empty, the app runs
   as before (no login, localStorage only) — fine in dev; `/api/chat` refuses in production without them.
 - Don't run a second `next dev` in this folder: both share `.next` and one's env leaks into the other.
-- No test suite. Verify changes in the browser; for prompt/parser logic, import the module in Node
-  (imports have no `.js` extension, so a small resolve hook is needed).
+- Tests: `node --test tests/*.test.mjs` (the resolve hook for extension-less imports is `tests/resolve-loader.mjs`).
+  Also verify UI changes in the browser; for prompt/parser logic, import the module in Node the same way.
 - **Testing without logging in** (Claude can't sign in to Google for the owner): copy the project to a temp folder
   (robocopy, skip `.next`/`.git`), give the copy a `.env.local` with only `GEMINI_API_KEY`, run `npx next dev -p 3002`
   there. No Supabase vars → no login, localStorage only. Delete the copy afterwards. Also `next build` there
@@ -41,6 +41,11 @@ The owner builds it for themselves and their partner. Reply to the owner in Thai
   client's JavaScript origins, or Google login on it fails.
 
 ## Where things live
+
+- Theme ("quiet night"): colours are tokens in `app/globals.css` (`--ink-*` warm neutrals, `--accent-*` muted mauve).
+  `tailwind.config.js` remaps the Tailwind scales `slate` → ink and `purple`/`violet`/`fuchsia`/`indigo` → accent, so
+  `bg-purple-600` is mauve, not purple. `pink` is NOT remapped (it is a supporting-speaker colour).
+- `components/BottomNav.jsx` — phone-only bottom bar (home / chats / create) on the home screen; "chats" opens the sidebar drawer.
 
 - `app/page.js` — all app state. Reads/writes go through a `store` prop with the localStorage API (`lib/store.js`):
   with login, the signed-in user's Supabase `user_kv` rows (one row per old localStorage key); without, localStorage.

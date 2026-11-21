@@ -50,7 +50,7 @@ export default function HomeHero({ character, preview, hasChat, onOpen, scrollRe
     <section
       ref={rootRef}
       style={{ '--p': 0 }}
-      className="relative h-[60svh] min-h-[22rem] max-h-[36rem] rounded-2xl overflow-hidden border border-slate-700/50 bg-slate-950"
+      className="relative h-[44svh] md:h-[60svh] min-h-[18rem] md:min-h-[22rem] max-h-[36rem] rounded-2xl overflow-hidden border border-slate-700/50 bg-slate-950"
     >
       {room && (
         <img
@@ -62,13 +62,15 @@ export default function HomeHero({ character, preview, hasChat, onOpen, scrollRe
       )}
       <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-950/40 to-transparent" />
 
+      {cutout && (
       <div
         aria-hidden="true"
-        className="absolute left-5 md:left-10 top-[9%] font-bold leading-none text-white/90 text-[20vw] md:text-[6.5rem] tracking-tight select-none"
+        className="absolute left-5 md:left-10 top-[9%] font-semibold leading-none text-white/90 text-[20vw] md:text-[6.5rem] select-none [font-family:var(--font-head)]"
         style={{ transform: 'translate3d(0, calc(var(--p) * -18%), 0)', opacity: 'calc(1 - var(--p) * 1.1)' }}
       >
         {shortName}
       </div>
+      )}
 
       {cutout ? (
         <img
@@ -95,7 +97,7 @@ export default function HomeHero({ character, preview, hasChat, onOpen, scrollRe
         {hasChat && preview && <p className="mt-2 text-xs text-slate-400 line-clamp-1">ล่าสุด: {preview}</p>}
         <button
           onClick={() => onOpen(character)}
-          className="mt-3 inline-flex items-center gap-2 min-h-11 px-5 rounded-full bg-purple-600 hover:bg-purple-500 active:scale-[0.97] text-white text-sm font-semibold transition"
+          className="mt-3 inline-flex items-center gap-2 min-h-11 px-5 rounded-full bg-purple-600 hover:bg-purple-700 active:scale-[0.97] text-white text-sm font-semibold transition"
         >
           <Play className="w-4 h-4 fill-current" />
           {hasChat ? 'คุยต่อ' : 'เริ่มแชท'}

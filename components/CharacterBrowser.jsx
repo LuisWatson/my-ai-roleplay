@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState, useMemo, useRef } from 'react';
-import { Search, Plus, MessageSquare, PanelLeftOpen } from 'lucide-react';
+import { Search, PanelLeftOpen } from 'lucide-react';
 import CharacterCard from './CharacterCard';
 import HomeHero from './HomeHero';
+import BottomNav from './BottomNav';
 
 /**
  * Home screen: searchable, filterable grid of every character. Picking a card opens its profile sheet.
@@ -26,6 +27,7 @@ export default function CharacterBrowser({
   // The character you talked to last; before any chat, one that has a cut-out, else the first
   const featured = recentChats[0] ?? null;
   const heroCharacter = featured?.character ?? characters.find((c) => c.cutouts) ?? characters[0];
+  const countById = useMemo(() => Object.fromEntries(recentChats.map((c) => [c.character.id, c.count])), [recentChats]);
 
   const categories = useMemo(() => [...new Set(characters.map((c) => c.category).filter(Boolean))], [characters]);
 
@@ -41,15 +43,8 @@ export default function CharacterBrowser({
   return (
     <main className="flex-1 flex flex-col bg-slate-900/95 overflow-hidden">
       <div ref={scrollRef} className="flex-1 overflow-y-auto">
-        <div className="max-w-6xl mx-auto px-4 md:px-8 py-5 md:py-8 space-y-4">
+        <div className="max-w-6xl mx-auto px-4 md:px-8 py-4 md:py-8 space-y-4">
           <div className="flex items-center gap-2">
-            <button
-              onClick={onOpenHistory}
-              title="แชทของฉัน"
-              className="md:hidden p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 hover:text-white transition"
-            >
-              <MessageSquare className="w-5 h-5" />
-            </button>
             {onExpandSidebar && (
               <button
                 onClick={onExpandSidebar}
@@ -70,13 +65,6 @@ export default function CharacterBrowser({
                 className="w-full bg-slate-800/80 border border-slate-700 rounded-xl pl-10 pr-3 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-purple-500 transition"
               />
             </div>
-            <button
-              onClick={onOpenCreateModal}
-              className="md:hidden p-2.5 rounded-xl bg-purple-600 text-white"
-              title="สร้างตัวละครใหม่"
-            >
-              <Plus className="w-5 h-5" />
-            </button>
           </div>
 
           {heroCharacter && !query.trim() && !category &&
@@ -90,7 +78,7 @@ export default function CharacterBrowser({
               />
             ) : (
               // Saved chats are still loading: keep the hero's space so the grid doesn't jump, and don't flash a default character
-              <div className="h-[60svh] min-h-[22rem] max-h-[36rem] rounded-2xl bg-slate-950/60 border border-slate-700/50" />
+              <div className="h-[44svh] md:h-[60svh] min-h-[18rem] md:min-h-[22rem] max-h-[36rem] rounded-2xl bg-slate-950/60 border border-slate-700/50" />
             ))}
 
           <div className="flex flex-wrap gap-1.5">
@@ -100,7 +88,7 @@ export default function CharacterBrowser({
                 onClick={() => setCategory(cat)}
                 className={`text-xs px-3 py-1.5 rounded-full border transition ${
                   category === cat
-                    ? 'bg-purple-600 border-purple-500 text-white'
+                    ? 'bg-purple-500/15 border-purple-500/50 text-purple-200'
                     : 'bg-slate-800/60 border-slate-700 text-slate-400 hover:text-slate-200'
                 }`}
               >
@@ -121,6 +109,7 @@ export default function CharacterBrowser({
                 <CharacterCard
                   key={char.id}
                   character={char}
+                  messageCount={countById[char.id]}
                   onSelect={onSelectChar}
                   onDelete={onDeleteChar}
                   onEdit={onEditChar}
@@ -130,6 +119,11 @@ export default function CharacterBrowser({
           )}
         </div>
       </div>
+      <BottomNav
+        onHome={() => scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}
+        onChats={onOpenHistory}
+        onCreate={onOpenCreateModal}
+      />
     </main>
   );
 }

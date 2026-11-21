@@ -3,6 +3,29 @@
 บันทึกงานที่ทำเสร็จ ใหม่สุดอยู่บนสุด (กฎอยู่ใน `CLAUDE.md` → Conventions)
 
 ---
+## 2026-11-22 — หน้าหลักมือถือ: แถบเมนูล่าง, hero เตี้ยลง, จำนวนข้อความบนการ์ด
+
+- เทียบหน้าหลักของ Khui AI / feelfan / Xoxona บนมือถือ แล้วยืมเฉพาะที่ช่วยกลับเข้าเรื่องเดิม ไม่ยืมของตลาด (แบนเนอร์, เหรียญ, อันดับ, สุ่ม, ตัวกรอง)
+- เพิ่ม `components/BottomNav.jsx` (หน้าหลัก / แชท / สร้าง, เฉพาะ `<md`; "แชท" เปิดลิ้นชัก sidebar เดิม; ปุ่มลิ้นชัก+ปุ่ม "+" มุมบนของมือถือถูกถอดเพราะซ้ำ)
+- hero มือถือ 60svh → 44svh; ตารางตัวละครเริ่มที่ y≈524 จากจอ 812 (เดิมต่ำกว่าจอแรก)
+- การ์ดตัวละครโชว์ "N ข้อความ" จากประวัติจริง (`chatSummary` ใน `lib/chatHelpers.js` อ่านประวัติครั้งเดียวได้ทั้ง preview และจำนวน; ไม่นับฉากเปิดที่บันทึกไว้ จึงไม่โชว์เมื่อเปิดแชทแต่ยังไม่เคยคุย); ชิปหมวดที่เลือกอยู่เป็นแคปซูลจาง (accent 15%) แทนพื้นทึบ
+- พื้นหลังเข้มลง `--ink-900` 29 25 28 → 20 17 20, `--ink-950` → 12 10 12, `theme-color`/manifest → `#141114`; contrast ใหม่: ink-500 บนพื้น 5.59 / บนการ์ด 4.54, ink-400 7.36/5.97, accent-300 บนแคปซูล 7.71
+- ไฟล์: `components/{BottomNav,CharacterBrowser,CharacterCard,HomeHero}.jsx`, `lib/chatHelpers.js`, `app/{page.js,globals.css,layout.js,manifest.js}`, `tests/chat-regressions.test.mjs`
+- ตรวจ: สำเนาทดสอบ (ใส่แชทตัวอย่าง 284/12/1203 ข้อความ) ที่ 375px และ 1280px, ปุ่ม "แชท" เปิดลิ้นชัก, ไม่ล้นแนวนอน, `next build` ผ่าน, `node --test tests/*.test.mjs` 44 ผ่าน (เพิ่ม 1, `chatSummary`); ยังไม่ได้ดูบน iPhone จริง
+- เหลือ: ไอคอนแอพยังสีเดิม, ปุ่มเลื่อนลงล่างสุด/เวลาข้อความ/จำนวนข้อความที่หัวแชท (ยังไม่ได้ทำ), แถว "คุยต่อ" (เลื่อนไว้ ดูหลังใช้แถบล่าง)
+
+## 2026-11-22 — รีดีไซน์ธีม "คืนเงียบ" (hallmark + impeccable + ui-ux-pro-max)
+
+- เปลี่ยนจาก slate + ม่วง เป็นเทาอุ่นโทนพลัม + สีส้มอิฐ (ember) สีเดียว ผ่าน token `--ink-*` / `--ember-*` ใน `app/globals.css`; `tailwind.config.js` map slate/purple/violet/fuchsia/indigo ไปที่ token เดิม จึงไม่ต้องแก้ class ทั้งแอป (pink ยังเป็นสีผู้พูดอื่น)
+- ฟอนต์: หัวข้อ/ชื่อ = Maitree (serif ไทยนุ่ม), เนื้อหา = IBM Plex Sans Thai (เดิมใช้ system font ที่ไทยดูไม่สวยบน Windows)
+- ปรับพื้นผิวเบราว์เซอร์: selection, caret, focus-visible, scrollbar, reduced-motion
+- Sidebar เข้มกว่าพื้นหลัก, ตัดหัวข้อ uppercase/tracking, ตัวหนังสือ `·` ใน hint; OpeningCard ตัด eyebrow แบบ tracking; bubble ผู้พูดอื่นเลิก `border-l-2` ใช้กรอบ 1px; ปุ่ม "ต่อ" เปลี่ยนจาก teal เป็นโทนเดียวกับธีม; HomeHero ซ่อนชื่อตัวใหญ่เมื่อไม่มี cut-out (เดิมโดนรูปทับ)
+- ไฟล์: `app/globals.css`, `app/layout.js`, `app/manifest.js`, `tailwind.config.js`, `components/{Sidebar,HomeHero,ChatMessage,ChatInput,OpeningCard,ExportChatModal}.jsx`
+- ตรวจ: สำเนาทดสอบ (ไม่มี Supabase) พอร์ต 3002 ดูหน้า home / โปรไฟล์ / โมดัลบทบาท / แชท ใน viewport มือถือ + `next build` ผ่าน; ยังไม่ได้ push, ยังไม่ได้ดูบน iPhone จริง, ยังไม่ได้ดู Settings/Memory/Create modal ทีละหน้า
+- แก้ตามรีวิว: ปุ่มหลัก hover เป็น `purple-700` (ขาวบน ember-500 contrast ไม่ถึง AA), `font-bold` → `font-semibold` (ฟอนต์โหลดแค่ 500/600), ดูแชทที่ใส่ข้อมูลตัวอย่าง (ข้อความผู้ใช้, ความคิด, ความทรงจำ, ค่าความสัมพันธ์) ไม่ล้นจอ และแยก ember/amber ออก
+- ตรวจสีด้วยตัวเลข: `ink-500` เดิมได้ 3.32:1 บนพื้น (ข้อความ/placeholder ไม่ผ่าน 4.5) → ปรับ `ink-400` เป็น 172 160 153 และ `ink-500` เป็น 150 138 132 (5.19 บนพื้น, 4.54 บนการ์ด). ฐานข้อมูล ui-ux-pro-max ไม่มีคู่สีที่ตรงงานนี้ (ใกล้สุด Sleep Tracker indigo/violet) จึงไม่ได้ยืนยันหรือค้านสีหลัก; เทียบ 3 โทนแล้ว: ember ห่างแดง 13°/amber 32°, rose ห่างแดง 12°, mauve ห่างแดง 68°/amber 113° (ทุกโทน white-on-600 ≥ 4.5) — เจ้าของเลือก **ม่วงหม่น (mauve)** แล้ว: token `--ember-*` เปลี่ยนชื่อเป็น `--accent-*` พร้อมค่าม่วงหม่น (600 = 153 74 165), `tailwind.config.js` map purple/violet/fuchsia/indigo → `accent`; ดูหน้า home + แชทตัวอย่างในสำเนาทดสอบแล้ว (ปุ่ม, ข้อความผู้ใช้, ชิปคำตอบเป็นม่วงหม่น, ป้ายความทรงจำ amber แยกชัด)
+- เหลือ: ตรวจ modal ที่เหลือ, ไอคอนแอพ (`public/icons`, `app/*icon.png`) ยังเป็นสีม่วง, ยังไม่ได้รัน search.py/audit ของ skill, ดูบน iPhone; โฟลเดอร์ทดสอบใน scratchpad `bt` ต้องลบเอง
+
 ## 2026-11-22 — เก็บงานทดลอง scroll-craft ใน Git
 
 - เพิ่มหน้า landing ทดลอง `scrollcraft/builds/botbaat-night` พร้อม assets, สคริปต์ทดสอบ และ fingerprint registry เข้า Git ตามคำขอ; ไม่รวม dependencies, ภาพทดสอบ และ logs ที่ถูก ignore

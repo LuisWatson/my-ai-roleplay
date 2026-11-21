@@ -1,13 +1,13 @@
 'use client';
 
 import React from 'react';
-import { Trash2, Pencil } from 'lucide-react';
+import { Trash2, Pencil, MessageCircle } from 'lucide-react';
 
 /**
  * Character card item displayed in the browse grid: full-bleed cover image with
  * name/tagline overlaid at the bottom, like a show poster.
  */
-export default function CharacterCard({ character, onSelect, onDelete, onEdit }) {
+export default function CharacterCard({ character, messageCount, onSelect, onDelete, onEdit }) {
   const isCustom = character.id && character.id.startsWith('custom_');
 
   const handleDelete = (e) => {
@@ -64,6 +64,12 @@ export default function CharacterCard({ character, onSelect, onDelete, onEdit })
         <p className="text-xs text-slate-300 line-clamp-2 drop-shadow mt-0.5">
           {character.tagline || character.description}
         </p>
+        {messageCount > 0 && (
+          <p className="mt-1.5 flex items-center gap-1 text-xs text-slate-300 drop-shadow">
+            <MessageCircle className="w-3.5 h-3.5" aria-hidden="true" />
+            <span>{messageCount.toLocaleString('en-US')} ข้อความ</span>
+          </p>
+        )}
       </div>
     </div>
   );

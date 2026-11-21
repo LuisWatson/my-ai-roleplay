@@ -48,7 +48,7 @@ import {
   FIRST_RESPONSE_CLIENT_TIMEOUT_MS,
   SIDEBAR_COLLAPSED_KEY,
   readChatActivity,
-  lastMessagePreview,
+  chatSummary,
   REPLY_ERRORS,
   withoutImages,
   swipeVersion,
@@ -295,7 +295,7 @@ function RoleplayApp({ store, account, getAccessToken }) {
     () =>
       characters
         .filter((c) => c.id in chatActivity)
-        .map((c) => ({ character: c, at: chatActivity[c.id], preview: lastMessagePreview(store, c.id) }))
+        .map((c) => ({ character: c, at: chatActivity[c.id], ...chatSummary(store, c.id) }))
         .sort((a, b) => b.at - a.at),
     [store, characters, chatActivity]
   );

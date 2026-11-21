@@ -10,6 +10,7 @@ const {
   firstVisibleMessageIndex,
   visibleMessages,
   restoreAfterEmptyReply,
+  chatSummary,
 } = await import('../lib/chatHelpers.js');
 
 test('tag-only replies have no visible story, while partial tags do not hide preceding text', () => {
@@ -49,4 +50,17 @@ test('chat pagination shows the latest page and reveals older pages in fixed inc
   const messages = Array.from({ length: 100 }, (_, index) => ({ index }));
   assert.deepEqual(visibleMessages(messages, 60).map((message) => message.index), Array.from({ length: 40 }, (_, i) => i + 60));
   assert.equal(visibleMessages(messages, 0).length, messages.length);
+});
+
+test('chatSummary gives the last preview and a message count that skips the saved opening scene', () => {
+  const store = (value) => ({ getItem: () => value });
+  const history = [
+    { role: 'model', text: 'ฉากเปิด', storyStart: true },
+    { role: 'user', text: 'สวัสดี' },
+    { role: 'model', text: 'เธอยิ้ม *(พยักหน้า)* "ว่าไง"' },
+  ];
+  assert.deepEqual(chatSummary(store(JSON.stringify(history)), 'x'), { preview: 'เธอยิ้ม "ว่าไง"', count: 2 });
+  assert.deepEqual(chatSummary(store(JSON.stringify(history.slice(0, 1))), 'x'), { preview: 'ฉากเปิด', count: 0 });
+  assert.deepEqual(chatSummary(store(JSON.stringify([{ role: 'user', text: 'หวัดดี' }])), 'x'), { preview: 'คุณ: หวัดดี', count: 1 });
+  for (const bad of [null, 'not json', '{"a":1}']) assert.deepEqual(chatSummary(store(bad), 'x'), { preview: '', count: 0 });
 });
