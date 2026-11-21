@@ -3,6 +3,14 @@
 บันทึกงานที่ทำเสร็จ ใหม่สุดอยู่บนสุด (กฎอยู่ใน `CLAUDE.md` → Conventions)
 
 ---
+## 2026-11-22 — เก็บงานทดลอง scroll-craft ใน Git
+
+- เพิ่มหน้า landing ทดลอง `scrollcraft/builds/botbaat-night` พร้อม assets, สคริปต์ทดสอบ และ fingerprint registry เข้า Git ตามคำขอ; ไม่รวม dependencies, ภาพทดสอบ และ logs ที่ถูก ignore
+- ไฟล์: `scrollcraft/`, `worklog.md`
+- ตรวจ: ตรวจรายการไฟล์และรูปแบบ secrets ที่พบบ่อยก่อน commit; ผลตรวจหน้าเดิมบันทึกไว้เมื่อ 2026-11-02
+- เหลือ: งานทดลองแยกจากแอปหลัก และยังไม่ได้ตรวจบน iPhone จริง
+
+---
 ## 2026-11-20 — ทดสอบ API error paths และลดงาน render ของแชทยาว
 
 - แก้: API ปฏิเสธ JSON/ฟิลด์คำขอที่ไม่ครบด้วย 400; แยกการอ่าน chunk แรกเพื่อทดสอบ stream ว่างและ fallback; จำกัด `.map()` ใน `ChatWindow` เฉพาะข้อความที่แสดง; ลบ placeholder ที่มีแต่ช่องว่างเมื่อคำตอบไม่มีเนื้อเรื่อง
