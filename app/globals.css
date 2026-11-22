@@ -4,19 +4,19 @@
 
 /* "Quiet night" tokens. Every colour in the app goes through these (Tailwind's slate / purple / violet scales
    are remapped to them in tailwind.config.js, so the old class names keep working).
-   ink = warm plum-brown neutrals, accent = muted mauve, the one accent. Channels, so `bg-slate-800/60` still works. */
+   ink = neutral blacks and greys (900 near-black, 950 black), accent = muted mauve, the one accent. Channels, so `bg-slate-800/60` still works. */
 :root {
-  --ink-50: 247 243 240;
-  --ink-100: 239 233 228;
-  --ink-200: 221 212 205;
-  --ink-300: 191 179 171;
-  --ink-400: 172 160 153;
-  --ink-500: 150 138 132;
-  --ink-600: 81 72 74;
-  --ink-700: 58 51 55;
-  --ink-800: 42 36 40;
-  --ink-900: 20 17 20;
-  --ink-950: 12 10 12;
+  --ink-50: 250 250 250;
+  --ink-100: 242 242 242;
+  --ink-200: 222 222 222;
+  --ink-300: 190 190 190;
+  --ink-400: 165 165 165;
+  --ink-500: 140 140 140;
+  --ink-600: 64 64 64;
+  --ink-700: 52 52 52;
+  --ink-800: 26 26 26;
+  --ink-900: 5 5 5;
+  --ink-950: 0 0 0;
 
   --accent-50: 249 244 250;
   --accent-100: 240 227 242;
