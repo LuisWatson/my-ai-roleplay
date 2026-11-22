@@ -109,6 +109,18 @@ Steps 1, 3 and 4 (white backdrop, cut-outs) are **dropped** by the owner (2026-1
    `public/characters/cutouts/<id>.webp` (main) and `<id>_<key>.webp`, transparent WebP 768×1024.
 4. Contact-sheet all 9 cut-outs before wiring `expressions` and `cutouts` in `constants/characters.js`.
 
+## Img2Img expressions with the Camille set-up (2026-11-22)
+
+Source = the downloaded main PNG (copy it into the scratchpad, upload with `file_upload` on the hidden file input). The Img2Img
+tab keeps its own LoRA list and prompt, so re-add the LoRAs there (same weights as the portrait) and keep denoise 0.72.
+Tool traps: the chat prompt box is a *different* textarea from a hidden one: pick the visible textarea whose top is < 100 px, not
+`[0]`, or the job re-uses the old prompt (cost 2.8 credits once). A click on Create is dropped while the result list is scrolled
+(the prompt collapses): scroll the list up first, and check the credit counter drops. Weights ≥ 1.5 pop a warning dialog: use ≤ 1.4.
+Avoid a raised/open hand in the pose (surprised grew a second hand out of the arm): `both hands resting on her hips` worked.
+The result list is virtualised: move to card k with `container.scrollTop = k * 536`, hover the image, click the download icon
+(middle of the three), then map the files by the time in their names (`TA-<date>-<hh-mm-ss>-...`); `.tmp` downloads appear
+later as `1.png`, `2.png`. Check a contact sheet (sharp composite) before wiring.
+
 ## Downloading many pictures from tensor.art
 
 The "download" helper kept returning the wrong image (a thumbnail or the previous result) and a Create click was dropped

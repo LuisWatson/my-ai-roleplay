@@ -3,6 +3,25 @@
 บันทึกงานที่ทำเสร็จ ใหม่สุดอยู่บนสุด (กฎอยู่ใน `CLAUDE.md` → Conventions)
 
 ---
+## 2026-11-22 — พื้นหลังดำกลาง (OLED black)
+
+- เจ้าของอยากให้แอปเป็นสีดำ: `--ink-*` เปลี่ยนจากเทาอมม่วงอุ่นเป็นเทากลางไม่มีสี (900 = 5 5 5 near-black, 950 = 0 0 0, 800 = 26 26 26 การ์ด/ช่องกรอก, 700 = 52 52 52 เส้นขอบ); สีม่วงหม่นเดิม; `theme-color`/manifest เป็น `#050505`
+- contrast ใหม่ (ตัวเลขจากสคริปต์): ข้อความเทา 500 บนพื้น 6.06 / บนการ์ด 5.18, 400 = 8.27/7.07, ขาวบนปุ่ม 5.42, accent-300 บนพื้น 9.92
+- ไฟล์: `app/globals.css`, `app/layout.js`, `app/manifest.js`
+- ตรวจ: สำเนาทดสอบ 375px ดูหน้าหลัก, โมดัลบทบาท, แชทตัวอย่าง (ข้อความผู้ใช้, ความคิด, ความทรงจำ, ชิปคำตอบ); ยังไม่ได้ `next build` หลังรอบนี้ (เปลี่ยนแค่ค่า CSS), ยังไม่ได้ดู iPhone จริง
+- หมายเหตุ: ขอบการ์ด (800) ต่างจากพื้นแค่ 1.17:1 บนจอ OLED อาจจางมาก ถ้าเจ้าของว่าการ์ดกลืนพื้นให้ขยับ 800 ขึ้นเป็นราว 32 32 32
+
+## 2026-11-22 — เพิ่มตัวละคร `noexit` (Camille, NO EXIT — โรงแรมที่ไม่เคยหลับใหล) ยังไม่มีรูป
+
+- การ์ดจาก ChatGPT (`NO_EXIT_The_Hotel_That_Never_Sleeps.md`) → preset ใหม่ `noexit`: ข้อมูลตัวละครใน `constants/characters.js`, โปรไฟล์ + cast 4 คน (Adrian, Charlotte, Marcus, Eleanor) + storyHooks 8 ข้อใน `constants/characterProfiles.js`
+- ตัดสินใจ: `name` = คามิลล์ (Camille), "NO EXIT" ไปอยู่ใน tagline; ฉากเปิดเป็นโถงต้อนรับ; หมวด 'ปริศนา' (ใช้หมวดเดิม ไม่เพิ่มแท็บใหม่); ไม่เอากฎ roleplay/ระยะความสัมพันธ์จากการ์ดเข้าแอป เพราะซ้ำกับ `lib/prompt.js` และมิเตอร์ความสัมพันธ์
+- ความจริงที่ซ่อนอยู่ 4 ขั้น (`STORY_ARCS.noexit`) เขียนโดย subagent แบบปิดตา ไม่มีใครอ่าน; รายงานกลับมาแค่จำนวนขั้นและความยาว
+- ตรวจ: สคริปต์ Node ผ่าน (preset 7 ตัว, noexit มี 4 ขั้น/cast 4/hooks 8, prompt สร้างได้ ~17k ตัวอักษร มี Camille/407/Adrian), หน้าแรกในแอปไม่ล็อกอินขึ้นการ์ดคามิลล์ ไม่มี console error; ยังไม่ได้ลองส่งข้อความจริงกับ Gemini, ยังไม่ได้ build, ยังไม่ได้ commit/push
+- รูปหลัก (2026-11-22): Krea-2 Turbo + TrustTheProcess 0.6 (trigger `ninilux`) + semi style 0.4, seed 2639525573, 768×1152 → ตัดเป็น 768×1024 `public/characters/noexit.webp` (44 KB), ตั้ง `avatar` แล้ว; หน้าตะวันตก ผมน้ำตาลเกาลัด ตา hazel ชุดซาตินดำคอวีลึกคลุมเบลเซอร์ ทรวดทรงนาฬิกาทราย (เสื้อผ้าครบ). บทเรียน: semi style ที่ 1.0 ทำให้หน้าเหมือน Serena (กลบ prompt) จึงลดเหลือ 0.4; TrustTheProcess ล้วนไม่ตอบคำเรื่องทรวดทรง ต้องผสม semi style; คำ `nude` ถูก tensor.art บล็อก. ยังไม่ได้ดูบนมือถือ
+- สีหน้า 8 แบบ (2026-11-22): Img2Img จากรูปหลัก Krea-2 Turbo + TrustTheProcess 0.6 + semi style 0.4, denoise 0.72, 8 steps, 2.8 เครดิตต่อภาพ → `public/characters/expressions/noexit_<happy|shy|sad|angry|thinking|surprised|teasing|worried>.webp` (768×1024, ~38 KB), ตั้ง `expressions` ครบ 8 แล้ว; หน้าคงเดิมทั้งชุด (ดูจาก contact sheet), ตรวจใน Node ว่าไฟล์มีครบ. ปัญหาที่เจอ: surprised ครั้งแรกมีมือยกงอกจากแขน (owner เห็น) จึงสร้างใหม่ด้วยท่ามือเท้าสะเอวทั้งสองข้าง; worried มีเงาคนเบลอเล็กๆ ที่ขอบขวา (ยังไม่แก้); น้ำหนักคำ ≥1.5 ทำให้ขึ้นหน้าต่างเตือน ใช้ 1.4; ท่าอารมณ์บางภาพ (teasing, surprised) ค่อนข้างอ่อน
+- ฉาก 8 ฉาก (2026-11-22): Krea-2 Turbo ไม่ใช้ LoRA, 1152×768, 8 steps, เขียน place เป็น `empty ...` + negative `people, person, figure...` (0.8 เครดิตต่อภาพ) → `public/characters/backgrounds/noexit/{grand_lobby,manager_office,restaurant,midnight_bar,indoor_pool,staff_lounge,archive_room,mountain_entrance}.webp`, ตั้ง `sceneSet` + `background` + ฉากเปิดเป็น `grand_lobby` แล้ว. restaurant สร้างสองรอบ (รอบแรกมีเชฟยืนในครัวเปิด รอบสองเปลี่ยนเป็นประตูครัวปิด + negative `chef, waiter, staff`). ตรวจ: Node (ไฟล์ครบ, openingBg อยู่ใน sceneSet, prompt สร้างได้), เปิดแอปไม่ล็อกอิน: การ์ด/โปรไฟล์/ฉากเปิด/พื้นหลังโถงขึ้นถูก. หมายเหตุ: ป้ายในภาพ mountain_entrance อ่านได้ว่า HOTEL; ยังไม่ได้ลองส่งข้อความจริงกับ Gemini ยังไม่ได้ build ยังไม่ได้ commit
+- เหลือ: แก้ worried (เงาคนเบลอที่ขอบขวา) ถ้าอยาก, ฉาก 8 ฉาก (`sceneSet`; ตอนนี้ใช้พื้นหลังชั่วคราว `hotel_lounge`) แล้วค่อยเปลี่ยนฉากเปิดเป็น `grand_lobby`; ลองข้อความจริง 1 ข้อความ; อัปเดต CLAUDE.md เรื่องจำนวน preset
+
 ## 2026-11-22 — หน้าหลักมือถือ: แถบเมนูล่าง, hero เตี้ยลง, จำนวนข้อความบนการ์ด
 
 - เทียบหน้าหลักของ Khui AI / feelfan / Xoxona บนมือถือ แล้วยืมเฉพาะที่ช่วยกลับเข้าเรื่องเดิม ไม่ยืมของตลาด (แบนเนอร์, เหรียญ, อันดับ, สุ่ม, ตัวกรอง)

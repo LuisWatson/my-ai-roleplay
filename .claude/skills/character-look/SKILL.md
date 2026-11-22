@@ -62,7 +62,8 @@ Catalogue (top KREA_2 LoRAs by uses, 2026-11-11; my reading of each sample pictu
 | Lunaria (Nini.Nozomi) | candlelit ethereal blonde | |
 | Haunted Melody (Nini.Nozomi) | ghostly pale, dark, haunting | |
 | Cherry Gloss (Nini.Nozomi) | candlelit vintage, veils, warm | |
-| semi style | clean semi-real (owner's favourite look) | **Serena 1.0**, **Yuna 1.0** (expressions 0.7) |
+| semi style | clean semi-real (owner's favourite look) | **Serena 1.0**, **Yuna 1.0** (expressions 0.7), **Camille 0.4** (at 1.0 it gave her Serena's face) |
+| TrustTheProcess-Beta (Nini.Nozomi, trigger `ninilux`) | Western-leaning glam face, defined cheekbones, warm skin; ignores body words alone, needs semi style 0.4 for a curvy figure | **Camille 0.6** |
 | GlowFace & PearlGlow (NxyF!ng) | porcelain glow | **Vivienne** (gives her face to all) |
 | SerenFace (moéline) | soft natural face | Noelle 0.3 |
 | Cherish (ᴍ1nd) | realistic skin/finish helper | Noelle 0.4 |

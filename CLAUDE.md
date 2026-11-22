@@ -42,7 +42,7 @@ The owner builds it for themselves and their partner. Reply to the owner in Thai
 
 ## Where things live
 
-- Theme ("quiet night"): colours are tokens in `app/globals.css` (`--ink-*` warm neutrals, `--accent-*` muted mauve).
+- Theme ("quiet night"): colours are tokens in `app/globals.css` (`--ink-*` neutral blacks/greys (900 = near-black, 950 = black), `--accent-*` muted mauve).
   `tailwind.config.js` remaps the Tailwind scales `slate` → ink and `purple`/`violet`/`fuchsia`/`indigo` → accent, so
   `bg-purple-600` is mauve, not purple. `pink` is NOT remapped (it is a supporting-speaker colour).
 - `components/BottomNav.jsx` — phone-only bottom bar (home / chats / create) on the home screen; "chats" opens the sidebar drawer.
@@ -81,7 +81,7 @@ The owner builds it for themselves and their partner. Reply to the owner in Thai
 - Never `confirm()` either: use `useConfirm()` from `components/ConfirmDialog.jsx`.
 - Errors: never `alert()`. Chat errors → notice card in `ChatWindow` (by `kind` from `/api/chat`); elsewhere → `Toast`.
   Waiting text stays in-story (character narration), never about the app/AI.
-- `constants/characters.js` — 6 preset characters (`ellie`, `ash`, `vivienne`, `serena`, `noelle` — a cooking-contest romcom added 2026-11-03, with `truthStages` and her own `sceneSet` of 8 backgrounds; `yuna` — a 3 a.m. tea shop for spirits, added 2026-11-12, with `truthStages`, 8 expressions and her own `sceneSet`); the 12 older presets were removed 2026-10-28, still in git history; `serena` has a portrait and the 4 expressions; her expression eyes look greyer than the portrait, owner accepted that;
+- `constants/characters.js` — 7 preset characters (`noexit` — Camille, a night-shift hotel mystery romcom added 2026-11-22, with a portrait, all 8 expressions and its own `sceneSet` of 8 backgrounds; `ellie`, `ash`, `vivienne`, `serena`, `noelle` — a cooking-contest romcom added 2026-11-03, with `truthStages` and her own `sceneSet` of 8 backgrounds; `yuna` — a 3 a.m. tea shop for spirits, added 2026-11-12, with `truthStages`, 8 expressions and her own `sceneSet`); the 12 older presets were removed 2026-10-28, still in git history; `serena` has a portrait and the 4 expressions; her expression eyes look greyer than the portrait, owner accepted that;
   `vivienne`, `serena` and `noelle` have their own `sceneSet` of 8 backgrounds). Optional fields:
   `avatar`, `background`, `defaultUserRole { description, background }`, `fixedBackground`, `userRoleHint`,
   `profile { age, occupation, appearance, personality, likes, dislikes, story }` and
@@ -98,7 +98,7 @@ The owner builds it for themselves and their partner. Reply to the owner in Thai
   told (`complete`), rule 11 stops "keep secrets alive". If a due stage's reply has no tag, `/api/suggest` asks a separate
   Lite yes/no (`revealCheck` → `revealed`, never mixed into the suggestion prompt) and `markRevealed` sets `reveal`.
   The memory panel shows only the count told/total (`truthCount`); the persona
-  sent never carries `truthStages`. `ellie`, `ash`, `vivienne`, `noelle` and `yuna` have one (noelle's and yuna's were written by a subagent
+  sent never carries `truthStages`. `ellie`, `ash`, `vivienne`, `noelle`, `yuna` and `noexit` have one (noelle's, yuna's and noexit's were written by a subagent
   that reported no content; nobody here has read it).
 - `components/CharacterProfile.jsx` — tapping a card on the home grid opens the character's profile sheet
   (bio / your role / people around them / greeting, relation + journal count, "เริ่มแชท"/"คุยต่อ");
