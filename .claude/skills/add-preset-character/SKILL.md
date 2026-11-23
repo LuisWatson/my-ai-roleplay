@@ -7,6 +7,18 @@ description: Checklist for adding a new preset character to Botbaat (data, profi
 
 Worked example: Noelle (2026-11-03, see `worklog.md`). Reply to the owner in Thai.
 
+## 0. Intake (Camille, 2026-11-22)
+
+The owner may have ChatGPT write the card: give them `card-template.md` (this folder), then read the saved `.md`. Before coding,
+review the card and tell the owner the fixes in Thai (they said "decide yourself" and "go"):
+- `name` short (the long title goes into the tagline); `category` reuses an existing tab (a new word adds a new tab on the home screen).
+- The opening place must be one of the 8 scenes (Camille's card started in "Staff Reception" but the scene list had none).
+- Do NOT import the card's "roleplay rules" and "relationship stages": they duplicate `lib/prompt.js` and the relationship meters;
+  fold one line of them into `description` / `situation` instead.
+- If an open question forces the hidden truth (e.g. "why is she not surprised"), tell the subagent that constraint, never the answer.
+- The owner's taste for these portraits: glamorous and sexy like Serena/Vivienne/Yuna (see `character-look`), clothed. A plain office look
+  was rejected as "not sexy, not chatty".
+
 ## 1. Data (files to touch)
 
 - `constants/characters.js` — new entry in `BASE_CHARACTERS`: `id`, `name`, `tagline`, `description`, `greeting`, `exampleDialogue`,
@@ -45,7 +57,11 @@ Chat = scene backdrop + expression pictures as mood cards (leave `cutouts` out).
   `npx next dev -p 3002` (a temp copy with a `node_modules` junction breaks webpack). Check card, profile sheet, opening card,
   backdrop, mood cards.
 - One real Gemini message (quota is tiny; never loop). Look for: in character, no invented facts, scene tag present.
-- `next build` before pushing.
+- `next build` before pushing (Camille was pushed on the owner's order without it; do the build first, it takes a minute).
+- Quick UI check without login: `preview_start` name `nologin-main` (port 3002, in `.claude/launch.json`), open the card, the profile
+  sheet, then "เริ่มแชท": the role dialog opens first (close it), then the opening card + backdrop show.
+- Credits: a whole character costs about 40-45 tensor.art credits with retries (portrait tests 0.8 each, 8 expressions 2.8 each,
+  8 scenes 0.8 each). Check the balance before starting.
 
 ## 5. Ship
 

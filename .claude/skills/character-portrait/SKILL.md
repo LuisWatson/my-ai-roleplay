@@ -117,9 +117,19 @@ Tool traps: the chat prompt box is a *different* textarea from a hidden one: pic
 `[0]`, or the job re-uses the old prompt (cost 2.8 credits once). A click on Create is dropped while the result list is scrolled
 (the prompt collapses): scroll the list up first, and check the credit counter drops. Weights ≥ 1.5 pop a warning dialog: use ≤ 1.4.
 Avoid a raised/open hand in the pose (surprised grew a second hand out of the arm): `both hands resting on her hips` worked.
-The result list is virtualised: move to card k with `container.scrollTop = k * 536`, hover the image, click the download icon
-(middle of the three), then map the files by the time in their names (`TA-<date>-<hh-mm-ss>-...`); `.tmp` downloads appear
-later as `1.png`, `2.png`. Check a contact sheet (sharp composite) before wiring.
+**Best way to download a batch (2026-11-22, much faster and safer than the toolbar icons):** the result list is virtualised, so
+scroll its container in 250 px steps (the one with class `overflow-y-auto`, found from a `.group img`) and collect every
+`.group img` with `naturalWidth` >= 1100 (scenes) or the portrait width into a Map keyed by the uuid in `currentSrc`
+(`generation/<id>/<date>/<uuid>.png`). The signed R2 URLs can be `fetch()`ed from the tensor.art page itself: fetch each, make a
+blob, click an `<a download="name_i.png">` 1.2 s apart; Chrome allowed all 8 in a row and names them by `download`. The Map order is
+NOT creation order: identify each file with a contact sheet (numbered thumbnails via `sharp`), then convert. The toolbar's middle
+icon works only at the exact spot; a wrong click opens the full-size preview whose download button navigates the tab to the raw URL.
+Using the toolbar anyway: map files by the time in their names (`TA-<date>-<hh-mm-ss>-...`); `.tmp` downloads appear later as `1.png`, `2.png`.
+
+Session traps: after a long pause the Chrome tab group is recreated (call `tabs_context_mcp` with `createIfEmpty`, old tab ids die; the
+workspace restores with the last prompt and LoRAs); the Create workspace may open in a narrow one-column layout until the window
+repaints; credits refill daily (58 again next day); the Create button moves when the prompt box grows or shrinks, so click it by
+`find` ref, never by saved coordinates; the Text2Img tab keeps a stale fixed seed (click the shuffle icon for a random one).
 
 ## Downloading many pictures from tensor.art
 
@@ -141,7 +151,10 @@ with `sharp`. No credits needed.
 Prompt: `masterpiece, best quality, semi-realistic, <place>, no people, cinematic, dim moody lighting, bokeh, wide shot, background scenery`.
 Noelle's 8 scenes used **Krea-2 Turbo with no LoRA**, 1152×768 (not Z-Image-Turbo). Write the place as **empty** (`empty cafe`,
 `empty market stalls`): "no people" alone still brought a blurred crowd. Small text on signs/chalkboards comes out garbled;
-dimmed and blurred in the chat it is fine. Check each scene for tiny figures at the edges. Save as `public/characters/backgrounds/<id>/<scene>.webp` (1152×768, quality 82) and set each scene's `src`.
+dimmed and blurred in the chat it is fine. Check each scene for tiny figures at the edges: Camille's restaurant first came with a chef
+standing in the open kitchen (even with `empty`); redo it as `closed wooden kitchen door at the back, nobody here` and add
+`chef, waiter, staff, cook` to the negative. Negative for scenes: `people, person, human, figure, silhouette, crowd, animal, text,
+watermark, logo, blurry`. Per scene 0.8 credit, about 35 s; the first scene (opening place) is also the card `background`. Save as `public/characters/backgrounds/<id>/<scene>.webp` (1152×768, quality 82) and set each scene's `src`.
 
 ## 3. Download into the project
 

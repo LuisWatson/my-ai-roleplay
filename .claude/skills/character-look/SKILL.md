@@ -86,3 +86,18 @@ Rules:
 
 Generate, download, expressions and scenes with the `character-portrait` skill (settings: 768×1152 portrait, 8 steps,
 CFG 1). Record the chosen LoRA + weights + face design in `worklog.md` and in the table above.
+
+## 4. The look the owner wants (Camille, 2026-11-22)
+
+Owner: pretty, **sexy and "น่าคุย"** like Serena / Vivienne / Yuna, full bust, curvy; clothed (project rule, see `character-portrait` and
+`CLAUDE.md` TODO 5). A buttoned office blazer and a stiff pose read as "not sexy" and were rejected three times; what worked:
+- Outfit: fitted satin dress with `(deep plunging V neckline:1.3)`, blazer draped off the shoulders, `bare shoulders, collarbone`;
+  body words `(voluptuous curvy hourglass figure:1.3), (full large bust:1.4), slim waist`; face `soft smoky eye makeup, full glossy rosy lips,
+  soft blush, glowing fair skin`; pose `one hand on hip, leaning on the counter, confident seductive smile, alluring gaze`.
+- LoRA: **TrustTheProcess 0.6 + semi style 0.4** (trigger `ninilux`). Semi style at 1.0 gives every character Serena's face; TrustTheProcess
+  alone gives a Western face but ignores body words. Both are in the table above.
+- The same **seed** keeps face and composition when only the outfit words change (2639525573 for Camille).
+- tensor.art blocks `nude` (use `soft rosy-beige`) and `cleavage`; weights >= 1.5 pop a warning dialog, stay at 1.4.
+- Do not go further than clothed: no nudity or explicit pictures, whatever the owner asks; say so plainly and offer the clothed options
+  (tighter dress, glossy fabric, lighting, pose).
+- Always compare with `public/characters/serena.webp` and `vivienne.webp` (Read them) before showing the owner.
